@@ -276,7 +276,15 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
             return OMX_ErrorNone;
         }
         else if (status != DECODE_SUCCESS && status != DECODE_FRAME_DROPPED) {
-            return TranslateDecodeStatus(status);
+            if (checkFatalDecoderError(status)) {
+                return TranslateDecodeStatus(status);
+            } else {
+                // For decoder errors that could be omitted,  not throw error and continue to decode.
+                TranslateDecodeStatus(status);
+
+                buffers[OUTPORT_INDEX]->nFilledLen = 0;
+                return OMX_ErrorNone;
+            }
         }
     }
     // drain the decoder output queue when in EOS state and fill the render buffer
