@@ -193,7 +193,7 @@ private:
     const static OMX_U32 INPORT_AVC_BUFFER_SIZE = 614400;
     const static OMX_U32 OUTPORT_AVC_ACTUAL_BUFFER_COUNT = 10;
     const static OMX_U32 OUTPORT_AVC_MIN_BUFFER_COUNT = 1;
-    const static OMX_U32 OUTPORT_AVC_BUFFER_SIZE = 614400;
+    const static OMX_U32 OUTPORT_AVC_BUFFER_SIZE = 3240000;
 
 
 };
