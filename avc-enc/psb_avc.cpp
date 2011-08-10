@@ -2430,7 +2430,7 @@ OMX_ERRORTYPE MrstPsbComponent::RequestToEnableBufferSharingMode()
         return OMX_ErrorUndefined;
     }
 
-    buffer_sharing_count = 4;
+    buffer_sharing_count = 7;
     buffer_sharing_info = NULL;
     buffer_sharing_lib = BufferShareRegistry::getInstance();
 
