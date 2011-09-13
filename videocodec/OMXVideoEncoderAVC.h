@@ -35,16 +35,17 @@ protected:
             buffer_retain_t *retains,
             OMX_U32 numberBuffers);
 
-   virtual OMX_ERRORTYPE BuildHandlerList(void);
-
-   DECLARE_HANDLER(OMXVideoEncoderAVC, ParamVideoAvc);
-   DECLARE_HANDLER(OMXVideoEncoderAVC, ParamNalStreamFormat);
-   DECLARE_HANDLER(OMXVideoEncoderAVC, ParamNalStreamFormatSupported);
-   DECLARE_HANDLER(OMXVideoEncoderAVC, ParamNalStreamFormatSelect);
-   DECLARE_HANDLER(OMXVideoEncoderAVC, ConfigVideoAVCIntraPeriod);
-   DECLARE_HANDLER(OMXVideoEncoderAVC, ConfigVideoNalSize);
-   DECLARE_HANDLER(OMXVideoEncoderAVC, ParamIntelAVCVUI);
-   DECLARE_HANDLER(OMXVideoEncoderAVC, ParamVideoBytestream);
+    virtual OMX_ERRORTYPE BuildHandlerList(void);
+    virtual OMX_ERRORTYPE SetVideoEncoderParam();
+    DECLARE_HANDLER(OMXVideoEncoderAVC, ParamVideoAvc);
+    DECLARE_HANDLER(OMXVideoEncoderAVC, ParamNalStreamFormat);
+    DECLARE_HANDLER(OMXVideoEncoderAVC, ParamNalStreamFormatSupported);
+    DECLARE_HANDLER(OMXVideoEncoderAVC, ParamNalStreamFormatSelect);
+    DECLARE_HANDLER(OMXVideoEncoderAVC, ConfigVideoAVCIntraPeriod);
+    DECLARE_HANDLER(OMXVideoEncoderAVC, ConfigVideoNalSize);
+    DECLARE_HANDLER(OMXVideoEncoderAVC, ParamIntelAVCVUI);
+    DECLARE_HANDLER(OMXVideoEncoderAVC, ParamVideoBytestream);
+    DECLARE_HANDLER(OMXVideoEncoderAVC, ConfigIntelSliceNumbers);
 
 
 private:
@@ -53,7 +54,6 @@ private:
         OUTPORT_MIN_BUFFER_COUNT = 1,
         OUTPORT_ACTUAL_BUFFER_COUNT = 10,
         OUTPORT_BUFFER_SIZE = 1382400,
-        // for OMX_VIDEO_PARAM_INTEL_AVC_DECODE_SETTINGS
         NUM_REFERENCE_FRAME = 4,
     };
 
@@ -61,7 +61,10 @@ private:
     OMX_NALSTREAMFORMATTYPE mNalStreamFormat;
     OMX_VIDEO_CONFIG_AVCINTRAPERIOD mConfigAvcIntraPeriod;
     OMX_VIDEO_CONFIG_NALSIZE mConfigNalSize;
-    //OMX_VIDEO_PARAM_INTEL_AVCVUI mParamIntelAvcVui;
+    OMX_VIDEO_PARAM_INTEL_BITRATETYPE avcEncParamIntelBitrateType;
+    OMX_VIDEO_PARAM_INTEL_AVCVUI mParamIntelAvcVui;
+    OMX_VIDEO_CONFIG_INTEL_SLICE_NUMBERS mConfigIntelSliceNumbers;
+    VideoParamsAVC *mAVCParams;
 };
 
 #endif /* OMX_VIDEO_ENCODER_AVC_H_ */

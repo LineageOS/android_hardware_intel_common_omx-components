@@ -35,9 +35,9 @@ protected:
             buffer_retain_t *retains,
             OMX_U32 numberBuffers);
 
-   virtual OMX_ERRORTYPE BuildHandlerList(void);
-
-   DECLARE_HANDLER(OMXVideoEncoderH263, ParamVideoH263);
+    virtual OMX_ERRORTYPE BuildHandlerList(void);
+    virtual OMX_ERRORTYPE SetVideoEncoderParam();
+    DECLARE_HANDLER(OMXVideoEncoderH263, ParamVideoH263);
 
 private:
     enum {

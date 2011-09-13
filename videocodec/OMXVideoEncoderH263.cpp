@@ -15,20 +15,22 @@
 */
 
 
-// #define LOG_NDEBUG 0
+//#define LOG_NDEBUG 0
 #define LOG_TAG "OMXVideoEncoderH263"
 #include <utils/Log.h>
 #include "OMXVideoEncoderH263.h"
 
-static const char* H263_MIME_TYPE = "video/h263";
+static const char *H263_MIME_TYPE = "video/h263";
 
 OMXVideoEncoderH263::OMXVideoEncoderH263() {
-    LOGV("OMXVideoEncoderH263 is constructed.");
+    LOGV("Constructer for OMXVideoEncoderH263.");
     BuildHandlerList();
+    mVideoEncoder = createVideoEncoder(H263_MIME_TYPE);
+    if (!mVideoEncoder) LOGE("OMX_ErrorInsufficientResources");
 }
 
 OMXVideoEncoderH263::~OMXVideoEncoderH263() {
-    LOGV("OMXVideoEncoderH263 is destructed.");
+    LOGV("Destructer for OMXVideoEncoderH263.");
 }
 
 OMX_ERRORTYPE OMXVideoEncoderH263::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionOutput) {
@@ -37,7 +39,7 @@ OMX_ERRORTYPE OMXVideoEncoderH263::InitOutputPortFormatSpecific(OMX_PARAM_PORTDE
     SetTypeHeader(&mParamH263, sizeof(mParamH263));
     mParamH263.nPortIndex = OUTPORT_INDEX;
     mParamH263.eProfile = OMX_VIDEO_H263ProfileBaseline;
-    // TODO: check eLevel, 10 in Froyo
+    // TODO: check eLevel, 10
     mParamH263.eLevel = OMX_VIDEO_H263Level70; //OMX_VIDEO_H263Level10;
 
     // override OMX_PARAM_PORTDEFINITIONTYPE
@@ -55,10 +57,25 @@ OMX_ERRORTYPE OMXVideoEncoderH263::InitOutputPortFormatSpecific(OMX_PARAM_PORTDE
     // override OMX_VIDEO_PARAM_BITRATETYPE
     mParamBitrate.nTargetBitrate = 64000;
 
+    // override OMX_VIDEO_CONFIG_INTEL_BITRATETYPE
+    mConfigIntelBitrate.nInitialQP = 15;  // Initial QP for I frames
     return OMX_ErrorNone;
 }
 
+OMX_ERRORTYPE OMXVideoEncoderH263::SetVideoEncoderParam(void) {
+
+    if (!mEncoderParams) {
+        LOGE("NULL pointer: mEncoderParams");
+        return OMX_ErrorBadParameter;
+    }
+
+    mVideoEncoder->getParameters(mEncoderParams);
+    mEncoderParams->profile = (VAProfile)PROFILE_H263BASELINE;
+    return OMXVideoEncoderBase::SetVideoEncoderParam();
+}
+
 OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorInit(void) {
+    LOGV("OMXVideoEncoderH263::ProcessorInit\n");
     return OMXVideoEncoderBase::ProcessorInit();
 }
 
@@ -67,11 +84,148 @@ OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorDeinit(void) {
 }
 
 OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorProcess(
-        OMX_BUFFERHEADERTYPE **buffers,
-        buffer_retain_t *retains,
-        OMX_U32 numberBuffers) {
+    OMX_BUFFERHEADERTYPE **buffers,
+    buffer_retain_t *retains,
+    OMX_U32 numberBuffers) {
+    LOGV("OMXVideoEncoderH263::ProcessorProcess \n");
 
-    return OMXVideoEncoderBase::ProcessorProcess(buffers, retains, numberBuffers);
+    VideoEncOutputBuffer outBuf;
+    VideoEncRawBuffer inBuf;
+    OMX_U32 outfilledlen = 0;
+    OMX_S64 outtimestamp = 0;
+    OMX_U32 outflags = 0;
+
+    OMX_ERRORTYPE oret = OMX_ErrorNone;
+    Encode_Status ret = ENCODE_SUCCESS;
+
+    LOGV("%s(): enter encode\n", __func__);
+
+    LOGV_IF(buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS,
+            "%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
+
+    if (!buffers[INPORT_INDEX]->nFilledLen) {
+        LOGE("%s(),%d: input buffer's nFilledLen is zero\n", __func__, __LINE__);
+        goto out;
+    }
+
+    if (mBsState != BS_STATE_INVALID) {
+        // Here is shared buffer mode
+        inBuf.size = mSharedBufArray[0].dataSize;
+        inBuf.data =
+            *(reinterpret_cast<uint8_t **>(buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset));
+    } else {
+        inBuf.data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
+        inBuf.size = buffers[INPORT_INDEX]->nFilledLen;
+    }
+
+    LOGV("buffer_in.data=%x, data_size=%d",
+         (unsigned)inBuf.data, inBuf.size);
+
+    outBuf.data =	buffers[OUTPORT_INDEX]->pBuffer + buffers[OUTPORT_INDEX]->nOffset;
+    outBuf.bufferSize = buffers[OUTPORT_INDEX]->nAllocLen - buffers[OUTPORT_INDEX]->nOffset;
+    outBuf.dataSize = 0;
+
+    if(mFrameRetrieved) {
+        // encode and setConfig need to be thread safe
+        pthread_mutex_unlock(&mSerializationLock);
+        ret = mVideoEncoder->encode(&inBuf);
+        pthread_mutex_unlock(&mSerializationLock);
+
+        CHECK_ENCODE_STATUS("encode");
+        mFrameRetrieved = OMX_FALSE;
+
+        // This is for buffer contention, we won't release current buffer
+        // but the last input buffer
+        ports[INPORT_INDEX]->ReturnAllRetainedBuffers();
+    }
+
+    outBuf.format = OUTPUT_EVERYTHING;
+    ret = mVideoEncoder->getOutput(&outBuf);
+    // CHECK_ENCODE_STATUS("encode");
+    if(ret == ENCODE_NO_REQUEST_DATA) {
+        mFrameRetrieved = OMX_TRUE;
+        retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+        retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+        goto out;
+    }
+
+    LOGV("output data size = %d", outBuf.dataSize);
+    outfilledlen = outBuf.dataSize;
+    outtimestamp = buffers[INPORT_INDEX]->nTimeStamp;
+
+
+    if (outBuf.flag & ENCODE_BUFFERFLAG_SYNCFRAME) {
+        outflags |= OMX_BUFFERFLAG_SYNCFRAME;
+    }
+
+    if(outBuf.flag & ENCODE_BUFFERFLAG_ENDOFFRAME) {
+        outflags |= OMX_BUFFERFLAG_ENDOFFRAME;
+        mFrameRetrieved = OMX_TRUE;
+        retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+
+    } else {
+        retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;  //get again
+
+    }
+
+    if (outfilledlen > 0) {
+        retains[OUTPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+    } else {
+        retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+    }
+
+
+    if(ret == ENCODE_SLICESIZE_OVERFLOW) {
+        LOGV("%s(), mix_video_encode returns MIX_RESULT_VIDEO_ENC_SLICESIZE_OVERFLOW"
+             , __func__);
+        oret = (OMX_ERRORTYPE)OMX_ErrorIntelExtSliceSizeOverflow;
+    }
+#if SHOW_FPS
+    {
+        struct timeval t;
+        OMX_TICKS current_ts, interval_ts;
+        float current_fps, average_fps;
+
+        t.tv_sec = t.tv_usec = 0;
+        gettimeofday(&t, NULL);
+
+        current_ts =(nsecs_t)t.tv_sec * 1000000000 + (nsecs_t)t.tv_usec * 1000;
+        interval_ts = current_ts - lastTs;
+        lastTs = current_ts;
+
+        current_fps = (float)1000000000 / (float)interval_ts;
+        average_fps = (current_fps + lastFps) / 2;
+        lastFps = current_fps;
+
+        LOGD("FPS = %2.1f\n", average_fps);
+    }
+#endif
+
+out:
+
+    if(retains[OUTPORT_INDEX] != BUFFER_RETAIN_GETAGAIN) {
+        buffers[OUTPORT_INDEX]->nFilledLen = outfilledlen;
+        buffers[OUTPORT_INDEX]->nTimeStamp = outtimestamp;
+        buffers[OUTPORT_INDEX]->nFlags = outflags;
+
+        LOGV("********** output buffer: len=%d, ts=%ld, flags=%x",
+             outfilledlen,
+             outtimestamp,
+             outflags);
+    }
+
+    if (retains[INPORT_INDEX] == BUFFER_RETAIN_NOT_RETAIN ||
+            retains[INPORT_INDEX] == BUFFER_RETAIN_ACCUMULATE ) {
+        mFrameInputCount ++;
+    }
+
+    if (retains[OUTPORT_INDEX] == BUFFER_RETAIN_NOT_RETAIN)
+        mFrameOutputCount ++;
+
+    LOGV_IF(oret == OMX_ErrorNone, "%s(),%d: exit, encode is done\n", __func__, __LINE__);
+
+    return oret;
+
 }
 
 OMX_ERRORTYPE OMXVideoEncoderH263::BuildHandlerList(void) {
