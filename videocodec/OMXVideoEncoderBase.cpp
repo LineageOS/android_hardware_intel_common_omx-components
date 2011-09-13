@@ -316,13 +316,18 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetVideoEncoderParam() {
             LOGV("rcMode = %d\n", mEncoderParams->rcMode);
         }
     } else {
-        mEncoderParams->rcMode = RATE_CONTROL_VCM;
-        if(mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateConstant ||
-           mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateVariable) {
-            LOGV("%s(), eControlRate == OMX_Video_Intel_ControlRateConstant || OMX_Video_Intel_ControlRateVariable", __func__);
+
+        if (mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateConstant ) {
+            LOGV("%s(), eControlRate == OMX_Video_Intel_ControlRateConstant", __func__);
             mEncoderParams->rcParams.bitRate = mParamIntelBitrate.nTargetBitrate;
-        } else if(mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateVideoConferencingMode) {
+            mEncoderParams->rcMode = RATE_CONTROL_CBR;
+        } else if (mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateVariable) {
+            LOGV("%s(), eControlRate == OMX_Video_Intel_ControlRateVariable", __func__);
+            mEncoderParams->rcParams.bitRate = mParamIntelBitrate.nTargetBitrate;
+            mEncoderParams->rcMode = RATE_CONTROL_VBR;
+        } else if (mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateVideoConferencingMode) {
             LOGV("%s(), eControlRate == OMX_Video_Intel_ControlRateVideoConferencingMode ", __func__);
+            mEncoderParams->rcMode = RATE_CONTROL_VCM;
             mEncoderParams->rcParams.bitRate = mConfigIntelBitrate.nMaxEncodeBitrate;
             if(mConfigIntelAir.bAirEnable == OMX_TRUE) {
                 mEncoderParams->airParams.airAuto = mConfigIntelAir.bAirAuto;
@@ -333,6 +338,8 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetVideoEncoderParam() {
                 mEncoderParams->refreshType = VIDEO_ENC_NONIR;
             }
             LOGV("refreshType = %d\n", mEncoderParams->refreshType);
+        } else {
+           mEncoderParams->rcMode = RATE_CONTROL_NONE;
         }
     }
 
