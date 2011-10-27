@@ -346,6 +346,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buf
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE *buffer, OMX_U32 inportBufferFlags) {
+    if (buffer->pPlatformPrivate) {
+        VideoRenderBuffer *p = (VideoRenderBuffer *)buffer->pPlatformPrivate;
+        p->renderDone = true;
+        buffer->pPlatformPrivate = NULL;
+    }
+
     bool draining = (inportBufferFlags & OMX_BUFFERFLAG_EOS);
     //pthread_mutex_lock(&mSerializationLock);
     const VideoRenderBuffer *renderBuffer = mVideoDecoder->getOutput(draining);
@@ -369,11 +375,11 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE *buffer
     p->display = renderBuffer->display;
     p->frame_structure = renderBuffer->scanFormat;
 
-    //LOGV("outputting frame %.2f", buffer->nTimeStamp/1E6);
-
     // TODO:  set "RenderDone" in next "FillRenderBuffer" with the same OMX buffer header.
     // this indicates surface is "rendered" and can be reused for decoding.
-    renderBuffer->renderDone = true;
+    //renderBuffer->renderDone = true;
+
+    buffer->pPlatformPrivate = (void *)renderBuffer;
     return OMX_ErrorNone;
 }
 
