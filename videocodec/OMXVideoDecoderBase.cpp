@@ -24,7 +24,8 @@ static const char* VA_RAW_MIME_TYPE = "video/x-raw-va";
 static const uint32_t VA_COLOR_FORMAT = 0x7FA00E00;
 
 OMXVideoDecoderBase::OMXVideoDecoderBase()
-    : mVideoDecoder(NULL) {
+    : mVideoDecoder(NULL),
+      mBufferIDMode(false) {
 }
 
 OMXVideoDecoderBase::~OMXVideoDecoderBase() {
@@ -134,7 +135,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::InitOutputPort(void) {
     paramPortDefinitionOutput.format.video.xFramerate = 15 << 16;
     paramPortDefinitionOutput.format.video.bFlagErrorConcealment = OMX_FALSE;
     paramPortDefinitionOutput.format.video.eCompressionFormat = OMX_VIDEO_CodingUnused;
-    paramPortDefinitionOutput.format.video.eColorFormat = (OMX_COLOR_FORMATTYPE)VA_COLOR_FORMAT;
+    paramPortDefinitionOutput.format.video.eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
     paramPortDefinitionOutput.format.video.pNativeWindow = NULL;
     paramPortDefinitionOutput.bBuffersContiguous = OMX_FALSE;
     paramPortDefinitionOutput.nBufferAlignment = 0;
@@ -305,6 +306,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
         return OMX_ErrorBadParameter;
     }
 
+    if (!mBufferIDMode) {
+        LOGD("intel omx video decoder working in raw nv12 mode");
+    } else {
+        LOGD("intel omx video decoder working in buffer index mode");
+    }
+
     p->width = paramPortDefinitionInput->format.video.nFrameWidth;
     p->height = paramPortDefinitionInput->format.video.nFrameHeight;
     return OMX_ErrorNone;
@@ -365,15 +372,21 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE *buffer
         }
         return OMX_ErrorNotReady;
     }
-    buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME;
-    buffer->nFilledLen = sizeof(VABuffer);
-    buffer->nTimeStamp = renderBuffer->timeStamp;
-    VABuffer *p = (VABuffer *)(buffer->pBuffer + buffer->nOffset);
 
-    // TODO: pass cropping data to VABuffer
-    p->surface = renderBuffer->surface;
-    p->display = renderBuffer->display;
-    p->frame_structure = renderBuffer->scanFormat;
+    buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME;
+    buffer->nTimeStamp = renderBuffer->timeStamp;
+
+    if (!mBufferIDMode) {
+        MapRawNV12(renderBuffer, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
+    } else {
+        buffer->nFilledLen = sizeof(VABuffer);
+        VABuffer *p = (VABuffer *)(buffer->pBuffer + buffer->nOffset);
+
+        // TODO: pass cropping data to VABuffer
+        p->surface = renderBuffer->surface;
+        p->display = renderBuffer->display;
+        p->frame_structure = renderBuffer->scanFormat;
+    }
 
     // TODO:  set "RenderDone" in next "FillRenderBuffer" with the same OMX buffer header.
     // this indicates surface is "rendered" and can be reused for decoding.
@@ -493,6 +506,8 @@ OMX_ERRORTYPE OMXVideoDecoderBase::BuildHandlerList(void) {
     OMXComponentCodecBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoPortFormat, GetParamVideoPortFormat, SetParamVideoPortFormat);
     //AddHandler(PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX, GetCapabilityFlags, SetCapabilityFlags);
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexBufferIDMode), GetBufferIDMode, SetBufferIDMode);
+
     return OMX_ErrorNone;
 }
 
@@ -522,6 +537,118 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetParamVideoPortFormat(OMX_PTR pStructure) {
     PortVideo *port = NULL;
     port = static_cast<PortVideo *>(this->ports[p->nPortIndex]);
     port->SetPortVideoParam(p, false);
+    return OMX_ErrorNone;
+}
+
+
+OMX_ERRORTYPE OMXVideoDecoderBase::GetBufferIDMode(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+
+    *(static_cast<bool*>(pStructure)) = mBufferIDMode;
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoDecoderBase::SetBufferIDMode(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+  
+    CHECK_SET_PARAM_STATE();
+
+    OMX_PARAM_PORTDEFINITIONTYPE port_def;
+    PortVideo *port;
+
+    mBufferIDMode = *(static_cast<bool*>(pStructure));
+
+    port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
+    memcpy(&port_def, port->GetPortDefinition(), sizeof(port_def));
+
+    if (!mBufferIDMode) {
+        port_def.nBufferSize = OUTPORT_BUFFER_SIZE;
+        port_def.format.video.cMIMEType = (OMX_STRING)"video/raw";
+        port_def.format.video.eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
+    } else {
+        port_def.nBufferSize = sizeof(VideoRenderBuffer);
+        port_def.format.video.cMIMEType = (OMX_STRING)VA_RAW_MIME_TYPE;
+        port_def.format.video.eColorFormat = static_cast<OMX_COLOR_FORMATTYPE>(VA_COLOR_FORMAT);
+    }
+
+    port->SetPortDefinition(&port_def, true);
+
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuffer, OMX_U8 *rawData, OMX_U32& size) {
+
+    VAStatus vaStatus;
+    VAImageFormat imageFormat;
+    VAImage vaImage;
+    int32_t width = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameWidth;
+    int32_t height = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameHeight;
+
+    size = width * height * 3 / 2;
+    
+    vaStatus = vaSyncSurface(renderBuffer->display, renderBuffer->surface);
+    if (vaStatus != VA_STATUS_SUCCESS) {
+        return OMX_ErrorUndefined;
+    }
+
+    vaImage.image_id = VA_INVALID_ID;
+    // driver currently only supports NV12 and IYUV format.
+    // byte_order information is from driver  and hard-coded here
+    imageFormat.fourcc = VA_FOURCC_NV12;
+    imageFormat.byte_order = VA_LSB_FIRST;
+    imageFormat.bits_per_pixel = 16;
+    vaStatus = vaCreateImage(
+        renderBuffer->display,
+        &imageFormat,
+        width,
+        height,
+        &vaImage);
+    if (vaStatus != VA_STATUS_SUCCESS) {
+        return OMX_ErrorUndefined;
+    }
+
+    vaStatus = vaGetImage(
+        renderBuffer->display,
+        renderBuffer->surface,
+        0,
+        0,
+        vaImage.width,
+        vaImage.height,
+        vaImage.image_id);
+    if (vaStatus != VA_STATUS_SUCCESS) {
+        return OMX_ErrorUndefined;
+    }
+
+    void *pBuf = NULL;
+    vaStatus = vaMapBuffer(renderBuffer->display, vaImage.buf, &pBuf);
+    if (vaStatus != VA_STATUS_SUCCESS) {
+        return OMX_ErrorUndefined;
+    }
+    
+    if (size == (int32_t)vaImage.data_size) {
+        memcpy(rawData, pBuf, size);
+    } else {
+        // copy Y data
+        uint8_t *src = (uint8_t*)pBuf;
+        uint8_t *dst = rawData;
+        int32_t row = 0;
+        for (row = 0; row < height; row++) {
+            memcpy(dst, src, width);
+            dst += width;
+            src += vaImage.pitches[0];
+        }
+        // copy interleaved V and  U data
+        src = (uint8_t*)pBuf + vaImage.offsets[1];
+        for (row = 0; row < height/2; row++) {
+            memcpy(dst, src, width);
+            dst += width;
+            src += vaImage.pitches[1];
+        }
+    }
+    // TODO: image may not get destroyed if error happens.
+    if (vaImage.image_id != VA_INVALID_ID) {
+        vaDestroyImage(renderBuffer->display, vaImage.image_id);
+    }
     return OMX_ErrorNone;
 }
 

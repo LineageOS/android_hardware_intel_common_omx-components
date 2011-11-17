@@ -10,7 +10,8 @@ LOCAL_LDFLAGS :=
 LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
     libva_videodecoder \
-    liblog
+    liblog \
+    libva
 
 LOCAL_C_INCLUDES := \
     $(WRS_OMXIL_CORE_ROOT)/utils/inc \
@@ -38,7 +39,8 @@ LOCAL_LDFLAGS :=
 LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
     libva_videodecoder \
-    liblog
+    liblog \
+    libva
 
 LOCAL_C_INCLUDES := \
     $(WRS_OMXIL_CORE_ROOT)/utils/inc \
@@ -65,7 +67,8 @@ LOCAL_LDFLAGS :=
 LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
     libva_videodecoder \
-    liblog
+    liblog \
+    libva
 
 LOCAL_C_INCLUDES := \
     $(WRS_OMXIL_CORE_ROOT)/utils/inc \
@@ -93,7 +96,8 @@ LOCAL_LDFLAGS :=
 LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
     libva_videodecoder \
-    liblog
+    liblog \
+    libva
 
 LOCAL_C_INCLUDES := \
     $(WRS_OMXIL_CORE_ROOT)/utils/inc \
@@ -217,7 +221,8 @@ LOCAL_LDFLAGS :=
 LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
     libva_videodecoder \
-    liblog
+    liblog \
+    libva
 
 LOCAL_C_INCLUDES := \
     $(WRS_OMXIL_CORE_ROOT)/utils/inc \

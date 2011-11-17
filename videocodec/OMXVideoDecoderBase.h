@@ -51,10 +51,12 @@ protected:
     virtual OMX_ERRORTYPE FillRenderBuffer(OMX_BUFFERHEADERTYPE *buffer, OMX_U32 inportBufferFlags);
     virtual OMX_ERRORTYPE HandleFormatChange(void);
     virtual OMX_ERRORTYPE TranslateDecodeStatus(Decode_Status status);
+    virtual OMX_ERRORTYPE MapRawNV12(const VideoRenderBuffer* renderBuffer, OMX_U8 *rawData, OMX_U32& size);
 
     virtual OMX_ERRORTYPE BuildHandlerList(void);
     DECLARE_HANDLER(OMXVideoDecoderBase, ParamVideoPortFormat);
     DECLARE_HANDLER(OMXVideoDecoderBase, CapabilityFlags);
+    DECLARE_HANDLER(OMXVideoDecoderBase, BufferIDMode);
 
 private:
     enum {
@@ -71,6 +73,7 @@ private:
 
 protected:
     IVideoDecoder *mVideoDecoder;
+    bool mBufferIDMode;
 };
 
 #endif /* OMX_VIDEO_DECODER_BASE_H_ */
