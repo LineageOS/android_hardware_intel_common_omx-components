@@ -11,7 +11,8 @@ LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
     libva_videodecoder \
     liblog \
-    libva
+    libva \
+    libva-android
 
 LOCAL_C_INCLUDES := \
     $(WRS_OMXIL_CORE_ROOT)/utils/inc \
@@ -40,7 +41,8 @@ LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
     libva_videodecoder \
     liblog \
-    libva
+    libva \
+    libva-android
 
 LOCAL_C_INCLUDES := \
     $(WRS_OMXIL_CORE_ROOT)/utils/inc \
@@ -68,7 +70,8 @@ LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
     libva_videodecoder \
     liblog \
-    libva
+    libva \
+    libva-android
 
 LOCAL_C_INCLUDES := \
     $(WRS_OMXIL_CORE_ROOT)/utils/inc \
@@ -97,7 +100,8 @@ LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
     libva_videodecoder \
     liblog \
-    libva
+    libva \
+    libva-android
 
 LOCAL_C_INCLUDES := \
     $(WRS_OMXIL_CORE_ROOT)/utils/inc \
@@ -222,7 +226,8 @@ LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
     libva_videodecoder \
     liblog \
-    libva
+    libva \
+    libva-android
 
 LOCAL_C_INCLUDES := \
     $(WRS_OMXIL_CORE_ROOT)/utils/inc \

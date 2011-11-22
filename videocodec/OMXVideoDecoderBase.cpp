@@ -18,7 +18,9 @@
 #define LOG_TAG "OMXVideoDecoderBase"
 #include <utils/Log.h>
 #include "OMXVideoDecoderBase.h"
-#include "vabuffer.h"
+#include <va/va.h>
+#include <va/va_android.h>
+#include <va/vabuffer.h>
 
 static const char* VA_RAW_MIME_TYPE = "video/x-raw-va";
 static const uint32_t VA_COLOR_FORMAT = 0x7FA00E00;
@@ -379,6 +381,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE *buffer
     if (!mBufferIDMode) {
         MapRawNV12(renderBuffer, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
     } else {
+#if 0
         buffer->nFilledLen = sizeof(VABuffer);
         VABuffer *p = (VABuffer *)(buffer->pBuffer + buffer->nOffset);
 
@@ -386,6 +389,14 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE *buffer
         p->surface = renderBuffer->surface;
         p->display = renderBuffer->display;
         p->frame_structure = renderBuffer->scanFormat;
+#else
+        buffer->nFilledLen = sizeof(VABufferIDPackage);
+        VABufferIDPackage *p = (VABufferIDPackage *)(buffer->pBuffer + buffer->nOffset);
+
+        vaGetBufferID(renderBuffer->display, renderBuffer->surface, &p->devid, &p->bufid);
+        p->width = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameWidth;
+        p->height = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameHeight;
+#endif
     }
 
     // TODO:  set "RenderDone" in next "FillRenderBuffer" with the same OMX buffer header.
