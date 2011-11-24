@@ -29,7 +29,8 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
     ,mFrameOutputCount(0)
     ,mPFrames(0)
     ,mFrameRetrieved(OMX_TRUE)
-    ,mFirstFrame(OMX_TRUE) {
+    ,mFirstFrame(OMX_TRUE)
+    ,mForceBufferSharing(OMX_FALSE) {
 
     mEncoderParams = new VideoParamsCommon();
     if (!mEncoderParams) LOGE("OMX_ErrorInsufficientResources");
@@ -626,6 +627,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::BuildHandlerList(void) {
     AddHandler(OMX_IndexConfigVideoIntraVOPRefresh, GetConfigVideoIntraVOPRefresh, SetConfigVideoIntraVOPRefresh);
     //AddHandler(OMX_IndexParamIntelAdaptiveSliceControl, GetParamIntelAdaptiveSliceControl, SetParamIntelAdaptiveSliceControl);
     AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoProfileLevelQuerySupported, SetParamVideoProfileLevelQuerySupported);
+    AddHandler((OMX_INDEXTYPE)OMX_IndexStoreMetaDataInBuffers, GetStoreMetaDataInBuffers, SetStoreMetaDataInBuffers);
 
     return OMX_ErrorNone;
 }
@@ -972,4 +974,29 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetParamVideoProfileLevelQuerySupported(OMX_P
     LOGW("SetParamVideoProfileLevelQuerySupported is not supported.");
     return OMX_ErrorUnsupportedSetting;
 }
+
+OMX_ERRORTYPE OMXVideoEncoderBase::GetStoreMetaDataInBuffers(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    StoreMetaDataInBuffersParams *p = (StoreMetaDataInBuffersParams *)pStructure;
+
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, INPORT_INDEX);
+
+    p->bStoreMetaData = mForceBufferSharing;
+
+    return OMX_ErrorNone;
+};
+
+OMX_ERRORTYPE OMXVideoEncoderBase::SetStoreMetaDataInBuffers(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    StoreMetaDataInBuffersParams *p = (StoreMetaDataInBuffersParams *)pStructure;
+
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, INPORT_INDEX);
+
+    LOGD("SetStoreMetaDataInBuffers (enabled = %x)", p->bStoreMetaData);
+    mForceBufferSharing = p->bStoreMetaData;
+
+    return OMX_ErrorNone;
+};
 

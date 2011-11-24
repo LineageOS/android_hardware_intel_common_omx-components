@@ -51,8 +51,8 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     SetTypeHeader(&mNalStreamFormat, sizeof(mNalStreamFormat));
     mNalStreamFormat.nPortIndex = OUTPORT_INDEX;
     // TODO: check if this is desired Nalu Format
-    // mNalStreamFormat.eNaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
-    mNalStreamFormat.eNaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
+     mNalStreamFormat.eNaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
+    //mNalStreamFormat.eNaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
     // OMX_VIDEO_CONFIG_AVCINTRAPERIOD
     memset(&mConfigAvcIntraPeriod, 0, sizeof(mConfigAvcIntraPeriod));
     SetTypeHeader(&mConfigAvcIntraPeriod, sizeof(mConfigAvcIntraPeriod));
@@ -280,6 +280,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
                 outBuf.format = OUTPUT_CODEC_DATA;
                 ret = mVideoEncoder->getOutput(&outBuf);
                 CHECK_ENCODE_STATUS("getOutput");
+
                 // Return code could not be ENCODE_BUFFER_TOO_SMALL
                 // If we don't return error, we will have dead lock issue
                 if (ret == ENCODE_BUFFER_TOO_SMALL) {

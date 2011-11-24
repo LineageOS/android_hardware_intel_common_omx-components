@@ -65,6 +65,7 @@ protected:
     DECLARE_HANDLER(OMXVideoEncoderBase, ConfigVideoIntraVOPRefresh);
     DECLARE_HANDLER(OMXVideoEncoderBase, ParamIntelAdaptiveSliceControl);
     DECLARE_HANDLER(OMXVideoEncoderBase, ParamVideoProfileLevelQuerySupported);
+    DECLARE_HANDLER(OMXVideoEncoderBase, StoreMetaDataInBuffers);
 
 protected:
     virtual OMX_ERRORTYPE InitBSMode(void);
@@ -102,6 +103,7 @@ protected:
     } mBsState;
 
     SharedBufferType *mSharedBufArray;
+    OMX_BOOL mForceBufferSharing;
 
 private:
 
@@ -120,7 +122,6 @@ private:
     sp<BufferShareRegistry> mBsInstance;
     OMX_U32 mSharedBufCnt;
     OMX_U32 mPFrames;
-
 };
 
 #endif /* OMX_VIDEO_ENCODER_BASE_H_ */
