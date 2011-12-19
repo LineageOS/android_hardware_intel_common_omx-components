@@ -1076,7 +1076,7 @@ OMX_ERRORTYPE MrstSstComponent::ProcessorResume(void)
 
 /* implement ComponentBase::ProcessorProcess */
 OMX_ERRORTYPE MrstSstComponent::ProcessorProcess(
-    OMX_BUFFERHEADERTYPE **buffers,
+    OMX_BUFFERHEADERTYPE ***pBuffers,
     buffer_retain_t *retain,
     OMX_U32 nr_buffers)
 {
@@ -1095,34 +1095,34 @@ OMX_ERRORTYPE MrstSstComponent::ProcessorProcess(
     LOGV("%s(): enter\n", __func__);
 
 #if !LOG_NDEBUG
-    DumpBuffer(buffers[INPORT_INDEX], false);
+    DumpBuffer(*pBuffers[INPORT_INDEX], false);
 #endif
 
-    LOGV_IF(buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS,
+    LOGV_IF((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS,
             "%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
 
-    if (!buffers[INPORT_INDEX]->nFilledLen) {
+    if (!(*pBuffers[INPORT_INDEX])->nFilledLen) {
         LOGV("%s(),%d: exit, input buffer's nFilledLen is zero (ret = void)\n",
              __func__, __LINE__);
         goto out;
     }
 
-    mixio_in->data = buffers[INPORT_INDEX]->pBuffer +
-                     buffers[INPORT_INDEX]->nOffset;
-    mixio_in->data_size = buffers[INPORT_INDEX]->nFilledLen;
-    mixio_in->buffer_size = buffers[INPORT_INDEX]->nAllocLen;
+    mixio_in->data = (*pBuffers[INPORT_INDEX])->pBuffer +
+                     (*pBuffers[INPORT_INDEX])->nOffset;
+    mixio_in->data_size = (*pBuffers[INPORT_INDEX])->nFilledLen;
+    mixio_in->buffer_size = (*pBuffers[INPORT_INDEX])->nAllocLen;
 
-    mixio_out->data = buffers[OUTPORT_INDEX]->pBuffer +
-                      buffers[OUTPORT_INDEX]->nOffset;
+    mixio_out->data = (*pBuffers[OUTPORT_INDEX])->pBuffer +
+                      (*pBuffers[OUTPORT_INDEX])->nOffset;
     mixio_out->data_size = 0;
-    mixio_out->buffer_size = buffers[OUTPORT_INDEX]->nAllocLen;
+    mixio_out->buffer_size = (*pBuffers[OUTPORT_INDEX])->nAllocLen;
 
     if (codec_mode == MIX_CODING_DECODE) {
         if (((coding_type == OMX_AUDIO_CodingMP3) &&
-                (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_SYNCFRAME))
+                ((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_SYNCFRAME))
                 ||
                 ((coding_type == OMX_AUDIO_CodingAAC) &&
-                 (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_CODECCONFIG))) {
+                 ((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_CODECCONFIG))) {
 
             oret = ChangeAcpWithConfigHeader(mixio_in->data,
                                              &acp_changed);
@@ -1172,7 +1172,7 @@ OMX_ERRORTYPE MrstSstComponent::ProcessorProcess(
         if (coding_type == OMX_AUDIO_CodingAAC) {
 #if TEST_USE_AAC_ENCODING_RAW
             if (codecdata) {
-                memcpy(buffers[OUTPORT_INDEX]->pBuffer, codecdata, 2);
+                memcpy((*pBuffers[OUTPORT_INDEX])->pBuffer, codecdata, 2);
 
                 free(codecdata);
                 codecdata = NULL;
@@ -1212,7 +1212,7 @@ OMX_ERRORTYPE MrstSstComponent::ProcessorProcess(
     }
 
     if (codec_mode == MIX_CODING_DECODE) {
-        if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
+        if ((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
             retain[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
             goto out;
         }
@@ -1257,8 +1257,8 @@ OMX_ERRORTYPE MrstSstComponent::ProcessorProcess(
     outfilledlen = produced;
     LOGV("%s(): %lu bytes produced\n", __func__, outfilledlen);
 
-    buffers[INPORT_INDEX]->nFilledLen -= (OMX_U32)consumed;
-    if (buffers[INPORT_INDEX]->nFilledLen) {
+    (*pBuffers[INPORT_INDEX])->nFilledLen -= (OMX_U32)consumed;
+    if ((*pBuffers[INPORT_INDEX])->nFilledLen) {
         LOGV("%s(): input buffer NOT fully consumed %lu bytes consumed\n",
              __func__, (OMX_U32)consumed);
 
@@ -1268,29 +1268,29 @@ OMX_ERRORTYPE MrstSstComponent::ProcessorProcess(
         }
 
         LOGV("%s(): %lu bytes remained, waits for next turn\n",
-             __func__, buffers[INPORT_INDEX]->nFilledLen);
+             __func__, (*pBuffers[INPORT_INDEX])->nFilledLen);
 
-        buffers[INPORT_INDEX]->nOffset += (OMX_U32)consumed;
+        (*pBuffers[INPORT_INDEX])->nOffset += (OMX_U32)consumed;
         retain[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
         /* FIXME */
-        outtimestamp = buffers[INPORT_INDEX]->nTimeStamp;
+        outtimestamp = (*pBuffers[INPORT_INDEX])->nTimeStamp;
     }
     else {
-        buffers[INPORT_INDEX]->nOffset = 0;
-        outtimestamp = buffers[INPORT_INDEX]->nTimeStamp;
+        (*pBuffers[INPORT_INDEX])->nOffset = 0;
+        outtimestamp = (*pBuffers[INPORT_INDEX])->nTimeStamp;
 
         LOGV("%s(): %lu bytes fully consumed\n", __func__,
              (OMX_U32)consumed);
     }
 
 out:
-    buffers[OUTPORT_INDEX]->nFilledLen = outfilledlen;
-    buffers[OUTPORT_INDEX]->nTimeStamp = outtimestamp;
-    buffers[OUTPORT_INDEX]->nFlags = outflags;
+    (*pBuffers[OUTPORT_INDEX])->nFilledLen = outfilledlen;
+    (*pBuffers[OUTPORT_INDEX])->nTimeStamp = outtimestamp;
+    (*pBuffers[OUTPORT_INDEX])->nFlags = outflags;
 
 #if !LOG_NDEBUG
     if (retain[OUTPORT_INDEX] == BUFFER_RETAIN_NOT_RETAIN)
-        DumpBuffer(buffers[OUTPORT_INDEX], false);
+        DumpBuffer(*pBuffers[OUTPORT_INDEX], false);
 #endif
 
     LOGV("%s(),%d: exit, done\n", __func__, __LINE__);

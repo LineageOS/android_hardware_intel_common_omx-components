@@ -23,6 +23,10 @@
 #include "VideoDecoderInterface.h"
 #include "VideoDecoderHost.h"
 
+static const char* VA_VED_RAW_MIME_TYPE = "video/x-raw-vaved";
+static const uint32_t VA_VED_COLOR_FORMAT = 0x20;
+
+
 class OMXVideoDecoderBase : public OMXComponentCodecBase {
 public:
     OMXVideoDecoderBase();
@@ -42,13 +46,16 @@ protected:
     //virtual OMX_ERRORTYPE ProcessorResume(void);
     virtual OMX_ERRORTYPE ProcessorFlush(OMX_U32 portIndex);
     virtual OMX_ERRORTYPE ProcessorProcess(
-            OMX_BUFFERHEADERTYPE **buffers,
+            OMX_BUFFERHEADERTYPE ***pBuffers,
             buffer_retain_t *retains,
             OMX_U32 numberBuffers);
 
+    virtual OMX_ERRORTYPE PreProcessBuffer(OMX_BUFFERHEADERTYPE* buffer);
+    virtual OMX_ERRORTYPE PreProcessBufferQueue_Locked();
+
     virtual OMX_ERRORTYPE PrepareConfigBuffer(VideoConfigBuffer *p);
     virtual OMX_ERRORTYPE PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
-    virtual OMX_ERRORTYPE FillRenderBuffer(OMX_BUFFERHEADERTYPE *buffer, OMX_U32 inportBufferFlags);
+    virtual OMX_ERRORTYPE FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer, OMX_U32 inportBufferFlags);
     virtual OMX_ERRORTYPE HandleFormatChange(void);
     virtual OMX_ERRORTYPE TranslateDecodeStatus(Decode_Status status);
     virtual OMX_ERRORTYPE MapRawNV12(const VideoRenderBuffer* renderBuffer, OMX_U8 *rawData, OMX_U32& size);
@@ -56,7 +63,8 @@ protected:
     virtual OMX_ERRORTYPE BuildHandlerList(void);
     DECLARE_HANDLER(OMXVideoDecoderBase, ParamVideoPortFormat);
     DECLARE_HANDLER(OMXVideoDecoderBase, CapabilityFlags);
-    DECLARE_HANDLER(OMXVideoDecoderBase, BufferIDMode);
+    DECLARE_HANDLER(OMXVideoDecoderBase, NativeBufferUsage);
+    DECLARE_HANDLER(OMXVideoDecoderBase, NativeBuffer);
 
 private:
     enum {
@@ -70,10 +78,14 @@ private:
         OUTPORT_ACTUAL_BUFFER_COUNT = 4,
         OUTPORT_BUFFER_SIZE = 1382400,
     };
+    uint32_t mOMXBufferHeaderTypePtrNum;
+    OMX_BUFFERHEADERTYPE *mOMXBufferHeaderTypePtrArray[MAX_GRAPHIC_NUM];
+    uint32_t mGraphicBufferStride;
+    uint32_t mGraphicBuffercolorformat;
 
 protected:
     IVideoDecoder *mVideoDecoder;
-    bool mBufferIDMode;
+    bool mNativeBufferMode;
 };
 
 #endif /* OMX_VIDEO_DECODER_BASE_H_ */

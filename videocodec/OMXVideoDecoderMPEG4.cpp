@@ -64,11 +64,11 @@ OMX_ERRORTYPE OMXVideoDecoderMPEG4::ProcessorDeinit(void) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderMPEG4::ProcessorProcess(
-        OMX_BUFFERHEADERTYPE **buffers,
+        OMX_BUFFERHEADERTYPE ***pBuffers,
         buffer_retain_t *retains,
         OMX_U32 numberBuffers) {
 
-    return OMXVideoDecoderBase::ProcessorProcess(buffers, retains, numberBuffers);
+    return OMXVideoDecoderBase::ProcessorProcess(pBuffers, retains, numberBuffers);
 }
 
 OMX_ERRORTYPE OMXVideoDecoderMPEG4::PrepareConfigBuffer(VideoConfigBuffer *p) {
@@ -82,6 +82,7 @@ OMX_ERRORTYPE OMXVideoDecoderMPEG4::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *bu
 OMX_ERRORTYPE OMXVideoDecoderMPEG4::BuildHandlerList(void) {
     OMXVideoDecoderBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoMpeg4, GetParamVideoMpeg4, SetParamVideoMpeg4);
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer),GetNativeBufferMode,SetNativeBufferMode);
     return OMX_ErrorNone;
 }
 
@@ -105,6 +106,30 @@ OMX_ERRORTYPE OMXVideoDecoderMPEG4::SetParamVideoMpeg4(OMX_PTR pStructure) {
     // TODO: do we need to check if port is enabled?
     // TODO: see SetPortMpeg4Param implementation - Can we make simple copy????
     memcpy(&mParamMpeg4, p, sizeof(mParamMpeg4));
+    return OMX_ErrorNone;
+}
+OMX_ERRORTYPE OMXVideoDecoderMPEG4::GetNativeBufferMode(OMX_PTR pStructure) {
+     OMX_ERRORTYPE ret;
+     return OMX_ErrorNone; //would not be here
+}
+
+
+#define MAX_OUTPUT_BUFFER_COUNT_FOR_MPEG4 10
+OMX_ERRORTYPE OMXVideoDecoderMPEG4::SetNativeBufferMode(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    //EnableAndroidNativeBuffersParams *param = (EnableAndroidNativeBuffersParams*)pStructure;
+    //CHECK_TYPE_HEADER(param);
+    CHECK_SET_PARAM_STATE();
+    mNativeBufferMode = true;
+    PortVideo *port = NULL;
+    port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
+    OMX_PARAM_PORTDEFINITIONTYPE port_def;
+    memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
+    port_def.nBufferCountMin = 1;
+    port_def.nBufferCountActual = MAX_OUTPUT_BUFFER_COUNT_FOR_MPEG4;
+    port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
+    port_def.format.video.eColorFormat =static_cast<OMX_COLOR_FORMATTYPE>(VA_VED_COLOR_FORMAT);
+    port->SetPortDefinition(&port_def,true);
     return OMX_ErrorNone;
 }
 

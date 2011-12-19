@@ -30,6 +30,8 @@
 
 #include <componentbase.h>
 #include "OMXComponentDefines.h"
+#include <media/stagefright/HardwareAPI.h>
+
 
 
 

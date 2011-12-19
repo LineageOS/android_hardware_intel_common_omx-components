@@ -1337,7 +1337,7 @@ OMX_ERRORTYPE MrstPsbComponent::ParserConfigData(OMX_U8* coded_buf, OMX_U32 code
 
 /* implement ComponentBase::ProcessorProcess */
 OMX_ERRORTYPE MrstPsbComponent::ProcessorProcess(
-    OMX_BUFFERHEADERTYPE **buffers,
+    OMX_BUFFERHEADERTYPE ***pBuffers,
     buffer_retain_t *retain,
     OMX_U32 nr_buffers)
 {
@@ -1353,10 +1353,10 @@ OMX_ERRORTYPE MrstPsbComponent::ProcessorProcess(
 
     LOGV("%s(): enter encode\n", __func__);
 
-    LOGV_IF(buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS,
+    LOGV_IF((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS,
             "%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
 
-    if (!buffers[INPORT_INDEX]->nFilledLen) {
+    if (!(*pBuffers[INPORT_INDEX])->nFilledLen) {
         LOGV("%s(),%d: input buffer's nFilledLen is zero\n",
              __func__, __LINE__);
         goto out;
@@ -1365,22 +1365,19 @@ OMX_ERRORTYPE MrstPsbComponent::ProcessorProcess(
     if (buffer_sharing_state != BUFFER_SHARING_INVALID) {
         buffer_in.data_size = buffer_sharing_info[0].dataSize;
         buffer_in.buffer_size = buffer_sharing_info[0].allocatedSize;
-        buffer_in.data =
-            *(reinterpret_cast<uchar**>(buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset));
+        buffer_in.data = *(reinterpret_cast<uchar**>((*pBuffers[INPORT_INDEX])->pBuffer + (*pBuffers[INPORT_INDEX])->nOffset));
     } else {
-        buffer_in.data =
-            buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
-        buffer_in.data_size = buffers[INPORT_INDEX]->nFilledLen;
-        buffer_in.buffer_size = buffers[INPORT_INDEX]->nFilledLen;
+        buffer_in.data = (*pBuffers[INPORT_INDEX])->pBuffer + (*pBuffers[INPORT_INDEX])->nOffset;
+        buffer_in.data_size = (*pBuffers[INPORT_INDEX])->nFilledLen;
+        buffer_in.buffer_size = (*pBuffers[INPORT_INDEX])->nFilledLen;
     }
 
     LOGV("buffer_in.data=%x, data_size=%d, buffer_size=%d",
          (unsigned)buffer_in.data, buffer_in.data_size, buffer_in.buffer_size);
 
-    buffer_out.data =
-        buffers[OUTPORT_INDEX]->pBuffer + buffers[OUTPORT_INDEX]->nOffset;
+    buffer_out.data = (*pBuffers[OUTPORT_INDEX])->pBuffer + (*pBuffers[OUTPORT_INDEX])->nOffset;
     buffer_out.data_size = 0;
-    buffer_out.buffer_size = buffers[OUTPORT_INDEX]->nAllocLen - buffers[OUTPORT_INDEX]->nOffset;
+    buffer_out.buffer_size = (*pBuffers[OUTPORT_INDEX])->nAllocLen - (*pBuffers[OUTPORT_INDEX])->nOffset;
     mixiovec_out[0] = &buffer_out;
 
 nomal_start:
@@ -1415,7 +1412,7 @@ nomal_start:
         LOGV("%s(), mret = 0x%08x", __func__, mret);
         LOGV("output data size = %d", mixiovec_out[0]->data_size);
 
-        outtimestamp = buffers[INPORT_INDEX]->nTimeStamp;
+        outtimestamp = (*pBuffers[INPORT_INDEX])->nTimeStamp;
 
         if (mret != MIX_RESULT_SUCCESS) {
             LOGE("%s(), %d: exit, mix_video_encode failed (ret == 0x%08x)\n",
@@ -1451,8 +1448,8 @@ nomal_start:
                 oret = OMX_ErrorUndefined;
                 goto out;
             }
-            if(buffers[OUTPORT_INDEX]->pBuffer + buffers[OUTPORT_INDEX]->nOffset != config_data) {
-                memcpy(buffers[OUTPORT_INDEX]->pBuffer+buffers[OUTPORT_INDEX]->nOffset,config_data,config_len);
+            if((*pBuffers[OUTPORT_INDEX])->pBuffer + (*pBuffers[OUTPORT_INDEX])->nOffset != config_data) {
+                memcpy((*pBuffers[OUTPORT_INDEX])->pBuffer+(*pBuffers[OUTPORT_INDEX])->nOffset,config_data,config_len);
             }
         }
         else {
@@ -1474,8 +1471,8 @@ nomal_start:
         if(DetectSyncFrame(video_data)) {
             outflags |= OMX_BUFFERFLAG_SYNCFRAME;
         }
-        if(buffers[OUTPORT_INDEX]->pBuffer + buffers[OUTPORT_INDEX]->nOffset != video_data) {
-            memcpy(buffers[OUTPORT_INDEX]->pBuffer+buffers[OUTPORT_INDEX]->nOffset,video_data,video_len);
+        if((*pBuffers[OUTPORT_INDEX])->pBuffer + (*pBuffers[OUTPORT_INDEX])->nOffset != video_data) {
+            memcpy((*pBuffers[OUTPORT_INDEX])->pBuffer+(*pBuffers[OUTPORT_INDEX])->nOffset,video_data,video_len);
         }
         video_data = NULL;
         video_len = 0;
@@ -1525,9 +1522,9 @@ out:
     }
 
     if(retain[OUTPORT_INDEX] != BUFFER_RETAIN_GETAGAIN) {
-        buffers[OUTPORT_INDEX]->nFilledLen = outfilledlen;
-        buffers[OUTPORT_INDEX]->nTimeStamp = outtimestamp;
-        buffers[OUTPORT_INDEX]->nFlags = outflags;
+        (*pBuffers[OUTPORT_INDEX])->nFilledLen = outfilledlen;
+        (*pBuffers[OUTPORT_INDEX])->nTimeStamp = outtimestamp;
+        (*pBuffers[OUTPORT_INDEX])->nFlags = outflags;
     }
 
     if (retain[INPORT_INDEX] == BUFFER_RETAIN_NOT_RETAIN ||

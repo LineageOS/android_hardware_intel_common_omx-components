@@ -14,25 +14,26 @@
 * limitations under the License.
 */
 
-#define LOG_NDEBUG 0
+//#define LOG_NDEBUG 0
 #define LOG_TAG "OMXVideoDecoderBase"
 #include <utils/Log.h>
 #include "OMXVideoDecoderBase.h"
-#include <va/va.h>
 #include <va/va_android.h>
-#include <va/vabuffer.h>
+
 
 static const char* VA_RAW_MIME_TYPE = "video/x-raw-va";
 static const uint32_t VA_COLOR_FORMAT = 0x7FA00E00;
 
 OMXVideoDecoderBase::OMXVideoDecoderBase()
     : mVideoDecoder(NULL),
-      mBufferIDMode(false) {
+      mNativeBufferMode(false),
+      mOMXBufferHeaderTypePtrNum(0),
+      mGraphicBuffercolorformat(0),
+      mGraphicBufferStride(0){
 }
 
 OMXVideoDecoderBase::~OMXVideoDecoderBase() {
     releaseVideoDecoder(mVideoDecoder);
-
     if (this->ports) {
         if (this->ports[INPORT_INDEX]) {
             delete this->ports[INPORT_INDEX];
@@ -184,6 +185,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorInit(void) {
     Decode_Status status = mVideoDecoder->start(&configBuffer);
     //pthread_mutex_unlock(&mSerializationLock);
 
+
     if (status != DECODE_SUCCESS) {
         return TranslateDecodeStatus(status);
     }
@@ -230,16 +232,81 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorFlush(OMX_U32 portIndex) {
     return OMX_ErrorNone;
 }
 
+ OMX_ERRORTYPE OMXVideoDecoderBase::PreProcessBuffer(OMX_BUFFERHEADERTYPE* buffer){
+
+    if(mNativeBufferMode && buffer->nOutputPortIndex == OUTPORT_INDEX){
+        Decode_Status status;
+        if(mVideoDecoder == NULL){
+            LOGE("PreProcessBuffer: Video decoder is not created");
+            return OMX_ErrorDynamicResourcesUnavailable;
+        }
+        status = mVideoDecoder->SignalRenderDoneFlag(buffer->pBuffer);
+
+        if (status != DECODE_SUCCESS) {
+            return TranslateDecodeStatus(status);
+        }
+    }
+    return OMX_ErrorNone;
+}
+
+
+ OMX_ERRORTYPE OMXVideoDecoderBase::PreProcessBufferQueue_Locked(void) {
+    if(!mNativeBufferMode )
+       return OMX_ErrorNone;
+    Decode_Status status = DECODE_SUCCESS;
+    PortBase *port_out = this->ports[OUTPORT_INDEX];
+
+    OMX_BUFFERHEADERTYPE *buffer = NULL;
+    OMX_BUFFERHEADERTYPE *buffer_head = NULL;
+    bool used = false;
+
+    OMX_U32 len = port_out->BufferQueueLength();
+    //check the buffer from buffer queue. used means cannot be used to decode
+    for( OMX_U32 i=0; i <len; i++){
+       buffer = port_out->PopBuffer();
+       if(buffer == NULL)
+          break;
+       status = mVideoDecoder->GetNativeBufferStatus(buffer->pBuffer,&used);
+       if(status != DECODE_SUCCESS){
+          LOGW("GetNativeBufferStatus returned status =%d",status);
+       }
+       if(used){
+          port_out->MixPushThisBuffer(buffer);
+       }
+       else{
+          port_out->PushThisBuffer(buffer);
+        }
+    }
+    //check the buffer from mix buffer queue,
+    len = port_out->MixBufferQueueLength();
+    for( OMX_U32 i=0; i <len; i++){
+       buffer = port_out->MixPopBuffer();
+       if(buffer == NULL)
+          break;
+       mVideoDecoder->GetNativeBufferStatus(buffer->pBuffer,&used);
+        if(status != DECODE_SUCCESS){
+          LOGW("GetNativeBufferStatus returned status =%d",status);
+       }
+       if(used){
+          port_out->MixPushThisBuffer(buffer);
+       }
+       else{
+          port_out->PushThisBuffer(buffer);
+       }
+   }
+
+    return OMX_ErrorNone;
+}
+
 OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
-    OMX_BUFFERHEADERTYPE **buffers,
+    OMX_BUFFERHEADERTYPE ***pBuffers,
     buffer_retain_t *retains,
     OMX_U32 numberBuffers) {
 
     OMX_ERRORTYPE ret;
     Decode_Status status;
-
     // fill render buffer without draining decoder output queue
-    ret = FillRenderBuffer(buffers[OUTPORT_INDEX], 0);
+    ret = FillRenderBuffer(pBuffers[OUTPORT_INDEX], 0);
     if (ret == OMX_ErrorNone) {
         retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
         // TODO: continue decoding
@@ -250,7 +317,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
 
     VideoDecodeBuffer decodeBuffer;
     // PrepareDecodeBuffer will set retain to either BUFFER_RETAIN_GETAGAIN or BUFFER_RETAIN_NOT_RETAIN
-    ret = PrepareDecodeBuffer(buffers[INPORT_INDEX], &retains[INPORT_INDEX], &decodeBuffer);
+    ret = PrepareDecodeBuffer(*pBuffers[INPORT_INDEX], &retains[INPORT_INDEX], &decodeBuffer);
     if (ret == OMX_ErrorNotReady) {
         retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
         return OMX_ErrorNone;
@@ -266,7 +333,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
         if (status == DECODE_FORMAT_CHANGE) {
             ret = HandleFormatChange();
             CHECK_RETURN_VALUE("HandleFormatChange");
-            buffers[OUTPORT_INDEX]->nFilledLen = 0;
+            ((*pBuffers[OUTPORT_INDEX]))->nFilledLen = 0;
             // don't use the output buffer if format is changed.
             return OMX_ErrorNone;
         } else if (status == DECODE_NO_CONFIG) {
@@ -285,17 +352,19 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
                 // For decoder errors that could be omitted,  not throw error and continue to decode.
                 TranslateDecodeStatus(status);
 
-                buffers[OUTPORT_INDEX]->nFilledLen = 0;
+                ((*pBuffers[OUTPORT_INDEX]))->nFilledLen = 0;
                 return OMX_ErrorNone;
             }
         }
     }
     // drain the decoder output queue when in EOS state and fill the render buffer
-    ret = FillRenderBuffer(buffers[OUTPORT_INDEX], buffers[INPORT_INDEX]->nFlags);
+    ret = FillRenderBuffer(pBuffers[OUTPORT_INDEX], ((*pBuffers[INPORT_INDEX]))->nFlags);
+
     if (ret == OMX_ErrorNotReady) {
         retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
         ret = OMX_ErrorNone;
     }
+
     return ret;
 }
 
@@ -308,12 +377,23 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
         return OMX_ErrorBadParameter;
     }
 
-    if (!mBufferIDMode) {
-        LOGD("intel omx video decoder working in raw nv12 mode");
-    } else {
-        LOGD("intel omx video decoder working in buffer index mode");
+    if ( mNativeBufferMode) {
+        LOGD("intel omx video decoder working in native buffer mode");
+    }else{
+        LOGD("intel omx video decoder working in raw nv12 mode ");
     }
 
+    if( mNativeBufferMode){
+        p->surfaceNumber = mOMXBufferHeaderTypePtrNum;
+        for( int i=0; i < mOMXBufferHeaderTypePtrNum;i++){
+            OMX_BUFFERHEADERTYPE *buffer_hdr = mOMXBufferHeaderTypePtrArray[i];
+            p->graphicBufferHandler[i] = buffer_hdr->pBuffer;
+            LOGV("PrepareConfigBuffer bufferid=%p,handle =%p",buffer_hdr,buffer_hdr->pBuffer);
+        }
+        p->flag |= USE_NATIVE_GRAPHIC_BUFFER;
+        p->graphicBufferStride = mGraphicBufferStride;
+        p->graphicBufferColorFormat = mGraphicBuffercolorformat;
+    }
     p->width = paramPortDefinitionInput->format.video.nFrameWidth;
     p->height = paramPortDefinitionInput->format.video.nFrameHeight;
     return OMX_ErrorNone;
@@ -354,8 +434,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buf
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE *buffer, OMX_U32 inportBufferFlags) {
-    if (buffer->pPlatformPrivate) {
+OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer, OMX_U32 inportBufferFlags) {
+
+    OMX_BUFFERHEADERTYPE *buffer = *pBuffer;
+    OMX_BUFFERHEADERTYPE *buffer_orign = buffer;
+
+    if (!mNativeBufferMode && buffer->pPlatformPrivate) {
         VideoRenderBuffer *p = (VideoRenderBuffer *)buffer->pPlatformPrivate;
         p->renderDone = true;
         buffer->pPlatformPrivate = NULL;
@@ -375,40 +459,58 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE *buffer
         return OMX_ErrorNotReady;
     }
 
+    if(mNativeBufferMode) {
+        buffer = *pBuffer = mOMXBufferHeaderTypePtrArray[renderBuffer->acquirePos];
+     }
+
     buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME;
     buffer->nTimeStamp = renderBuffer->timeStamp;
 
-    if (!mBufferIDMode) {
-        MapRawNV12(renderBuffer, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
+    if (mNativeBufferMode) {
+
+        PortBase *port_out = this->ports[OUTPORT_INDEX];
+        //check orign buffer
+        if(buffer_orign != buffer){
+
+            bool used = false;
+            mVideoDecoder->GetNativeBufferStatus(buffer_orign->pBuffer,&used);
+            if(used){
+                port_out->MixPushThisBuffer(buffer_orign);
+            }else{
+                port_out->PushThisBuffer(buffer_orign);
+            }
+
+            //need pop  the returing buffer from mix used buffer queue
+            OMX_U32 len = port_out->MixBufferQueueLength();
+            OMX_BUFFERHEADERTYPE *temp = NULL;
+            for(OMX_U32 i =0 ; i < len; i++){
+                temp = port_out->MixPopBuffer();
+                if(temp == NULL)
+                   break;
+                if(temp == buffer){
+                   LOGV("FillRenderBuffer Poped buffer = %p from mix queue",temp);
+                   break;
+                }
+                else{
+                   port_out->MixPushThisBuffer(temp);
+                }
+            }
+        }
+
+       buffer->nFilledLen = sizeof(OMX_U8*);
+
     } else {
-#if 0
-        buffer->nFilledLen = sizeof(VABuffer);
-        VABuffer *p = (VABuffer *)(buffer->pBuffer + buffer->nOffset);
-
-        // TODO: pass cropping data to VABuffer
-        p->surface = renderBuffer->surface;
-        p->display = renderBuffer->display;
-        p->frame_structure = renderBuffer->scanFormat;
-#else
-        buffer->nFilledLen = sizeof(VABufferIDPackage);
-        VABufferIDPackage *p = (VABufferIDPackage *)(buffer->pBuffer + buffer->nOffset);
-
-        vaGetBufferID(renderBuffer->display, renderBuffer->surface, &p->devid, &p->bufid);
-        p->width = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameWidth;
-        p->height = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameHeight;
-#endif
+        MapRawNV12(renderBuffer, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
+        buffer->pPlatformPrivate = (void *)renderBuffer;
     }
 
-    // TODO:  set "RenderDone" in next "FillRenderBuffer" with the same OMX buffer header.
-    // this indicates surface is "rendered" and can be reused for decoding.
-    //renderBuffer->renderDone = true;
-
-    buffer->pPlatformPrivate = (void *)renderBuffer;
     return OMX_ErrorNone;
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
     LOGW("Video format is changed.");
+    if(mNativeBufferMode)
+        return OMX_ErrorNone;
     //pthread_mutex_lock(&mSerializationLock);
     const VideoFormatInfo *formatInfo = mVideoDecoder->getFormatInfo();
     //pthread_mutex_unlock(&mSerializationLock);
@@ -516,8 +618,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::TranslateDecodeStatus(Decode_Status status) {
 OMX_ERRORTYPE OMXVideoDecoderBase::BuildHandlerList(void) {
     OMXComponentCodecBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoPortFormat, GetParamVideoPortFormat, SetParamVideoPortFormat);
-    //AddHandler(PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX, GetCapabilityFlags, SetCapabilityFlags);
-    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexBufferIDMode), GetBufferIDMode, SetBufferIDMode);
+    //AddHandler(PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX, GetCapabilityFlags, SetCapabilityFlags); 
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtGetNativeBufferUsage),GetNativeBufferUsage,SetNativeBufferUsage);
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtUseNativeBuffer),GetNativeBuffer,SetNativeBuffer);
 
     return OMX_ErrorNone;
 }
@@ -551,39 +654,46 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetParamVideoPortFormat(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
-
-OMX_ERRORTYPE OMXVideoDecoderBase::GetBufferIDMode(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBufferUsage(OMX_PTR pStructure) {
+     OMX_ERRORTYPE ret;
+     GetAndroidNativeBufferUsageParams *param = (GetAndroidNativeBufferUsageParams*)pStructure;
+     CHECK_TYPE_HEADER(param);
+     param->nUsage |= GRALLOC_USAGE_SW_WRITE_OFTEN;
+     param->nUsage |= GRALLOC_USAGE_HW_TEXTURE;
+     return OMX_ErrorNone;
+}
+OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferUsage(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
-
-    *(static_cast<bool*>(pStructure)) = mBufferIDMode;
-    return OMX_ErrorNone;
+    CHECK_SET_PARAM_STATE();
+    return OMX_ErrorBadParameter;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderBase::SetBufferIDMode(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBuffer(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
-  
+    return OMX_ErrorBadParameter;
+}
+OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBuffer(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
     CHECK_SET_PARAM_STATE();
-
-    OMX_PARAM_PORTDEFINITIONTYPE port_def;
-    PortVideo *port;
-
-    mBufferIDMode = *(static_cast<bool*>(pStructure));
-
-    port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
-    memcpy(&port_def, port->GetPortDefinition(), sizeof(port_def));
-
-    if (!mBufferIDMode) {
-        port_def.nBufferSize = OUTPORT_BUFFER_SIZE;
-        port_def.format.video.cMIMEType = (OMX_STRING)"video/raw";
-        port_def.format.video.eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
-    } else {
-        port_def.nBufferSize = sizeof(VideoRenderBuffer);
-        port_def.format.video.cMIMEType = (OMX_STRING)VA_RAW_MIME_TYPE;
-        port_def.format.video.eColorFormat = static_cast<OMX_COLOR_FORMATTYPE>(VA_COLOR_FORMAT);
+    UseAndroidNativeBufferParams *param = (UseAndroidNativeBufferParams*)pStructure;
+    CHECK_TYPE_HEADER(param);
+    if(param->nPortIndex != OUTPORT_INDEX)
+        return OMX_ErrorBadParameter;
+    OMX_BUFFERHEADERTYPE *buf_hdr = NULL;
+    ret = this->ports[OUTPORT_INDEX]->UseBuffer(&buf_hdr,OUTPORT_INDEX,param->pAppPrivate,sizeof(OMX_U8*),
+                                      const_cast<OMX_U8*>(reinterpret_cast<const OMX_U8*>(param->nativeBuffer->handle)));
+    if(ret != OMX_ErrorNone)
+        return ret;
+    if (mOMXBufferHeaderTypePtrNum >= MAX_GRAPHIC_NUM)
+        return OMX_ErrorOverflow;
+    mOMXBufferHeaderTypePtrArray[mOMXBufferHeaderTypePtrNum++] = buf_hdr;
+    *(param->bufferHeader) = buf_hdr;
+    if(!mGraphicBuffercolorformat) {
+         mGraphicBuffercolorformat = param->nativeBuffer->format;
     }
-
-    port->SetPortDefinition(&port_def, true);
-
+    if(!mGraphicBufferStride) {
+         mGraphicBufferStride = param->nativeBuffer->stride;
+    }
     return OMX_ErrorNone;
 }
 
@@ -596,7 +706,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuf
     int32_t height = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameHeight;
 
     size = width * height * 3 / 2;
-    
+
     vaStatus = vaSyncSurface(renderBuffer->display, renderBuffer->surface);
     if (vaStatus != VA_STATUS_SUCCESS) {
         return OMX_ErrorUndefined;
@@ -635,7 +745,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuf
     if (vaStatus != VA_STATUS_SUCCESS) {
         return OMX_ErrorUndefined;
     }
-    
+
     if (size == (int32_t)vaImage.data_size) {
         memcpy(rawData, pBuf, size);
     } else {

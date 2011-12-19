@@ -31,7 +31,7 @@ protected:
     virtual OMX_ERRORTYPE ProcessorDeinit(void);
     virtual OMX_ERRORTYPE ProcessorFlush(OMX_U32 portIndex);
     virtual OMX_ERRORTYPE ProcessorProcess(
-            OMX_BUFFERHEADERTYPE **buffers,
+            OMX_BUFFERHEADERTYPE ***pBuffers,
             buffer_retain_t *retains,
             OMX_U32 numberBuffers);
 
@@ -42,6 +42,7 @@ protected:
    DECLARE_HANDLER(OMXVideoDecoderPAVC, ParamVideoAvc);
    DECLARE_HANDLER(OMXVideoDecoderPAVC, VideoProfileLevelQuerySupported);
    DECLARE_HANDLER(OMXVideoDecoderPAVC, VideoProfileLevelCurrent);
+   DECLARE_HANDLER(OMXVideoDecoderPAVC, NativeBufferMode);
 
 
 private:

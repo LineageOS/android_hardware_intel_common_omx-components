@@ -2176,7 +2176,7 @@ OMX_ERRORTYPE MrstPsbComponent::ProcessorResume(void)
 
 /* implement ComponentBase::ProcessorProcess */
 OMX_ERRORTYPE MrstPsbComponent::ProcessorProcess(
-    OMX_BUFFERHEADERTYPE **buffers,
+    OMX_BUFFERHEADERTYPE ***pBuffers,
     buffer_retain_t *retain,
     OMX_U32 nr_buffers)
 {
@@ -2191,27 +2191,27 @@ OMX_ERRORTYPE MrstPsbComponent::ProcessorProcess(
     VABuffer *vaBuf;
     int retry_decode_count;
 
-    LOGV_IF(buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS,
+    LOGV_IF((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS,
             "%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
 
-    if (!buffers[INPORT_INDEX]->nFilledLen) {
+    if (!(*pBuffers[INPORT_INDEX])->nFilledLen) {
         LOGV("%s(),%d: input buffer's nFilledLen is zero\n",
              __func__, __LINE__);
         goto out;
     }
 
     buffer_in.data =
-        buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
-    buffer_in.data_size = buffers[INPORT_INDEX]->nFilledLen;
-    buffer_in.buffer_size = buffers[INPORT_INDEX]->nFilledLen;
+        (*pBuffers[INPORT_INDEX])->pBuffer + (*pBuffers[INPORT_INDEX])->nOffset;
+    buffer_in.data_size = (*pBuffers[INPORT_INDEX])->nFilledLen;
+    buffer_in.buffer_size = (*pBuffers[INPORT_INDEX])->nFilledLen;
 
     LOGV("buffer_in.data=%x, data_size=%d, buffer_size=%d",
          (unsigned)buffer_in.data, buffer_in.data_size, buffer_in.buffer_size);
 
     buffer_out.data =
-        buffers[OUTPORT_INDEX]->pBuffer + buffers[OUTPORT_INDEX]->nOffset;
+        (*pBuffers[OUTPORT_INDEX])->pBuffer + (*pBuffers[OUTPORT_INDEX])->nOffset;
     buffer_out.data_size = 0;
-    buffer_out.buffer_size = buffers[OUTPORT_INDEX]->nAllocLen - buffers[OUTPORT_INDEX]->nOffset;
+    buffer_out.buffer_size = (*pBuffers[OUTPORT_INDEX])->nAllocLen - (*pBuffers[OUTPORT_INDEX])->nOffset;
 
     mixiovec_out[0] = &buffer_out;
 
@@ -2276,9 +2276,9 @@ OMX_ERRORTYPE MrstPsbComponent::ProcessorProcess(
         outflags |= OMX_BUFFERFLAG_ENDOFFRAME;
         retain[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
 
-        buffers[OUTPORT_INDEX]->nFilledLen = outfilledlen;
-        buffers[OUTPORT_INDEX]->nTimeStamp = outtimestamp;
-        buffers[OUTPORT_INDEX]->nFlags = outflags;
+        (*pBuffers[OUTPORT_INDEX])->nFilledLen = outfilledlen;
+        (*pBuffers[OUTPORT_INDEX])->nTimeStamp = outtimestamp;
+        (*pBuffers[OUTPORT_INDEX])->nFlags = outflags;
 
         outframe_counter++;
 
@@ -2358,8 +2358,8 @@ normal_start:
     }
 
     /* only in case of decode mode */
-    if ((buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) &&
-            (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_CODECCONFIG)) {
+    if (((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) &&
+            ((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_CODECCONFIG)) {
 
         if (coding_type == OMX_VIDEO_CodingAVC) {
             if (inframe_counter == 0) {
@@ -2484,7 +2484,7 @@ normal_start:
     MixVideoFrame *frame;
 
     /* set timestamp */
-    outtimestamp = buffers[INPORT_INDEX]->nTimeStamp;
+    outtimestamp = (*pBuffers[INPORT_INDEX])->nTimeStamp;
 
     mix_videodecodeparams_set_timestamp(MIX_VIDEODECODEPARAMS(mvp),
                                         outtimestamp);
@@ -2717,9 +2717,9 @@ out:
     }
 
     if(retain[OUTPORT_INDEX] != BUFFER_RETAIN_GETAGAIN) {
-        buffers[OUTPORT_INDEX]->nFilledLen = outfilledlen;
-        buffers[OUTPORT_INDEX]->nTimeStamp = outtimestamp;
-        buffers[OUTPORT_INDEX]->nFlags = outflags;
+        (*pBuffers[OUTPORT_INDEX])->nFilledLen = outfilledlen;
+        (*pBuffers[OUTPORT_INDEX])->nTimeStamp = outtimestamp;
+        (*pBuffers[OUTPORT_INDEX])->nFlags = outflags;
     }
 
     if (retain[INPORT_INDEX] == BUFFER_RETAIN_NOT_RETAIN ||

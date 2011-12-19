@@ -32,7 +32,7 @@ protected:
     virtual OMX_ERRORTYPE ProcessorInit(void);
     virtual OMX_ERRORTYPE ProcessorDeinit(void);
     virtual OMX_ERRORTYPE ProcessorProcess(
-            OMX_BUFFERHEADERTYPE **buffers,
+            OMX_BUFFERHEADERTYPE ***pBuffers,
             buffer_retain_t *retains,
             OMX_U32 numberBuffers);
 
@@ -41,6 +41,7 @@ protected:
 
    virtual OMX_ERRORTYPE BuildHandlerList(void);
    DECLARE_HANDLER(OMXVideoDecoderWMV, ParamVideoWmv);
+   DECLARE_HANDLER(OMXVideoDecoderWMV, NativeBufferMode);
 
 private:
     enum {

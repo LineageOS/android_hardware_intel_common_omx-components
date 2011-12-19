@@ -1167,7 +1167,7 @@ OMX_ERRORTYPE MrstPsbComponent::ProcessorResume(void)
 
 /* implement ComponentBase::ProcessorProcess */
 OMX_ERRORTYPE MrstPsbComponent::ProcessorProcess(
-    OMX_BUFFERHEADERTYPE **buffers,
+    OMX_BUFFERHEADERTYPE ***pBuffers,
     buffer_retain_t *retain,
     OMX_U32 nr_buffers)
 {
@@ -1175,16 +1175,15 @@ OMX_ERRORTYPE MrstPsbComponent::ProcessorProcess(
     OMX_U32 outfilledlen = 0;
     OMX_S64 outtimestamp = 0;
     OMX_U32 outflags = 0;
-
     OMX_ERRORTYPE oret = OMX_ErrorNone;
     MIX_RESULT mret;
 
     LOGV("%s(): enter encode\n", __func__);
 
-    LOGV_IF(buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS,
+    LOGV_IF((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS,
             "%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
 
-    if (!buffers[INPORT_INDEX]->nFilledLen) {
+    if (!(*pBuffers[INPORT_INDEX])->nFilledLen) {
         LOGE("%s(),%d: input buffer's nFilledLen is zero\n",
              __func__, __LINE__);
         goto out;
@@ -1193,22 +1192,20 @@ OMX_ERRORTYPE MrstPsbComponent::ProcessorProcess(
     if (buffer_sharing_state != BUFFER_SHARING_INVALID) {
         buffer_in.data_size = buffer_sharing_info[0].dataSize;
         buffer_in.buffer_size = buffer_sharing_info[0].allocatedSize;
-        buffer_in.data =
-            *(reinterpret_cast<uchar**>(buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset));
+        buffer_in.data = *(reinterpret_cast<uchar**>((*pBuffers[INPORT_INDEX])->pBuffer + (*pBuffers[INPORT_INDEX])->nOffset));
     } else {
-        buffer_in.data =
-            buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
-        buffer_in.data_size = buffers[INPORT_INDEX]->nFilledLen;
-        buffer_in.buffer_size = buffers[INPORT_INDEX]->nFilledLen;
+        buffer_in.data = (*pBuffers[INPORT_INDEX])->pBuffer + (*pBuffers[INPORT_INDEX])->nOffset;
+        buffer_in.data_size = (*pBuffers[INPORT_INDEX])->nFilledLen;
+        buffer_in.buffer_size = (*pBuffers[INPORT_INDEX])->nFilledLen;
     }
 
     LOGV("buffer_in.data=%x, data_size=%d, buffer_size=%d",
          (unsigned)buffer_in.data, buffer_in.data_size, buffer_in.buffer_size);
 
     buffer_out.data =
-        buffers[OUTPORT_INDEX]->pBuffer + buffers[OUTPORT_INDEX]->nOffset;
+        (*pBuffers[OUTPORT_INDEX])->pBuffer + (*pBuffers[OUTPORT_INDEX])->nOffset;
     buffer_out.data_size = 0;
-    buffer_out.buffer_size = buffers[OUTPORT_INDEX]->nAllocLen - buffers[OUTPORT_INDEX]->nOffset;
+    buffer_out.buffer_size = (*pBuffers[OUTPORT_INDEX])->nAllocLen - (*pBuffers[OUTPORT_INDEX])->nOffset;
     mixiovec_out[0] = &buffer_out;
 
 normal_start:
@@ -1248,7 +1245,7 @@ normal_start:
     }
 
     outfilledlen = mixiovec_out[0]->data_size;
-    outtimestamp = buffers[INPORT_INDEX]->nTimeStamp;
+    outtimestamp = (*pBuffers[INPORT_INDEX])->nTimeStamp;
     outflags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
     int32 width;
@@ -1308,9 +1305,9 @@ out:
     }
 
     if(retain[OUTPORT_INDEX] != BUFFER_RETAIN_GETAGAIN) {
-        buffers[OUTPORT_INDEX]->nFilledLen = outfilledlen;
-        buffers[OUTPORT_INDEX]->nTimeStamp = outtimestamp;
-        buffers[OUTPORT_INDEX]->nFlags = outflags;
+        (*pBuffers[OUTPORT_INDEX])->nFilledLen = outfilledlen;
+        (*pBuffers[OUTPORT_INDEX])->nTimeStamp = outtimestamp;
+        (*pBuffers[OUTPORT_INDEX])->nFlags = outflags;
 
         LOGV("********** output buffer: len=%d, ts=%ld, flags=%x",
              outfilledlen,

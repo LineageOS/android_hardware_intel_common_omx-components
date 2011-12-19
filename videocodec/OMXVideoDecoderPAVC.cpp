@@ -74,11 +74,11 @@ OMX_ERRORTYPE OMXVideoDecoderPAVC::ProcessorFlush(OMX_U32 portIndex) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderPAVC::ProcessorProcess(
-        OMX_BUFFERHEADERTYPE **buffers,
+        OMX_BUFFERHEADERTYPE ***pBuffers,
         buffer_retain_t *retains,
         OMX_U32 numberBuffers) {
 
-    return OMXVideoDecoderBase::ProcessorProcess(buffers, retains, numberBuffers);
+    return OMXVideoDecoderBase::ProcessorProcess(pBuffers, retains, numberBuffers);
 }
 
 OMX_ERRORTYPE OMXVideoDecoderPAVC::PrepareConfigBuffer(VideoConfigBuffer *p) {
@@ -115,6 +115,7 @@ OMX_ERRORTYPE OMXVideoDecoderPAVC::BuildHandlerList(void) {
     AddHandler(OMX_IndexParamVideoAvc, GetParamVideoAvc, SetParamVideoAvc);
     AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetVideoProfileLevelQuerySupported, SetVideoProfileLevelQuerySupported);
     AddHandler(OMX_IndexParamVideoProfileLevelCurrent, GetVideoProfileLevelCurrent, SetVideoProfileLevelCurrent);
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer),GetNativeBufferMode,SetNativeBufferMode);
 
     return OMX_ErrorNone;
 }
@@ -199,6 +200,32 @@ OMX_ERRORTYPE OMXVideoDecoderPAVC::SetVideoProfileLevelCurrent(OMX_PTR pStructur
 
     return OMX_ErrorNone;
 }
+
+
+OMX_ERRORTYPE OMXVideoDecoderPAVC::GetNativeBufferMode(OMX_PTR pStructure) {
+     OMX_ERRORTYPE ret;
+     return OMX_ErrorNone; //would not be here
+}
+
+#define MAX_OUTPUT_BUFFER_COUNT_FOR_PAVC 10
+OMX_ERRORTYPE OMXVideoDecoderPAVC::SetNativeBufferMode(OMX_PTR pStructure) {
+   // OMX_ERRORTYPE ret;
+    //EnableAndroidNativeBuffersParams *param = (EnableAndroidNativeBuffersParams*)pStructure;
+    //CHECK_TYPE_HEADER(param);
+    CHECK_SET_PARAM_STATE();
+    mNativeBufferMode = true;
+    PortVideo *port = NULL;
+    port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
+    OMX_PARAM_PORTDEFINITIONTYPE port_def;
+    memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
+    port_def.nBufferCountMin = 1;
+    port_def.nBufferCountActual = MAX_OUTPUT_BUFFER_COUNT_FOR_PAVC;
+    port_def.format.video.cMIMEType = (OMX_STRING)"video/raw_ve";
+    port_def.format.video.eColorFormat =static_cast<OMX_COLOR_FORMATTYPE>(0x7FA00EFF) ;//
+    port->SetPortDefinition(&port_def,true);
+    return OMX_ErrorNone;
+}
+
 
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.PAVC", "video_decoder.pavc", OMXVideoDecoderPAVC);
