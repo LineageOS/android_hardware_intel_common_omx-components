@@ -430,6 +430,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buf
         p->flag = HAS_COMPLETE_FRAME;
     }
 
+    if(buffer->nFlags & OMX_BUFFERFLAG_SYNCFRAME) {
+        p->flag |= IS_SYNC_FRAME;
+    }
+
     *retain= BUFFER_RETAIN_NOT_RETAIN;
     return OMX_ErrorNone;
 }
