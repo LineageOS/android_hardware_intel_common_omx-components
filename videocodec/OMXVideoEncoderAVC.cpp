@@ -51,8 +51,8 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     SetTypeHeader(&mNalStreamFormat, sizeof(mNalStreamFormat));
     mNalStreamFormat.nPortIndex = OUTPORT_INDEX;
     // TODO: check if this is desired Nalu Format
-     mNalStreamFormat.eNaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
-    //mNalStreamFormat.eNaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
+    // mNalStreamFormat.eNaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
+    mNalStreamFormat.eNaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
     // OMX_VIDEO_CONFIG_AVCINTRAPERIOD
     memset(&mConfigAvcIntraPeriod, 0, sizeof(mConfigAvcIntraPeriod));
     SetTypeHeader(&mConfigAvcIntraPeriod, sizeof(mConfigAvcIntraPeriod));
@@ -166,7 +166,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
         goto out;
     }
 
-    if (mBsState != BS_STATE_INVALID) {
+    if (mBsState != BS_STATE_INVALID && mBsState != BS_STATE_FAILD) {
         LOGV(" Share buffer mode\n");
         inBuf.size = mSharedBufArray[0].dataSize;
         inBuf.data =

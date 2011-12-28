@@ -99,7 +99,8 @@ protected:
     enum {
         BS_STATE_INVALID,
         BS_STATE_LOADED,
-        BS_STATE_EXECUTING
+        BS_STATE_EXECUTING,
+        BS_STATE_FAILD
     } mBsState;
 
     SharedBufferType *mSharedBufArray;

@@ -278,6 +278,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetVideoEncoderParam() {
 
     if(mPFrames == 0) {
         mPFrames = mEncoderParams->frameRate.frameRateNum / 2;
+        mPFrames = (mPFrames < 15) ? 15 : mPFrames;   // Limit intra frame period to ensure video quality for low bitrate application.
     }
     mEncoderParams->intraPeriod = mPFrames;
     mEncoderParams->rawFormat = RAW_FORMAT_NV12;
@@ -359,6 +360,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorInit(void) {
 
     if (mVideoEncoder->start() != ENCODE_SUCCESS) {
         LOGE("Start failed, ret = 0x%08x\n", ret);
+        StopBufferSharing();
         return OMX_ErrorUndefined;
     }
 
@@ -416,7 +418,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::AllocateSharedBuffers(int width, int height) 
 
     CHECK_BS_STATE();
 
-    if (mBsState == BS_STATE_INVALID) {
+    if (mBsState == BS_STATE_INVALID || mBsState == BS_STATE_FAILD) {
         LOGW("buffer sharing not enabled, do nothing");
         return OMX_ErrorNone;
     }
@@ -468,7 +470,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::AllocateSharedBuffers(int width, int height) 
 OMX_ERRORTYPE OMXVideoEncoderBase::UploadSharedBuffers() {
     CHECK_BS_STATE();
 
-    if (mBsState == BS_STATE_INVALID) {
+    if (mBsState == BS_STATE_INVALID || mBsState == BS_STATE_FAILD) {
         LOGW("buffer sharing not enabled, do nothing.");
         return OMX_ErrorNone;
     }
@@ -488,7 +490,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetBSInfoToPort() {
 
     //caution: buffer-sharing info stored in INPORT (raw port)
     privateinfoparam.nPortIndex = INPORT_INDEX;
-    if (mBsState == BS_STATE_INVALID) {
+    if (mBsState == BS_STATE_INVALID || mBsState == BS_STATE_FAILD) {
         privateinfoparam.nCapacity = 0;
         privateinfoparam.nHolder = NULL;
     } else {
@@ -503,7 +505,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetBSInfoToPort() {
 OMX_ERRORTYPE OMXVideoEncoderBase::TriggerBSMode() {
     CHECK_BS_STATE();
 
-    if (mBsState == BS_STATE_INVALID) {
+    if (mBsState == BS_STATE_INVALID || mBsState == BS_STATE_FAILD) {
         LOGW("buffer sharing not enabled.");
         return OMX_ErrorNone;
     }
@@ -551,8 +553,10 @@ OMX_ERRORTYPE OMXVideoEncoderBase::InitBSMode(void) {
     mBsInstance = BufferShareRegistry::getInstance();
 
     ret = mBsInstance->encoderRequestToEnableSharingMode();
-    CHECK_BS_STATUS	("encoderRequestToEnableSharingMode");
-
+    if (ret != BS_SUCCESS) {
+        mBsState = BS_STATE_FAILD;
+        return OMX_ErrorInsufficientResources;
+    }
     return OMX_ErrorNone;
 }
 
@@ -561,7 +565,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::DeinitBSMode(void) {
 
     CHECK_BS_STATE();
 
-    if (mBsState == BS_STATE_INVALID) {
+    if (mBsState == BS_STATE_INVALID || mBsState == BS_STATE_FAILD) {
         return OMX_ErrorNone;
     }
 
@@ -571,7 +575,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::DeinitBSMode(void) {
     }
 
     ret = mBsInstance->encoderRequestToDisableSharingMode();
-    CHECK_BS_STATUS	("encoderRequestToDisableSharingMode");
+    CHECK_BS_STATUS("encoderRequestToDisableSharingMode");
 
 
     mBsState = BS_STATE_INVALID;
@@ -603,7 +607,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::StartBufferSharing(void) {
 
 OMX_ERRORTYPE OMXVideoEncoderBase::StopBufferSharing(void) {
 
-    if (mBsState == BS_STATE_INVALID) {
+    if (mBsState == BS_STATE_INVALID || mBsState == BS_STATE_FAILD) {
         return OMX_ErrorNone;
     }
 
