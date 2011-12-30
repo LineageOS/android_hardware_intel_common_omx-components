@@ -393,6 +393,17 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
         p->flag |= USE_NATIVE_GRAPHIC_BUFFER;
         p->graphicBufferStride = mGraphicBufferStride;
         p->graphicBufferColorFormat = mGraphicBuffercolorformat;
+
+        PortVideo *port = NULL;
+        port = static_cast<PortVideo *>(this->ports[INPORT_INDEX]);
+        OMX_PARAM_PORTDEFINITIONTYPE port_def;
+        memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
+
+        if(port_def.format.video.pNativeWindow != NULL){
+            p->nativeWindow = port_def.format.video.pNativeWindow;
+            LOGD("NativeWindow = %p", p->nativeWindow);
+        }
+
     }
     p->width = paramPortDefinitionInput->format.video.nFrameWidth;
     p->height = paramPortDefinitionInput->format.video.nFrameHeight;
