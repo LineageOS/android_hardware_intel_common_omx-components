@@ -485,7 +485,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
 
         PortBase *port_out = this->ports[OUTPORT_INDEX];
         //check orign buffer
-        if(buffer_orign != buffer){
+        if(buffer_orign != buffer) {
 
             bool used = false;
             mVideoDecoder->GetNativeBufferStatus(buffer_orign->pBuffer,&used);
@@ -498,22 +498,35 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
             //need pop  the returing buffer from mix used buffer queue
             OMX_U32 len = port_out->MixBufferQueueLength();
             OMX_BUFFERHEADERTYPE *temp = NULL;
-            for(OMX_U32 i =0 ; i < len; i++){
+            for(OMX_U32 i = 0 ; i < len; i++) {
                 temp = port_out->MixPopBuffer();
                 if(temp == NULL)
-                   break;
-                if(temp == buffer){
-                   LOGV("FillRenderBuffer Poped buffer = %p from mix queue",temp);
-                   break;
+                    break;
+                if(temp == buffer) {
+                    LOGV("FillRenderBuffer Poped buffer = %p from mix queue",temp);
+                    break;
                 }
-                else{
-                   port_out->MixPushThisBuffer(temp);
+                else {
+                    port_out->MixPushThisBuffer(temp);
+                }
+            }
+
+            // make sure the render buffer has been moved out of bufferq
+            len = port_out->BufferQueueLength();
+            for(OMX_U32 i = 0; i < len; i++) {
+                temp = port_out->PopBuffer();
+                if(temp == NULL)
+                    break;
+                if(temp == buffer) {
+                    LOGV("FillRenderBuffer Poped buffer = %p from buffer queue",temp);
+                    break;
+                }
+                else {
+                    port_out->PushThisBuffer(temp);
                 }
             }
         }
-
-       buffer->nFilledLen = sizeof(OMX_U8*);
-
+        buffer->nFilledLen = sizeof(OMX_U8*);
     } else {
         MapRawNV12(renderBuffer, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
         buffer->pPlatformPrivate = (void *)renderBuffer;
