@@ -232,9 +232,21 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorFlush(OMX_U32 portIndex) {
     return OMX_ErrorNone;
 }
 
- OMX_ERRORTYPE OMXVideoDecoderBase::PreProcessBuffer(OMX_BUFFERHEADERTYPE* buffer){
+OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorPreFreeBuffer(OMX_U32 nPortIndex,OMX_BUFFERHEADERTYPE * pBuffer) {
+    if (mNativeBufferMode)
+        return OMX_ErrorNone;
 
-    if(mNativeBufferMode && buffer->nOutputPortIndex == OUTPORT_INDEX){
+    if (nPortIndex == OUTPORT_INDEX && pBuffer->pPlatformPrivate) {
+        VideoRenderBuffer *p = (VideoRenderBuffer *)pBuffer->pPlatformPrivate;
+        p->renderDone = true;
+        pBuffer->pPlatformPrivate = NULL;
+    }
+    return OMX_ErrorNone;
+}
+
+ OMX_ERRORTYPE OMXVideoDecoderBase::PreProcessBuffer(OMX_BUFFERHEADERTYPE* buffer) {
+
+    if (mNativeBufferMode && buffer->nOutputPortIndex == OUTPORT_INDEX){
         Decode_Status status;
         if(mVideoDecoder == NULL){
             LOGE("PreProcessBuffer: Video decoder is not created");
@@ -245,6 +257,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorFlush(OMX_U32 portIndex) {
         if (status != DECODE_SUCCESS) {
             return TranslateDecodeStatus(status);
         }
+    } else if (buffer->pPlatformPrivate && buffer->nOutputPortIndex == OUTPORT_INDEX){
+        VideoRenderBuffer *p = (VideoRenderBuffer *)buffer->pPlatformPrivate;
+        p->renderDone = true;
+        buffer->pPlatformPrivate = NULL;
     }
     return OMX_ErrorNone;
 }

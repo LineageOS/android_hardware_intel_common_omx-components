@@ -52,7 +52,7 @@ OMX_ERRORTYPE OMXVideoDecoderPAVC::InitInputPortFormatSpecific(OMX_PARAM_PORTDEF
     SetTypeHeader(&mParamAvc, sizeof(mParamAvc));
     mParamAvc.nPortIndex = INPORT_INDEX;
     // TODO: check eProfile/eLevel
-    mParamAvc.eProfile = OMX_VIDEO_AVCProfileHigh; //OMX_VIDEO_AVCProfileBaseline;
+    mParamAvc.eProfile = OMX_VIDEO_AVCProfileMain; //OMX_VIDEO_AVCProfileBaseline;
     mParamAvc.eLevel = OMX_VIDEO_AVCLevel41; //OMX_VIDEO_AVCLevel1;
 
     mCurrentProfile = mParamAvc.eProfile;
@@ -85,8 +85,11 @@ OMX_ERRORTYPE OMXVideoDecoderPAVC::PrepareConfigBuffer(VideoConfigBuffer *p) {
     OMX_ERRORTYPE ret;
     ret = OMXVideoDecoderBase::PrepareConfigBuffer(p);
     CHECK_RETURN_VALUE("OMXVideoDecoderBase::PrepareConfigBuffer");
-
-    p->flag |= WANT_SURFACE_PROTECTION;
+    p->width = 1920;
+    p->height = 1088;
+    p->surfaceNumber = 16;
+    p->profile = VAProfileH264High;
+    p->flag =  WANT_SURFACE_PROTECTION | HAS_VA_PROFILE | HAS_SURFACE_NUMBER;
     return OMX_ErrorNone;
 }
 
