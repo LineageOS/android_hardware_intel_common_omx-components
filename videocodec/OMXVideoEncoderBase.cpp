@@ -31,7 +31,7 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
     ,mFrameRetrieved(OMX_TRUE)
     ,mFirstFrame(OMX_TRUE)
     ,mForceBufferSharing(OMX_FALSE) {
-
+    LOGV("OMXVideoEncoderBase::OMXVideoEncoderBase begin");
     mEncoderParams = new VideoParamsCommon();
     if (!mEncoderParams) LOGE("OMX_ErrorInsufficientResources");
 
@@ -41,9 +41,12 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
         LOGE("InitBSMode failed in Constructor ");
         DeinitBSMode();
     }
+    LOGV("OMXVideoEncoderBase::OMXVideoEncoderBase end");
 }
 
 OMXVideoEncoderBase::~OMXVideoEncoderBase() {
+
+    LOGV("OMXVideoEncoderBase::~OMXVideoEncoderBase begin");
 
     // destroy ports
     if (this->ports) {
@@ -73,6 +76,8 @@ OMXVideoEncoderBase::~OMXVideoEncoderBase() {
     if (oret != OMX_ErrorNone) {
         LOGE("DeinitBSMode in destructor");
     }
+
+    LOGV("OMXVideoEncoderBase::~OMXVideoEncoderBase end");
 }
 
 OMX_ERRORTYPE OMXVideoEncoderBase::InitInputPort(void) {
@@ -523,7 +528,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::TriggerBSMode() {
 OMX_ERRORTYPE OMXVideoEncoderBase::CheckAndEnableBSMode() {
     BufferShareStatus bsret;
 
-    if (mBsState != BS_STATE_INVALID) {
+    if ((mBsState != BS_STATE_INVALID) && (mBsState != BS_STATE_FAILD)) {
         LOGE("failed (incorrect state).");
         return OMX_ErrorUndefined;
     }
@@ -553,15 +558,19 @@ OMX_ERRORTYPE OMXVideoEncoderBase::InitBSMode(void) {
     mBsInstance = BufferShareRegistry::getInstance();
 
     ret = mBsInstance->encoderRequestToEnableSharingMode();
+
     if (ret != BS_SUCCESS) {
         mBsState = BS_STATE_FAILD;
         return OMX_ErrorInsufficientResources;
     }
+
     return OMX_ErrorNone;
 }
 
 OMX_ERRORTYPE OMXVideoEncoderBase::DeinitBSMode(void) {
     BufferShareStatus ret;
+
+    LOGV("OMXVideoEncoderBase::DeinitBSMode begin");
 
     CHECK_BS_STATE();
 
@@ -579,6 +588,9 @@ OMX_ERRORTYPE OMXVideoEncoderBase::DeinitBSMode(void) {
 
 
     mBsState = BS_STATE_INVALID;
+
+    LOGV("OMXVideoEncoderBase::DeinitBSMode end");
+
     return OMX_ErrorNone;
 }
 

@@ -42,6 +42,7 @@ protected:
    DECLARE_HANDLER(OMXVideoDecoderAVC, ParamVideoAvc);
    DECLARE_HANDLER(OMXVideoDecoderAVC, ParamIntelAVCDecodeSettings);
    DECLARE_HANDLER(OMXVideoDecoderAVC,NativeBufferMode);
+   DECLARE_HANDLER(OMXVideoDecoderAVC, ParamVideoAVCProfileLevel);
 
 private:
     inline OMX_ERRORTYPE AccumulateBuffer(OMX_BUFFERHEADERTYPE *buffer);

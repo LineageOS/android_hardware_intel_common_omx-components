@@ -224,6 +224,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::BuildHandlerList(void) {
     AddHandler(OMX_IndexParamVideoAvc, GetParamVideoAvc, SetParamVideoAvc);
     AddHandler((OMX_INDEXTYPE)OMX_IndexParamIntelAVCDecodeSettings, GetParamIntelAVCDecodeSettings, SetParamIntelAVCDecodeSettings);
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer),GetNativeBufferMode,SetNativeBufferMode);
+    AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoAVCProfileLevel, SetParamVideoAVCProfileLevel);
     return OMX_ErrorNone;
 }
 
@@ -300,5 +301,22 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::SetNativeBufferMode(OMX_PTR pStructure) {
      return OMX_ErrorNone;
 }
 
+OMX_ERRORTYPE OMXVideoDecoderAVC::GetParamVideoAVCProfileLevel(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_PARAM_PROFILELEVELTYPE *p = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)pStructure;
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, INPORT_INDEX);
+    CHECK_ENUMERATION_RANGE(p->nProfileIndex,1);
+
+    p->eProfile = mParamAvc.eProfile;
+    p->eLevel = mParamAvc.eLevel;
+
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoDecoderAVC::SetParamVideoAVCProfileLevel(OMX_PTR pStructure) {
+    LOGW("SetParamVideoAVCProfileLevel is not supported.");
+    return OMX_ErrorUnsupportedSetting;
+}
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.AVC", "video_decoder.avc", OMXVideoDecoderAVC);

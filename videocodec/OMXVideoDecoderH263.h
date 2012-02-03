@@ -41,6 +41,7 @@ protected:
    virtual OMX_ERRORTYPE BuildHandlerList(void);
    DECLARE_HANDLER(OMXVideoDecoderH263, ParamVideoH263);
    DECLARE_HANDLER(OMXVideoDecoderH263,NativeBufferMode);
+   DECLARE_HANDLER(OMXVideoDecoderH263, ParamVideoH263ProfileLevel);
 
 private:
     enum {

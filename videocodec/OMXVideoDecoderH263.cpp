@@ -83,6 +83,7 @@ OMX_ERRORTYPE OMXVideoDecoderH263::BuildHandlerList(void) {
     OMXVideoDecoderBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoH263, GetParamVideoH263, SetParamVideoH263);
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer),GetNativeBufferMode,SetNativeBufferMode);
+    AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoH263ProfileLevel, SetParamVideoH263ProfileLevel);
     return OMX_ErrorNone;
 }
 
@@ -134,6 +135,22 @@ OMX_ERRORTYPE OMXVideoDecoderH263::SetNativeBufferMode(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
+OMX_ERRORTYPE OMXVideoDecoderH263::GetParamVideoH263ProfileLevel(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_PARAM_PROFILELEVELTYPE *p = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)pStructure;
+    CHECK_TYPE_HEADER(p);
+    CHECK_ENUMERATION_RANGE(p->nProfileIndex,1);
+
+    p->eProfile = mParamH263.eProfile;
+    p->eLevel = mParamH263.eLevel;
+
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoDecoderH263::SetParamVideoH263ProfileLevel(OMX_PTR pStructure) {
+    LOGW("SetParamVideoH263ProfileLevel is not supported.");
+    return OMX_ErrorUnsupportedSetting;
+}
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.H263", "video_decoder.h263", OMXVideoDecoderH263);
 

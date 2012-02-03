@@ -23,6 +23,7 @@
 static const char *AVC_MIME_TYPE = "video/h264";
 
 OMXVideoEncoderAVC::OMXVideoEncoderAVC() {
+    LOGV("OMXVideoEncoderAVC::OMXVideoEncoderAVC");
     BuildHandlerList();
     mVideoEncoder = createVideoEncoder(AVC_MIME_TYPE);
     if (!mVideoEncoder) LOGE("OMX_ErrorInsufficientResources");
@@ -32,6 +33,7 @@ OMXVideoEncoderAVC::OMXVideoEncoderAVC() {
 }
 
 OMXVideoEncoderAVC::~OMXVideoEncoderAVC() {
+    LOGV("OMXVideoEncoderAVC::~OMXVideoEncoderAVC");
     if(mAVCParams) {
         delete mAVCParams;
         mAVCParams = NULL;
@@ -44,14 +46,14 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     SetTypeHeader(&mParamAvc, sizeof(mParamAvc));
     mParamAvc.nPortIndex = OUTPORT_INDEX;
     mParamAvc.eProfile = OMX_VIDEO_AVCProfileBaseline;
-    mParamAvc.eLevel = OMX_VIDEO_AVCLevel1;
+    mParamAvc.eLevel = OMX_VIDEO_AVCLevel41;
 
     // OMX_NALSTREAMFORMATTYPE
     memset(&mNalStreamFormat, 0, sizeof(mNalStreamFormat));
     SetTypeHeader(&mNalStreamFormat, sizeof(mNalStreamFormat));
     mNalStreamFormat.nPortIndex = OUTPORT_INDEX;
     // TODO: check if this is desired Nalu Format
-    // mNalStreamFormat.eNaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
+    //mNalStreamFormat.eNaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
     mNalStreamFormat.eNaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
     // OMX_VIDEO_CONFIG_AVCINTRAPERIOD
     memset(&mConfigAvcIntraPeriod, 0, sizeof(mConfigAvcIntraPeriod));
@@ -461,12 +463,14 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::GetParamNalStreamFormat(OMX_PTR pStructure) {
 }
 
 OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamNalStreamFormat(OMX_PTR pStructure) {
+
+    LOGV("SetParamNalStreamFormat start");
     OMX_ERRORTYPE ret;
     OMX_NALSTREAMFORMATTYPE *p = (OMX_NALSTREAMFORMATTYPE *)pStructure;
 
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
-
+    LOGV("Current eNaluFormat is %d\n", mNalStreamFormat.eNaluFormat);
     LOGV("p->eNaluFormat =%d\n",p->eNaluFormat);
     if(p->eNaluFormat != OMX_NaluFormatStartCodes &&
             p->eNaluFormat != OMX_NaluFormatStartCodesSeparateFirstHeader &&
@@ -476,6 +480,8 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamNalStreamFormat(OMX_PTR pStructure) {
         return OMX_ErrorUnsupportedSetting;
     }
     mNalStreamFormat.eNaluFormat = p->eNaluFormat;
+    LOGV("Set eNaluFormat to %d\n", mNalStreamFormat.eNaluFormat);
+    LOGV("SetParamNalStreamFormat end");
     return OMX_ErrorNone;
 }
 

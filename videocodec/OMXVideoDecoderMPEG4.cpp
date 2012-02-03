@@ -83,6 +83,7 @@ OMX_ERRORTYPE OMXVideoDecoderMPEG4::BuildHandlerList(void) {
     OMXVideoDecoderBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoMpeg4, GetParamVideoMpeg4, SetParamVideoMpeg4);
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer),GetNativeBufferMode,SetNativeBufferMode);
+    AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoMpeg4ProfileLevel, SetParamVideoMpeg4ProfileLevel);
     return OMX_ErrorNone;
 }
 
@@ -133,6 +134,22 @@ OMX_ERRORTYPE OMXVideoDecoderMPEG4::SetNativeBufferMode(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
+OMX_ERRORTYPE OMXVideoDecoderMPEG4::GetParamVideoMpeg4ProfileLevel(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_PARAM_PROFILELEVELTYPE *p = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)pStructure;
+    CHECK_TYPE_HEADER(p);
+    CHECK_ENUMERATION_RANGE(p->nProfileIndex,1);
+
+    p->eProfile = mParamMpeg4.eProfile;
+    p->eLevel = mParamMpeg4.eLevel;
+
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoDecoderMPEG4::SetParamVideoMpeg4ProfileLevel(OMX_PTR pStructure) {
+    LOGW("SetParamVideoMpeg4ProfileLevel is not supported.");
+    return OMX_ErrorUnsupportedSetting;
+}
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.MPEG4", "video_decoder.mpeg4", OMXVideoDecoderMPEG4);
 
