@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-#define LOG_NDEBUG 0
+//#define LOG_NDEBUG 0
 #define LOG_TAG "OMXVideoDecoderBase"
 #include <utils/Log.h>
 #include "OMXVideoDecoderBase.h"
@@ -372,8 +372,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
                 TranslateDecodeStatus(status);
 
                 ((*pBuffers[OUTPORT_INDEX]))->nFilledLen = 0;
-                retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
-                return OMX_ErrorNone;
+
+                // Do not return, and try to drain the output queue
+                // retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+                // return OMX_ErrorNone;
             }
         }
     }
