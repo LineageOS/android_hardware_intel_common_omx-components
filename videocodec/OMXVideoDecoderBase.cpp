@@ -363,6 +363,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
             LOGW("Decoder returns DECODE_NO_REFERENCE.");
             retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
             return OMX_ErrorNone;
+        } else if (status == DECODE_MULTIPLE_FRAME){
+            (*pBuffers[INPORT_INDEX])->nOffset += decodeBuffer.offSet;
+            (*pBuffers[INPORT_INDEX])->nTimeStamp = decodeBuffer.nextTimeStamp;
+            (*pBuffers[INPORT_INDEX])->nFilledLen -= decodeBuffer.offSet;
+            retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+            LOGV("Find multiple frame in a buffer, next frame offset =%d, timestamp=%lld", (*pBuffers[INPORT_INDEX])->nOffset, (*pBuffers[INPORT_INDEX])->nTimeStamp);
         }
         else if (status != DECODE_SUCCESS && status != DECODE_FRAME_DROPPED) {
             if (checkFatalDecoderError(status)) {
