@@ -201,7 +201,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorDeinit(void) {
     //pthread_mutex_lock(&mSerializationLock);
     mVideoDecoder->stop();
     //pthread_mutex_unlock(&mSerializationLock);
-
+    mOMXBufferHeaderTypePtrNum = 0;
+    mGraphicBuffercolorformat = 0;
+    mGraphicBufferStride = 0;
     return OMXComponentCodecBase::ProcessorDeinit();
 }
 
