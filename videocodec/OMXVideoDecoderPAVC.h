@@ -42,7 +42,6 @@ protected:
    DECLARE_HANDLER(OMXVideoDecoderPAVC, ParamVideoAvc);
    DECLARE_HANDLER(OMXVideoDecoderPAVC, VideoProfileLevelQuerySupported);
    DECLARE_HANDLER(OMXVideoDecoderPAVC, VideoProfileLevelCurrent);
-   DECLARE_HANDLER(OMXVideoDecoderPAVC, NativeBufferMode);
 
 
 private:

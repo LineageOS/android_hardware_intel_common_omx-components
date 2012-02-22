@@ -41,7 +41,6 @@ protected:
 
    virtual OMX_ERRORTYPE BuildHandlerList(void);
    DECLARE_HANDLER(OMXVideoDecoderMPEG4, ParamVideoMpeg4);
-   DECLARE_HANDLER(OMXVideoDecoderMPEG4,NativeBufferMode);
    DECLARE_HANDLER(OMXVideoDecoderMPEG4, ParamVideoMpeg4ProfileLevel);
 
 private:

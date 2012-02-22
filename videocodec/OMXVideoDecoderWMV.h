@@ -41,7 +41,6 @@ protected:
 
    virtual OMX_ERRORTYPE BuildHandlerList(void);
    DECLARE_HANDLER(OMXVideoDecoderWMV, ParamVideoWmv);
-   DECLARE_HANDLER(OMXVideoDecoderWMV, NativeBufferMode);
 
 private:
     enum {

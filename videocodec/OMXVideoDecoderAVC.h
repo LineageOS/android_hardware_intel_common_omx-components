@@ -41,7 +41,6 @@ protected:
    virtual OMX_ERRORTYPE BuildHandlerList(void);
    DECLARE_HANDLER(OMXVideoDecoderAVC, ParamVideoAvc);
    DECLARE_HANDLER(OMXVideoDecoderAVC, ParamIntelAVCDecodeSettings);
-   DECLARE_HANDLER(OMXVideoDecoderAVC,NativeBufferMode);
    DECLARE_HANDLER(OMXVideoDecoderAVC, ParamVideoAVCProfileLevel);
 
 private:
@@ -62,6 +61,9 @@ private:
         // extra number of reference frame to allocate for video conferencing use case.
         // total number of reference frame allocated by default  in video conferencing use case is 10.
         EXTRA_REFERENCE_FRAME = 6,
+
+        // max DBP + EXTRA_REFERENCE_FRAME + 1
+        OUTPORT_NATIVE_BUFFER_COUNT = 23,
     };
 
     OMX_VIDEO_PARAM_AVCTYPE mParamAvc;

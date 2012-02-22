@@ -80,7 +80,6 @@ OMX_ERRORTYPE OMXVideoDecoderWMV::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buff
 OMX_ERRORTYPE OMXVideoDecoderWMV::BuildHandlerList(void) {
     OMXVideoDecoderBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoWmv, GetParamVideoWmv, SetParamVideoWmv);
-    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer),GetNativeBufferMode,SetNativeBufferMode);
     return OMX_ErrorNone;
 }
 
@@ -105,33 +104,6 @@ OMX_ERRORTYPE OMXVideoDecoderWMV::SetParamVideoWmv(OMX_PTR pStructure) {
     memcpy(&mParamWmv, p, sizeof(mParamWmv));
     return OMX_ErrorNone;
 }
-
-
-
-OMX_ERRORTYPE OMXVideoDecoderWMV::GetNativeBufferMode(OMX_PTR pStructure) {
-    OMX_ERRORTYPE ret;
-    return OMX_ErrorNone; //would not be here
-}
-
-#define MAX_OUTPUT_BUFFER_COUNT_FOR_WMV 10
-OMX_ERRORTYPE OMXVideoDecoderWMV::SetNativeBufferMode(OMX_PTR pStructure) {
-    //OMX_ERRORTYPE ret;
-    //EnableAndroidNativeBuffersParams *param = (EnableAndroidNativeBuffersParams*)pStructure;
-    //CHECK_TYPE_HEADER(param);
-    CHECK_SET_PARAM_STATE();
-    mNativeBufferMode = true;
-    PortVideo *port = NULL;
-    port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
-    OMX_PARAM_PORTDEFINITIONTYPE port_def;
-    memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
-    port_def.nBufferCountMin = 1;
-    port_def.nBufferCountActual = MAX_OUTPUT_BUFFER_COUNT_FOR_WMV;
-    port_def.format.video.cMIMEType = (OMX_STRING)"video/raw_ve";
-    port_def.format.video.eColorFormat =static_cast<OMX_COLOR_FORMATTYPE>(0x7FA00EFF) ;//
-    port->SetPortDefinition(&port_def,true);
-    return OMX_ErrorNone;
-}
-
 
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.WMV", "video_decoder.wmv", OMXVideoDecoderWMV);

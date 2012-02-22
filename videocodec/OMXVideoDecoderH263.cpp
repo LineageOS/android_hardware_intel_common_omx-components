@@ -82,7 +82,6 @@ OMX_ERRORTYPE OMXVideoDecoderH263::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buf
 OMX_ERRORTYPE OMXVideoDecoderH263::BuildHandlerList(void) {
     OMXVideoDecoderBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoH263, GetParamVideoH263, SetParamVideoH263);
-    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer),GetNativeBufferMode,SetNativeBufferMode);
     AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoH263ProfileLevel, SetParamVideoH263ProfileLevel);
     return OMX_ErrorNone;
 }
@@ -107,31 +106,6 @@ OMX_ERRORTYPE OMXVideoDecoderH263::SetParamVideoH263(OMX_PTR pStructure) {
     // TODO: do we need to check if port is enabled?
     // TODO: see SetPortH263Param implementation - Can we make simple copy????
     memcpy(&mParamH263, p, sizeof(mParamH263));
-    return OMX_ErrorNone;
-}
-
-OMX_ERRORTYPE OMXVideoDecoderH263::GetNativeBufferMode(OMX_PTR pStructure) {
-     OMX_ERRORTYPE ret;
-     return OMX_ErrorNone; //would not be here
-}
-
-#define MAX_OUTPUT_BUFFER_COUNT_FOR_H263 10
-
-OMX_ERRORTYPE OMXVideoDecoderH263::SetNativeBufferMode(OMX_PTR pStructure) {
-    OMX_ERRORTYPE ret;
-    CHECK_SET_PARAM_STATE();
-    //EnableAndroidNativeBuffersParams *param = (EnableAndroidNativeBuffersParams*)pStructure;
-    //CHECK_TYPE_HEADER(param);
-    mNativeBufferMode = true;
-    PortVideo *port = NULL;
-    port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
-    OMX_PARAM_PORTDEFINITIONTYPE port_def;
-    memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
-    port_def.nBufferCountMin = 1;
-    port_def.nBufferCountActual = MAX_OUTPUT_BUFFER_COUNT_FOR_H263;
-    port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
-    port_def.format.video.eColorFormat =static_cast<OMX_COLOR_FORMATTYPE>(VA_VED_COLOR_FORMAT) ;//
-    port->SetPortDefinition(&port_def,true);
     return OMX_ErrorNone;
 }
 

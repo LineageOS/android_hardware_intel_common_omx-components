@@ -50,12 +50,12 @@ protected:
             buffer_retain_t *retains,
             OMX_U32 numberBuffers);
 
-    virtual OMX_ERRORTYPE PreProcessBuffer(OMX_BUFFERHEADERTYPE* buffer);
-    virtual OMX_ERRORTYPE PreProcessBufferQueue_Locked();
+    virtual bool IsAllBufferAvailable(void);
+    virtual OMX_ERRORTYPE ProcessorPreFillBuffer(OMX_BUFFERHEADERTYPE* buffer);
     virtual OMX_ERRORTYPE ProcessorPreFreeBuffer(OMX_U32 nPortIndex,OMX_BUFFERHEADERTYPE * pBuffer);
     virtual OMX_ERRORTYPE PrepareConfigBuffer(VideoConfigBuffer *p);
     virtual OMX_ERRORTYPE PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
-    virtual OMX_ERRORTYPE FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer, OMX_U32 inportBufferFlags);
+    virtual OMX_ERRORTYPE FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer,  buffer_retain_t *retain, OMX_U32 inportBufferFlags);
     virtual OMX_ERRORTYPE HandleFormatChange(void);
     virtual OMX_ERRORTYPE TranslateDecodeStatus(Decode_Status status);
     virtual OMX_ERRORTYPE MapRawNV12(const VideoRenderBuffer* renderBuffer, OMX_U8 *rawData, OMX_U32& size);
@@ -65,6 +65,7 @@ protected:
     DECLARE_HANDLER(OMXVideoDecoderBase, CapabilityFlags);
     DECLARE_HANDLER(OMXVideoDecoderBase, NativeBufferUsage);
     DECLARE_HANDLER(OMXVideoDecoderBase, NativeBuffer);
+    DECLARE_HANDLER(OMXVideoDecoderBase, NativeBufferMode);
 
 private:
     enum {
@@ -77,6 +78,8 @@ private:
         OUTPORT_MIN_BUFFER_COUNT = 1,
         OUTPORT_ACTUAL_BUFFER_COUNT = 4,
         OUTPORT_BUFFER_SIZE = 1382400,
+
+        OUTPORT_NATIVE_BUFFER_COUNT = 10,
     };
     uint32_t mOMXBufferHeaderTypePtrNum;
     OMX_BUFFERHEADERTYPE *mOMXBufferHeaderTypePtrArray[MAX_GRAPHIC_NUM];
@@ -86,6 +89,7 @@ private:
 protected:
     IVideoDecoder *mVideoDecoder;
     bool mNativeBufferMode;
+    int  mNativeBufferCount;
 };
 
 #endif /* OMX_VIDEO_DECODER_BASE_H_ */
