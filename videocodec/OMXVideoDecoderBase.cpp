@@ -30,7 +30,8 @@ OMXVideoDecoderBase::OMXVideoDecoderBase()
       mNativeBufferCount(OUTPORT_NATIVE_BUFFER_COUNT),
       mOMXBufferHeaderTypePtrNum(0),
       mGraphicBuffercolorformat(0),
-      mGraphicBufferStride(0) {
+      mGraphicBufferStride(0),
+      mRotationDegrees(0) {
 }
 
 OMXVideoDecoderBase::~OMXVideoDecoderBase() {
@@ -205,6 +206,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorDeinit(void) {
     mOMXBufferHeaderTypePtrNum = 0;
     mGraphicBuffercolorformat = 0;
     mGraphicBufferStride = 0;
+    mRotationDegrees = 0;
     return OMXComponentCodecBase::ProcessorDeinit();
 }
 
@@ -402,6 +404,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
         }
 
     }
+    p->rotationDegrees = mRotationDegrees;
     p->width = paramPortDefinitionInput->format.video.nFrameWidth;
     p->height = paramPortDefinitionInput->format.video.nFrameHeight;
     return OMX_ErrorNone;
@@ -603,9 +606,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::BuildHandlerList(void) {
     OMXComponentCodecBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoPortFormat, GetParamVideoPortFormat, SetParamVideoPortFormat);
     //AddHandler(PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX, GetCapabilityFlags, SetCapabilityFlags); 
-    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtGetNativeBufferUsage),GetNativeBufferUsage,SetNativeBufferUsage);
-    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtUseNativeBuffer),GetNativeBuffer,SetNativeBuffer);
-    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer),GetNativeBufferMode,SetNativeBufferMode);
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtGetNativeBufferUsage), GetNativeBufferUsage, SetNativeBufferUsage);
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtUseNativeBuffer), GetNativeBuffer, SetNativeBuffer);
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer), GetNativeBufferMode, SetNativeBufferMode);
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtRotationDegrees), GetDecoderRotation, SetDecoderRotation);
 
     return OMX_ErrorNone;
 }
@@ -705,6 +709,21 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
      port->SetPortDefinition(&port_def,true);
 
      return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderRotation(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    return OMX_ErrorBadParameter;
+}
+OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderRotation(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    CHECK_SET_PARAM_STATE();
+    int32_t rotationDegrees = 0;
+
+    rotationDegrees = *(static_cast<int32_t*>(pStructure));
+    mRotationDegrees = rotationDegrees;
+
+    return OMX_ErrorNone;
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuffer, OMX_U8 *rawData, OMX_U32& size) {

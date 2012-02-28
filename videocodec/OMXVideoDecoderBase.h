@@ -66,6 +66,7 @@ protected:
     DECLARE_HANDLER(OMXVideoDecoderBase, NativeBufferUsage);
     DECLARE_HANDLER(OMXVideoDecoderBase, NativeBuffer);
     DECLARE_HANDLER(OMXVideoDecoderBase, NativeBufferMode);
+    DECLARE_HANDLER(OMXVideoDecoderBase, DecoderRotation);
 
 private:
     enum {
@@ -85,6 +86,7 @@ private:
     OMX_BUFFERHEADERTYPE *mOMXBufferHeaderTypePtrArray[MAX_GRAPHIC_NUM];
     uint32_t mGraphicBufferStride;
     uint32_t mGraphicBuffercolorformat;
+    uint32_t mRotationDegrees;
 
 protected:
     IVideoDecoder *mVideoDecoder;
