@@ -40,10 +40,10 @@ protected:
 
     virtual OMX_ERRORTYPE ProcessorInit(void);
     virtual OMX_ERRORTYPE ProcessorDeinit(void);
-    //virtual OMX_ERRORTYPE ProcessorStart(void);
+    virtual OMX_ERRORTYPE ProcessorStart(void);
     virtual OMX_ERRORTYPE ProcessorStop(void);
-    //virtual OMX_ERRORTYPE ProcessorPause(void);
-    //virtual OMX_ERRORTYPE ProcessorResume(void);
+    virtual OMX_ERRORTYPE ProcessorPause(void);
+    virtual OMX_ERRORTYPE ProcessorResume(void);
     virtual OMX_ERRORTYPE ProcessorFlush(OMX_U32 portIndex);
     virtual OMX_ERRORTYPE ProcessorProcess(
             OMX_BUFFERHEADERTYPE ***pBuffers,
@@ -84,7 +84,7 @@ private:
         OUTPORT_NATIVE_BUFFER_COUNT = 10,
     };
     uint32_t mOMXBufferHeaderTypePtrNum;
-    OMX_BUFFERHEADERTYPE *mOMXBufferHeaderTypePtrArray[MAX_GRAPHIC_NUM];
+    OMX_BUFFERHEADERTYPE *mOMXBufferHeaderTypePtrArray[MAX_GRAPHIC_BUFFER_NUM];
     struct GraphicBufferParam {
         uint32_t graphicBufferStride;
         uint32_t graphicBufferWidth;

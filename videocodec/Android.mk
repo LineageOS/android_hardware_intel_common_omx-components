@@ -247,4 +247,38 @@ LOCAL_MODULE := libOMXVideoDecoderPAVC
 include $(BUILD_SHARED_LIBRARY)
 
 
+include $(CLEAR_VARS)
+
+LOCAL_CPPFLAGS :=
+LOCAL_LDFLAGS :=
+
+LOCAL_SHARED_LIBRARIES := \
+    libwrs_omxil_common \
+    libva_videodecoder \
+    liblog \
+    libva \
+    libva-android \
+    libsepdrm
+
+LOCAL_C_INCLUDES := \
+    $(WRS_OMXIL_CORE_ROOT)/utils/inc \
+    $(WRS_OMXIL_CORE_ROOT)/base/inc \
+    $(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+    $(PV_INCLUDES) \
+    $(TARGET_OUT_HEADERS)/libmix_videodecoder \
+    $(TARGET_OUT_HEADERS)/libva \
+    $(TARGET_OUT_HEADERS)/libsepdrm
+
+LOCAL_SRC_FILES := \
+    OMXComponentCodecBase.cpp\
+    OMXVideoDecoderBase.cpp\
+    OMXVideoDecoderAVCSecure.cpp
+
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE := libOMXVideoDecoderAVCSecure
+include $(BUILD_SHARED_LIBRARY)
+
+
+
+
 endif

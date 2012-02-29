@@ -16,7 +16,7 @@
 
 
 //#define LOG_NDEBUG 0
-#define LOG_TAG "OMXVideoDecoderPAVC"
+#define LOG_TAG "OMXVideoDecoder"
 #include <utils/Log.h>
 #include "OMXVideoDecoderPAVC.h"
 
