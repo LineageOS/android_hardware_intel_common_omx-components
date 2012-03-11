@@ -741,30 +741,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuf
         return OMX_ErrorUndefined;
     }
 
-    vaImage.image_id = VA_INVALID_ID;
-    // driver currently only supports NV12 and IYUV format.
-    // byte_order information is from driver  and hard-coded here
-    imageFormat.fourcc = VA_FOURCC_NV12;
-    imageFormat.byte_order = VA_LSB_FIRST;
-    imageFormat.bits_per_pixel = 16;
-    vaStatus = vaCreateImage(
-        renderBuffer->display,
-        &imageFormat,
-        width,
-        height,
-        &vaImage);
-    if (vaStatus != VA_STATUS_SUCCESS) {
-        return OMX_ErrorUndefined;
-    }
-
-    vaStatus = vaGetImage(
-        renderBuffer->display,
-        renderBuffer->surface,
-        0,
-        0,
-        vaImage.width,
-        vaImage.height,
-        vaImage.image_id);
+    vaStatus = vaDeriveImage(renderBuffer->display, renderBuffer->surface,&vaImage);
     if (vaStatus != VA_STATUS_SUCCESS) {
         return OMX_ErrorUndefined;
     }
@@ -782,22 +759,30 @@ OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuf
         uint8_t *src = (uint8_t*)pBuf;
         uint8_t *dst = rawData;
         int32_t row = 0;
-        for (row = 0; row < height; row++) {
+        for (row = height; row != 0 ; row--) {
             memcpy(dst, src, width);
             dst += width;
             src += vaImage.pitches[0];
         }
         // copy interleaved V and  U data
         src = (uint8_t*)pBuf + vaImage.offsets[1];
-        for (row = 0; row < height/2; row++) {
+        for (row = height/2; row != 0 ; row--) {
             memcpy(dst, src, width);
             dst += width;
             src += vaImage.pitches[1];
         }
     }
-    // TODO: image may not get destroyed if error happens.
-    if (vaImage.image_id != VA_INVALID_ID) {
-        vaDestroyImage(renderBuffer->display, vaImage.image_id);
+
+    vaStatus = vaUnmapBuffer(renderBuffer->display, vaImage.buf);
+    if (vaStatus != VA_STATUS_SUCCESS) {
+        LOGE("vaUnmapBuffer: error=%d",vaStatus);
+        return OMX_ErrorUndefined;
+    }
+
+    vaStatus = vaDestroyImage(renderBuffer->display, vaImage.image_id);
+    if (vaStatus != VA_STATUS_SUCCESS) {
+        LOGE("vaDestroyImage: error=%d",vaStatus);
+        return OMX_ErrorUndefined;
     }
     return OMX_ErrorNone;
 }
