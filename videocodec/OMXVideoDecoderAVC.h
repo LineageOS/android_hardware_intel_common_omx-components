@@ -46,6 +46,8 @@ protected:
 private:
     inline OMX_ERRORTYPE AccumulateBuffer(OMX_BUFFERHEADERTYPE *buffer);
     inline OMX_ERRORTYPE FillDecodeBuffer(VideoDecodeBuffer *p);
+    OMX_U32 GetDPBSize(OMX_U32 level, OMX_U32 picWidth, OMX_U32 picHeight);
+    void CalculateBufferCount();
 
 private:
     enum {
