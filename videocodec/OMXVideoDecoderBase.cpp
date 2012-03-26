@@ -347,6 +347,15 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
     // drain the decoder output queue when in EOS state and fill the render buffer
     ret = FillRenderBuffer(pBuffers[OUTPORT_INDEX], &retains[OUTPORT_INDEX], ((*pBuffers[INPORT_INDEX]))->nFlags);
 
+    bool inputEoS = ((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS);
+    bool outputEoS = ((*pBuffers[OUTPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS);
+    //if output port is not eos, retain the input buffer until all the output buffers are drained.
+    if (inputEoS && !outputEoS) {
+        retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+        // the input buffer is retained for draining purpose.set nFilledLen to 0 so buffer will not be decoded again.
+        (*pBuffers[INPORT_INDEX])->nFilledLen = 0;
+    }
+
     if (ret == OMX_ErrorNotReady) {
         retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
         ret = OMX_ErrorNone;
@@ -467,7 +476,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
     if (renderBuffer == NULL) {
         buffer->nFilledLen = 0;
         if (draining) {
-            LOGI("EOS received");
+            LOGI("output EOS received");
             buffer->nFlags = OMX_BUFFERFLAG_EOS;
             return OMX_ErrorNone;
         }
