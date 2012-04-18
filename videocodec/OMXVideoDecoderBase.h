@@ -49,7 +49,7 @@ protected:
             OMX_BUFFERHEADERTYPE ***pBuffers,
             buffer_retain_t *retains,
             OMX_U32 numberBuffers);
-
+    virtual OMX_ERRORTYPE ProcessorReset(void);
     virtual bool IsAllBufferAvailable(void);
     virtual OMX_ERRORTYPE ProcessorPreFillBuffer(OMX_BUFFERHEADERTYPE* buffer);
     virtual OMX_ERRORTYPE ProcessorPreFreeBuffer(OMX_U32 nPortIndex,OMX_BUFFERHEADERTYPE * pBuffer);
@@ -67,6 +67,7 @@ protected:
     DECLARE_HANDLER(OMXVideoDecoderBase, NativeBuffer);
     DECLARE_HANDLER(OMXVideoDecoderBase, NativeBufferMode);
     DECLARE_HANDLER(OMXVideoDecoderBase, DecoderRotation);
+    DECLARE_HANDLER(OMXVideoDecoderBase, DecoderOutputCrop);
 
 private:
     enum {
@@ -84,8 +85,13 @@ private:
     };
     uint32_t mOMXBufferHeaderTypePtrNum;
     OMX_BUFFERHEADERTYPE *mOMXBufferHeaderTypePtrArray[MAX_GRAPHIC_NUM];
-    uint32_t mGraphicBufferStride;
-    uint32_t mGraphicBuffercolorformat;
+    struct GraphicBufferParam {
+        uint32_t graphicBufferStride;
+        uint32_t graphicBufferWidth;
+        uint32_t graphicBufferHeight;
+        uint32_t graphicBufferColorFormat;
+    };
+    GraphicBufferParam mGraphicBufferParam;
     uint32_t mRotationDegrees;
 
 protected:
