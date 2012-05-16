@@ -525,7 +525,8 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
         }
          buffer->nFilledLen = sizeof(OMX_U8*);
     } else {
-        MapRawNV12(renderBuffer, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
+        OMX_ERRORTYPE  ret = MapRawNV12(renderBuffer, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
+        CHECK_RETURN_VALUE("MapRawNV12");
         buffer->pPlatformPrivate = (void *)renderBuffer;
     }
 
@@ -797,8 +798,6 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderOutputCrop(OMX_PTR pStructure) {
     return OMX_ErrorUnsupportedSetting;
 }
 
-
-
 OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuffer, OMX_U8 *rawData, OMX_U32& size) {
 
     VAStatus vaStatus;
@@ -811,18 +810,24 @@ OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuf
 
     vaStatus = vaSyncSurface(renderBuffer->display, renderBuffer->surface);
     if (vaStatus != VA_STATUS_SUCCESS) {
-        return OMX_ErrorUndefined;
+        LOGE("vaSyncSurface failed. Error = %#x", vaStatus);
+        return OMX_ErrorHardware;
     }
 
-    vaStatus = vaDeriveImage(renderBuffer->display, renderBuffer->surface,&vaImage);
+    vaStatus = vaDeriveImage(renderBuffer->display, renderBuffer->surface, &vaImage);
     if (vaStatus != VA_STATUS_SUCCESS) {
-        return OMX_ErrorUndefined;
+        LOGW("vaDeriveImage failed. Error = %#x. A faked image is returned.", vaStatus);
+        int sizeY = width * height;
+        memset(rawData, 16, sizeY);
+        memset(rawData + sizeY, 128, sizeY/2);
+        return OMX_ErrorNone;
     }
 
     void *pBuf = NULL;
     vaStatus = vaMapBuffer(renderBuffer->display, vaImage.buf, &pBuf);
     if (vaStatus != VA_STATUS_SUCCESS) {
-        return OMX_ErrorUndefined;
+        LOGE("vaMapBuffer failed. Error = %#x", vaStatus);
+        return OMX_ErrorHardware;
     }
 
     if (size == (int32_t)vaImage.data_size) {
@@ -848,14 +853,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuf
 
     vaStatus = vaUnmapBuffer(renderBuffer->display, vaImage.buf);
     if (vaStatus != VA_STATUS_SUCCESS) {
-        LOGE("vaUnmapBuffer: error=%d",vaStatus);
-        return OMX_ErrorUndefined;
+        LOGW("vaUnmapBuffer failed. Error = %#x", vaStatus);
     }
 
     vaStatus = vaDestroyImage(renderBuffer->display, vaImage.image_id);
     if (vaStatus != VA_STATUS_SUCCESS) {
-        LOGE("vaDestroyImage: error=%d",vaStatus);
-        return OMX_ErrorUndefined;
+        LOGW("vaDestroyImage failed. Error = %#x", vaStatus);
     }
     return OMX_ErrorNone;
 }
