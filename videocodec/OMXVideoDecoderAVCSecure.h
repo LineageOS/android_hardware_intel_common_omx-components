@@ -76,6 +76,8 @@ private:
     } mIMRSlot[INPORT_ACTUAL_BUFFER_COUNT];
 
     timer_t mKeepAliveTimer;
+
+    bool mSessionPaused;
 };
 
 #endif /* OMX_VIDEO_DECODER_AVC_SECURE_H_ */
