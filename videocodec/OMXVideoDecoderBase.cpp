@@ -277,12 +277,13 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorPreFreeBuffer(OMX_U32 nPortIndex, OM
     if (mNativeBufferMode && buffer->nOutputPortIndex == OUTPORT_INDEX){
         Decode_Status status;
         if(mVideoDecoder == NULL){
-            LOGE("PreProcessBuffer: Video decoder is not created");
+            LOGW("ProcessorPreFillBuffer: Video decoder is not created");
             return OMX_ErrorDynamicResourcesUnavailable;
         }
         status = mVideoDecoder->signalRenderDone(buffer->pBuffer);
 
         if (status != DECODE_SUCCESS) {
+            LOGW("ProcessorPreFillBuffer:: signalRenderDone return error");
             return TranslateDecodeStatus(status);
         }
     } else if (buffer->pPlatformPrivate && buffer->nOutputPortIndex == OUTPORT_INDEX){
@@ -746,7 +747,16 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBufferMode(OMX_PTR pStructure) {
 
 OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
      OMX_ERRORTYPE ret;
+     EnableAndroidNativeBuffersParams *param = (EnableAndroidNativeBuffersParams*)pStructure;
+
+     CHECK_TYPE_HEADER(param);
+     CHECK_PORT_INDEX_RANGE(param);
      CHECK_SET_PARAM_STATE();
+
+     if (!param->enable) {
+        mNativeBufferMode = false;
+        return OMX_ErrorNone;
+     }
      mNativeBufferMode = true;
      PortVideo *port = NULL;
      port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
