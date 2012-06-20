@@ -113,11 +113,21 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetVideoEncoderParam(void) {
 
     mVideoEncoder->getParameters(mEncoderParams);
     mEncoderParams->profile = (VAProfile)VAProfileH264Baseline;
+    // 0 - all luma and chroma block edges of the slice are filtered
+    // 1 - deblocking is disabled for all block edges of the slice
+    // 2 - all luma and chroma block edges of the slice are filtered
+    // with exception of the block edges that coincide with slice boundaries
+    mEncoderParams->disableDeblocking = 0;
     OMXVideoEncoderBase::SetVideoEncoderParam();
 
     mVideoEncoder->getParameters(mAVCParams);
     if(mParamIntelAvcVui.bVuiGeneration == OMX_TRUE) {
         mAVCParams->VUIFlag = 1;
+    }
+    // For resolution below VGA, single core can hit the performance target and provide VQ gain
+    if (mEncoderParams->resolution.width <= 640 && mEncoderParams->resolution.height <= 480) {
+        mConfigIntelSliceNumbers.nISliceNumber = 1;
+        mConfigIntelSliceNumbers.nPSliceNumber = 1;
     }
     mAVCParams->sliceNum.iSliceNum = mConfigIntelSliceNumbers.nISliceNumber;
     mAVCParams->sliceNum.pSliceNum = mConfigIntelSliceNumbers.nPSliceNumber;
@@ -125,6 +135,18 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetVideoEncoderParam(void) {
     mAVCParams->maxSliceSize = mConfigNalSize.nNaluBytes * 8;
     ret = mVideoEncoder ->setParameters(mAVCParams);
     CHECK_ENCODE_STATUS("setParameters");
+
+    VideoConfigAVCIntraPeriod avcIntraPreriod;
+    avcIntraPreriod.idrInterval = mConfigAvcIntraPeriod.nIDRPeriod;
+    // hardcode intra period for AVC encoder, get value from OMX_VIDEO_PARAM_AVCTYPE.nPFrames or
+    // OMX_VIDEO_CONFIG_AVCINTRAPERIOD.nPFrames is a more flexible method
+    if (mParamAvc.nPFrames == 0) {
+        avcIntraPreriod.intraPeriod = 0;
+    } else {
+        avcIntraPreriod.intraPeriod = 30;
+    }
+    ret = mVideoEncoder->setConfig(&avcIntraPreriod);
+    CHECK_ENCODE_STATUS("setConfig");
 
     LOGV("VUIFlag = %d\n", mAVCParams->VUIFlag);
     LOGV("sliceNum.iSliceNum = %d\n", mAVCParams->sliceNum.iSliceNum);
