@@ -9,10 +9,6 @@ PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/wrs_omxil_components.list:system/etc/wrs_omxil_components.list
 #$(call add-prebuilt-files, ETC, wrs_omxil_components.list)
 
-WRS_OMXIL_CORE_ROOT := hardware/intel/wrs_omxil_core
-
-LIBVA_TOP := hardware/intel/libva
-
 # mrst sst audio
 #-include $(VENDORS_INTEL_MRST_COMPONENTS_ROOT)/sst/Android.mk
 

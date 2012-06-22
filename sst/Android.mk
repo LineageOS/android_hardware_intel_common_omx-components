@@ -18,9 +18,8 @@ LOCAL_SHARED_LIBRARIES := \
 	libmixaudio
 
 LOCAL_C_INCLUDES := \
-	$(WRS_OMXIL_CORE_ROOT)/utils/inc \
-	$(WRS_OMXIL_CORE_ROOT)/base/inc \
-	$(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+	$(TARGET_OUT_HEADERS)/wrs_omxil_core \
+	$(TARGET_OUT_HEADERS)/khronos/openmax \
 	$(PV_INCLUDES) \
 	$(TARGET_OUT_HEADERS)/libmixcommon \
 	$(TARGET_OUT_HEADERS)/libmixaudio

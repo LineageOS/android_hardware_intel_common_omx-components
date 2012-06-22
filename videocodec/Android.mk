@@ -15,9 +15,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_C_INCLUDES := \
-    $(WRS_OMXIL_CORE_ROOT)/utils/inc \
-    $(WRS_OMXIL_CORE_ROOT)/base/inc \
-    $(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva
@@ -45,9 +44,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_C_INCLUDES := \
-    $(WRS_OMXIL_CORE_ROOT)/utils/inc \
-    $(WRS_OMXIL_CORE_ROOT)/base/inc \
-    $(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva
@@ -74,9 +72,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_C_INCLUDES := \
-    $(WRS_OMXIL_CORE_ROOT)/utils/inc \
-    $(WRS_OMXIL_CORE_ROOT)/base/inc \
-    $(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva
@@ -104,9 +101,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_C_INCLUDES := \
-    $(WRS_OMXIL_CORE_ROOT)/utils/inc \
-    $(WRS_OMXIL_CORE_ROOT)/base/inc \
-    $(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva
@@ -136,9 +132,8 @@ LOCAL_SHARED_LIBRARIES := \
         libsharedbuffer
 
 LOCAL_C_INCLUDES := \
-    $(WRS_OMXIL_CORE_ROOT)/utils/inc \
-    $(WRS_OMXIL_CORE_ROOT)/base/inc \
-    $(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
     $(TARGET_OUT_HEADERS)/libsharedbuffer
@@ -169,9 +164,8 @@ LOCAL_SHARED_LIBRARIES := \
         libsharedbuffer
 
 LOCAL_C_INCLUDES := \
-    $(WRS_OMXIL_CORE_ROOT)/utils/inc \
-    $(WRS_OMXIL_CORE_ROOT)/base/inc \
-    $(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
     $(TARGET_OUT_HEADERS)/libsharedbuffer
@@ -201,9 +195,8 @@ LOCAL_SHARED_LIBRARIES := \
         libsharedbuffer
 
 LOCAL_C_INCLUDES := \
-    $(WRS_OMXIL_CORE_ROOT)/utils/inc \
-    $(WRS_OMXIL_CORE_ROOT)/base/inc \
-    $(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
     $(TARGET_OUT_HEADERS)/libsharedbuffer
@@ -230,9 +223,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_C_INCLUDES := \
-    $(WRS_OMXIL_CORE_ROOT)/utils/inc \
-    $(WRS_OMXIL_CORE_ROOT)/base/inc \
-    $(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva
@@ -261,9 +253,8 @@ LOCAL_SHARED_LIBRARIES := \
     libsepdrm
 
 LOCAL_C_INCLUDES := \
-    $(WRS_OMXIL_CORE_ROOT)/utils/inc \
-    $(WRS_OMXIL_CORE_ROOT)/base/inc \
-    $(WRS_OMXIL_CORE_ROOT)/core/inc/khronos/openmax/include \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
