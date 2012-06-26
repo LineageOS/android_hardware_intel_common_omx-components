@@ -96,7 +96,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     mParamBitrate.nTargetBitrate = 192000;
 
     // Override OMX_VIDEO_CONFIG_INTEL_BITRATETYPE
-    mConfigIntelBitrate.nInitialQP = 24;  // Initial QP for I frames
+    mConfigIntelBitrate.nInitialQP = 0;  // Initial QP for I frames
 
     return OMX_ErrorNone;
 }
