@@ -113,10 +113,20 @@ OMX_ERRORTYPE OMXVideoDecoderMPEG4::GetParamVideoMpeg4ProfileLevel(OMX_PTR pStru
     OMX_ERRORTYPE ret;
     OMX_VIDEO_PARAM_PROFILELEVELTYPE *p = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)pStructure;
     CHECK_TYPE_HEADER(p);
-    CHECK_ENUMERATION_RANGE(p->nProfileIndex,1);
 
-    p->eProfile = mParamMpeg4.eProfile;
-    p->eLevel = mParamMpeg4.eLevel;
+    struct ProfileLevelTable {
+        OMX_U32 profile;
+        OMX_U32 level;
+    } plTable[] = {
+        {OMX_VIDEO_MPEG4ProfileSimple, OMX_VIDEO_MPEG4Level3},
+        {OMX_VIDEO_MPEG4ProfileAdvancedSimple, OMX_VIDEO_MPEG4Level5}
+    };
+
+    OMX_U32 count = sizeof(plTable)/sizeof(ProfileLevelTable);
+    CHECK_ENUMERATION_RANGE(p->nProfileIndex,count);
+
+    p->eProfile = plTable[p->nProfileIndex].profile;
+    p->eLevel = plTable[p->nProfileIndex].level;
 
     return OMX_ErrorNone;
 }
