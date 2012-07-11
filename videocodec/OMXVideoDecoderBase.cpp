@@ -26,10 +26,10 @@ static const uint32_t VA_COLOR_FORMAT = 0x7FA00E00;
 
 OMXVideoDecoderBase::OMXVideoDecoderBase()
     : mVideoDecoder(NULL),
-      mNativeBufferMode(false),
       mNativeBufferCount(OUTPORT_NATIVE_BUFFER_COUNT),
       mOMXBufferHeaderTypePtrNum(0),
-      mRotationDegrees(0) {
+      mRotationDegrees(0),
+      mWorkingMode(RAWDATA_MODE) {
       memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
 }
 
@@ -194,14 +194,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorInit(void) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorReset(void) {
-    if (mNativeBufferMode) {
-        OMX_ERRORTYPE ret;
-        VideoConfigBuffer configBuffer;
-        // reset the configbuffer and set it to mix
-        ret = PrepareConfigBuffer(&configBuffer);
-        CHECK_RETURN_VALUE("PrepareConfigBuffer");
-        mVideoDecoder->reset(&configBuffer);
-    }
+    OMX_ERRORTYPE ret;
+    VideoConfigBuffer configBuffer;
+    // reset the configbuffer and set it to mix
+    ret = PrepareConfigBuffer(&configBuffer);
+    CHECK_RETURN_VALUE("PrepareConfigBuffer");
+    mVideoDecoder->reset(&configBuffer);
     return OMX_ErrorNone;
 }
 
@@ -261,7 +259,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorFlush(OMX_U32 portIndex) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorPreFreeBuffer(OMX_U32 nPortIndex, OMX_BUFFERHEADERTYPE * pBuffer) {
-    if (mNativeBufferMode)
+    if (mWorkingMode == GRAPHICBUFFER_MODE)
         return OMX_ErrorNone;
 
     if (nPortIndex == OUTPORT_INDEX && pBuffer->pPlatformPrivate) {
@@ -274,7 +272,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorPreFreeBuffer(OMX_U32 nPortIndex, OM
 
  OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorPreFillBuffer(OMX_BUFFERHEADERTYPE* buffer) {
 
-    if (mNativeBufferMode && buffer->nOutputPortIndex == OUTPORT_INDEX){
+    if (mWorkingMode == GRAPHICBUFFER_MODE && buffer->nOutputPortIndex == OUTPORT_INDEX){
         Decode_Status status;
         if(mVideoDecoder == NULL){
             LOGW("ProcessorPreFillBuffer: Video decoder is not created");
@@ -418,7 +416,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
         return OMX_ErrorBadParameter;
     }
 
-    if (mNativeBufferMode) {
+    if (mWorkingMode == GRAPHICBUFFER_MODE) {
         p->surfaceNumber = mOMXBufferHeaderTypePtrNum;
         for (int i = 0; i < mOMXBufferHeaderTypePtrNum; i++){
             OMX_BUFFERHEADERTYPE *buffer_hdr = mOMXBufferHeaderTypePtrArray[i];
@@ -493,7 +491,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
     OMX_BUFFERHEADERTYPE *buffer = *pBuffer;
     OMX_BUFFERHEADERTYPE *buffer_orign = buffer;
 
-    if (!mNativeBufferMode && buffer->pPlatformPrivate) {
+    if (mWorkingMode != GRAPHICBUFFER_MODE && buffer->pPlatformPrivate) {
         VideoRenderBuffer *p = (VideoRenderBuffer *)buffer->pPlatformPrivate;
         p->renderDone = true;
         buffer->pPlatformPrivate = NULL;
@@ -513,14 +511,14 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
         return OMX_ErrorNotReady;
     }
 
-    if (mNativeBufferMode) {
+    if (mWorkingMode == GRAPHICBUFFER_MODE) {
         buffer = *pBuffer = mOMXBufferHeaderTypePtrArray[renderBuffer->graphicBufferIndex];
      }
 
     buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME;
     buffer->nTimeStamp = renderBuffer->timeStamp;
 
-    if (mNativeBufferMode) {
+    if (mWorkingMode == GRAPHICBUFFER_MODE) {
         if (buffer_orign != buffer) {
             *retain = BUFFER_RETAIN_OVERRIDDEN;
         }
@@ -566,26 +564,38 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
         paramPortDefinitionInput.format.video.nFrameHeight,
         width, height, widthCropped, heightCropped);
 
-    if (width == paramPortDefinitionInput.format.video.nFrameWidth &&
-        height == paramPortDefinitionInput.format.video.nFrameHeight &&
-        widthCropped == paramPortDefinitionOutput.format.video.nFrameWidth &&
+    if (widthCropped == paramPortDefinitionOutput.format.video.nFrameWidth &&
         heightCropped == paramPortDefinitionOutput.format.video.nFrameHeight) {
-        // reporting portsetting change may crash media player.
-        LOGW("Change of portsetting is not reported as size is not changed.");
-        return OMX_ErrorNone;
+        if (mWorkingMode == GRAPHICBUFFER_MODE) {
+            if (width <= formatInfo->surfaceWidth &&
+                height <= formatInfo->surfaceHeight) {
+                LOGW("Change of portsetting is not reported as size is not changed.");
+                return OMX_ErrorNone;
+            }
+        } else if (mWorkingMode == RAWDATA_MODE) {
+            LOGW("Change of portsetting is not reported as size is not changed.");
+            return OMX_ErrorNone;
+        }
     }
 
+    if (mWorkingMode == RAWDATA_MODE &&
+            width == paramPortDefinitionInput.format.video.nFrameWidth &&
+            height == paramPortDefinitionInput.format.video.nFrameHeight) {
+        // FIXME: This is a workaroud for video editor issue, if contains crop msg we don't report to
+        // the client.
+        return OMX_ErrorNone;
+    }
     paramPortDefinitionInput.format.video.nFrameWidth = width;
     paramPortDefinitionInput.format.video.nFrameHeight = height;
     paramPortDefinitionInput.format.video.nStride = stride;
     paramPortDefinitionInput.format.video.nSliceHeight = sliceHeight;
 
-    if (!mNativeBufferMode) {
+    if (mWorkingMode == RAWDATA_MODE) {
         paramPortDefinitionOutput.format.video.nFrameWidth = widthCropped;
         paramPortDefinitionOutput.format.video.nFrameHeight = heightCropped;
         paramPortDefinitionOutput.format.video.nStride = strideCropped;
         paramPortDefinitionOutput.format.video.nSliceHeight = sliceHeightCropped;
-    } else {
+    } else if (mWorkingMode == GRAPHICBUFFER_MODE) {
         // when the width and height ES parse are not larger than allocated graphic buffer in outport,
         // there is no need to reallocate graphic buffer,just report the crop info to omx client
         if (width <= formatInfo->surfaceWidth && height <= formatInfo->surfaceHeight) {
@@ -599,6 +609,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
         paramPortDefinitionOutput.format.video.nStride = stride;
         paramPortDefinitionOutput.format.video.nSliceHeight = sliceHeight;
     }
+
     paramPortDefinitionOutput.bEnabled = (OMX_BOOL)false;
     mOMXBufferHeaderTypePtrNum = 0;
     memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
@@ -754,10 +765,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
      CHECK_SET_PARAM_STATE();
 
      if (!param->enable) {
-        mNativeBufferMode = false;
+        mWorkingMode = RAWDATA_MODE;
         return OMX_ErrorNone;
      }
-     mNativeBufferMode = true;
+     mWorkingMode = GRAPHICBUFFER_MODE;
      PortVideo *port = NULL;
      port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
 

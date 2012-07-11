@@ -96,8 +96,12 @@ private:
 
 protected:
     IVideoDecoder *mVideoDecoder;
-    bool mNativeBufferMode;
     int  mNativeBufferCount;
+    enum WorkingMode {
+        GRAPHICBUFFER_MODE,
+        RAWDATA_MODE,
+    };
+    WorkingMode mWorkingMode;
 };
 
 #endif /* OMX_VIDEO_DECODER_BASE_H_ */
