@@ -30,10 +30,7 @@
 
 #include <componentbase.h>
 #include "OMXComponentDefines.h"
-#include <media/stagefright/HardwareAPI.h>
-
-
-
+#include <HardwareAPI.h>
 
 class OMXComponentCodecBase : public ComponentBase {
 public:

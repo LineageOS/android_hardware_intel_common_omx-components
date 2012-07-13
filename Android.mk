@@ -1,4 +1,4 @@
-ifeq ($(strip $(BOARD_USES_MRST_OMX)),true)
+ifeq ($(BOARD_USES_MRST_OMX),true)
 
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)

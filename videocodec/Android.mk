@@ -19,7 +19,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
-    $(TARGET_OUT_HEADERS)/libva
+    $(TARGET_OUT_HEADERS)/libva \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -48,7 +50,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
-    $(TARGET_OUT_HEADERS)/libva
+    $(TARGET_OUT_HEADERS)/libva \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -76,7 +80,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
-    $(TARGET_OUT_HEADERS)/libva
+    $(TARGET_OUT_HEADERS)/libva \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -105,7 +111,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
-    $(TARGET_OUT_HEADERS)/libva
+    $(TARGET_OUT_HEADERS)/libva \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -136,7 +144,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
-    $(TARGET_OUT_HEADERS)/libsharedbuffer
+    $(TARGET_OUT_HEADERS)/libsharedbuffer \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
@@ -168,7 +178,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
-    $(TARGET_OUT_HEADERS)/libsharedbuffer
+    $(TARGET_OUT_HEADERS)/libsharedbuffer \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
@@ -199,7 +211,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
-    $(TARGET_OUT_HEADERS)/libsharedbuffer
+    $(TARGET_OUT_HEADERS)/libsharedbuffer \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
@@ -227,7 +241,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
-    $(TARGET_OUT_HEADERS)/libva
+    $(TARGET_OUT_HEADERS)/libva \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -250,7 +266,7 @@ LOCAL_SHARED_LIBRARIES := \
     liblog \
     libva \
     libva-android \
-    libsepdrm
+#    libsepdrm
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -258,12 +274,14 @@ LOCAL_C_INCLUDES := \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
-    $(TARGET_OUT_HEADERS)/libsepdrm
+    $(TARGET_OUT_HEADERS)/libsepdrm \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
     OMXVideoDecoderBase.cpp\
-    OMXVideoDecoderAVCSecure.cpp
+#    OMXVideoDecoderAVCSecure.cpp
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderAVCSecure
