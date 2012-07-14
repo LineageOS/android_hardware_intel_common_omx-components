@@ -5,8 +5,9 @@ include $(CLEAR_VARS)
 
 VENDORS_INTEL_MRST_COMPONENTS_ROOT := $(LOCAL_PATH)
 
-PRODUCT_COPY_FILES += \
-	$(LOCAL_PATH)/wrs_omxil_components.list:system/etc/wrs_omxil_components.list
+$(info WARNING: PRODUCT_COPY_FILES disabled in $(LOCAL_PATH))
+#PRODUCT_COPY_FILES += \
+#	$(LOCAL_PATH)/wrs_omxil_components.list:system/etc/wrs_omxil_components.list
 #$(call add-prebuilt-files, ETC, wrs_omxil_components.list)
 
 # mrst sst audio
