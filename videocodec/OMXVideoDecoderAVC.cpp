@@ -101,6 +101,11 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::ProcessorProcess(
 
 OMX_ERRORTYPE OMXVideoDecoderAVC::PrepareConfigBuffer(VideoConfigBuffer *p) {
     OMX_ERRORTYPE ret;
+
+    if (mParamAvc.eProfile == OMX_VIDEO_AVCProfileBaseline) {
+        p->flag |= WANT_LOW_DELAY;
+    }
+
     ret = OMXVideoDecoderBase::PrepareConfigBuffer(p);
     CHECK_RETURN_VALUE("OMXVideoDecoderBase::PrepareConfigBuffer");
 
