@@ -379,7 +379,12 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
             } else {
                 outBuf.format = OUTPUT_LENGTH_PREFIXED;
                 ret = mVideoEncoder->getOutput(&outBuf);
-                CHECK_ENCODE_STATUS("getOutput");
+
+                if (ret < ENCODE_SUCCESS) { \
+                  LOGE("getOutput Failed. ret = 0x%08x, drop this frame\n", ret);
+                  outBuf.dataSize = 0;
+                  outBuf.flag |= ENCODE_BUFFERFLAG_ENDOFFRAME;
+                }
 
                 LOGV("output data size = %d", outBuf.dataSize);
 
