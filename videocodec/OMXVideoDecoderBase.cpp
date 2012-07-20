@@ -766,7 +766,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
      port_def.nBufferCountMin = 1;
      port_def.nBufferCountActual = mNativeBufferCount;
      port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
-     port_def.format.video.eColorFormat = static_cast<OMX_COLOR_FORMATTYPE>(VA_VED_COLOR_FORMAT);
+     port_def.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
      port->SetPortDefinition(&port_def,true);
 
      return OMX_ErrorNone;
