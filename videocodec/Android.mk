@@ -266,7 +266,7 @@ LOCAL_SHARED_LIBRARIES := \
     liblog \
     libva \
     libva-android \
-#    libsepdrm
+    libsepdrm
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -281,7 +281,7 @@ LOCAL_C_INCLUDES := \
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
     OMXVideoDecoderBase.cpp\
-#    OMXVideoDecoderAVCSecure.cpp
+    OMXVideoDecoderAVCSecure.cpp
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderAVCSecure
