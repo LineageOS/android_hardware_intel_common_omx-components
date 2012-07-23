@@ -137,7 +137,7 @@ LOCAL_SHARED_LIBRARIES := \
         libva-android \
         libva-tpi \
         libutils \
-        libsharedbuffer
+        libintelmetadatabuffer
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -171,7 +171,7 @@ LOCAL_SHARED_LIBRARIES := \
         libva-android \
         libva-tpi \
         libutils \
-        libsharedbuffer
+        libintelmetadatabuffer
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -204,7 +204,7 @@ LOCAL_SHARED_LIBRARIES := \
         libva-android \
         libva-tpi \
         libutils \
-        libsharedbuffer
+        libintelmetadatabuffer
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \

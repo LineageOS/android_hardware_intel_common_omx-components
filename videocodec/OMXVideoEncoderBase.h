@@ -26,7 +26,6 @@
 #include<VideoEncoderHost.h>
 
 using android::sp;
-using android::BufferShareRegistry;
 
 #define SHARED_BUFFER_CNT 7
 
@@ -68,17 +67,7 @@ protected:
     DECLARE_HANDLER(OMXVideoEncoderBase, StoreMetaDataInBuffers);
 
 protected:
-    virtual OMX_ERRORTYPE InitBSMode(void);
-    virtual OMX_ERRORTYPE DeinitBSMode(void);
-    virtual OMX_ERRORTYPE StartBufferSharing(void);
-    virtual OMX_ERRORTYPE StopBufferSharing(void);
     virtual OMX_ERRORTYPE SetVideoEncoderParam();
-private:
-    OMX_ERRORTYPE CheckAndEnableBSMode();
-    OMX_ERRORTYPE AllocateSharedBuffers(int width, int height);
-    OMX_ERRORTYPE UploadSharedBuffers();
-    OMX_ERRORTYPE SetBSInfoToPort();
-    OMX_ERRORTYPE TriggerBSMode();
 protected:
     OMX_VIDEO_PARAM_BITRATETYPE mParamBitrate;
     OMX_VIDEO_CONFIG_PRI_INFOTYPE mConfigPriInfo;
@@ -95,16 +84,7 @@ protected:
     OMX_U32 mFrameOutputCount;
     OMX_BOOL mFirstFrame;
     OMX_BOOL mFrameRetrieved;
-
-    enum {
-        BS_STATE_INVALID,
-        BS_STATE_LOADED,
-        BS_STATE_EXECUTING,
-        BS_STATE_FAILD
-    } mBsState;
-
-    SharedBufferType *mSharedBufArray;
-    OMX_BOOL mForceBufferSharing;
+    OMX_BOOL mStoreMetaDataInBuffers;
 
 private:
 
@@ -120,8 +100,6 @@ private:
         OUTPORT_BUFFER_SIZE = 1382400,
     };
 
-    sp<BufferShareRegistry> mBsInstance;
-    OMX_U32 mSharedBufCnt;
     OMX_U32 mPFrames;
 };
 
