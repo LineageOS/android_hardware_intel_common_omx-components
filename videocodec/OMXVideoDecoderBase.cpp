@@ -595,7 +595,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
         }
         // set the real decoded resolution to outport instead of display resolution for graphic buffer reallocation
         paramPortDefinitionOutput.format.video.nFrameWidth = width;
-        paramPortDefinitionOutput.format.video.nFrameHeight = height;
+        paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
         paramPortDefinitionOutput.format.video.nStride = stride;
         paramPortDefinitionOutput.format.video.nSliceHeight = sliceHeight;
     }
@@ -767,6 +767,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
      port_def.nBufferCountActual = mNativeBufferCount;
      port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
      port_def.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
+     port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;
      port->SetPortDefinition(&port_def,true);
 
      return OMX_ErrorNone;
