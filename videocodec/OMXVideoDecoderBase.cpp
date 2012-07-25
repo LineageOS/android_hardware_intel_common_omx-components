@@ -474,7 +474,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buf
     p->data = buffer->pBuffer + buffer->nOffset;
     p->size = buffer->nFilledLen;
     p->timeStamp = buffer->nTimeStamp;
-    if (buffer->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) {
+    if (buffer->nFlags & (OMX_BUFFERFLAG_ENDOFFRAME | OMX_BUFFERFLAG_EOS)) {
         // TODO: OMX_BUFFERFLAG_ENDOFFRAME can be used to indicate end of a NAL unit.
         // setting this flag may cause corruption if buffer does not contain end-of-frame data.
         p->flag = HAS_COMPLETE_FRAME;

@@ -138,7 +138,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buff
     }
 
     // OMX_BUFFERFLAG_ENDOFFRAME is an optional flag
-    if (buffer->nFlags & OMX_BUFFERFLAG_ENDOFFRAME) {
+    if (buffer->nFlags & (OMX_BUFFERFLAG_ENDOFFRAME | OMX_BUFFERFLAG_EOS)) {
         // TODO: if OMX_BUFFERFLAG_ENDOFFRAME indicates end of a NAL unit and in OMXVideoDecodeBase
         // we set buffer flag to HAS_COMPLETE_FRAME,  corruption will happen
         mTimeStamp = buffer->nTimeStamp;
