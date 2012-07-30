@@ -51,8 +51,8 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     SetTypeHeader(&mNalStreamFormat, sizeof(mNalStreamFormat));
     mNalStreamFormat.nPortIndex = OUTPORT_INDEX;
     // TODO: check if this is desired Nalu Format
-    //mNalStreamFormat.eNaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
-    mNalStreamFormat.eNaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
+    mNalStreamFormat.eNaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
+    //mNalStreamFormat.eNaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
     // OMX_VIDEO_CONFIG_AVCINTRAPERIOD
     memset(&mConfigAvcIntraPeriod, 0, sizeof(mConfigAvcIntraPeriod));
     SetTypeHeader(&mConfigAvcIntraPeriod, sizeof(mConfigAvcIntraPeriod));
@@ -158,6 +158,8 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
     VideoEncOutputBuffer outBuf;
     VideoEncRawBuffer inBuf;
 
+    OMX_NALUFORMATSTYPE NaluFormat = mNalStreamFormat.eNaluFormat;
+
     LOGV_IF(buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS,
             "%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
 
@@ -197,7 +199,10 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
         ports[INPORT_INDEX]->ReturnAllRetainedBuffers();
     }
 
-    switch (mNalStreamFormat.eNaluFormat) {
+    if (mStoreMetaDataInBuffers)
+        NaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
+
+    switch (NaluFormat) {
         case OMX_NaluFormatStartCodes:
 
             outBuf.format = OUTPUT_EVERYTHING;
