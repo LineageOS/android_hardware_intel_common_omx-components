@@ -718,13 +718,11 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBufferUsage(OMX_PTR pStructure) {
      return OMX_ErrorNone;
 }
 OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferUsage(OMX_PTR pStructure) {
-    OMX_ERRORTYPE ret;
     CHECK_SET_PARAM_STATE();
     return OMX_ErrorBadParameter;
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBuffer(OMX_PTR pStructure) {
-    OMX_ERRORTYPE ret;
     return OMX_ErrorBadParameter;
 }
 OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBuffer(OMX_PTR pStructure) {
@@ -785,11 +783,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderRotation(OMX_PTR pStructure) {
-    OMX_ERRORTYPE ret;
     return OMX_ErrorBadParameter;
 }
 OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderRotation(OMX_PTR pStructure) {
-    OMX_ERRORTYPE ret;
     CHECK_SET_PARAM_STATE();
     int32_t rotationDegrees = 0;
 
