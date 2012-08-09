@@ -145,6 +145,7 @@ OMX_ERRORTYPE OMXVideoEncoderMPEG4::ProcessorProcess(
         outflags |= OMX_BUFFERFLAG_ENDOFFRAME;
         outflags |= OMX_BUFFERFLAG_SYNCFRAME;
 
+        retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
         outfilledlen = outBuf.dataSize;
         mFirstFrame = OMX_FALSE;
     } else {
