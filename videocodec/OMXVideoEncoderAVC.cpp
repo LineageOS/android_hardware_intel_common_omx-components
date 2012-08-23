@@ -208,6 +208,11 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
          buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset,
          buffers[INPORT_INDEX]->nTimeStamp);
 
+    if(inBuf.data == NULL) {
+        LOGE("The Input buf is NULL\n");
+        return OMX_ErrorBadParameter;
+    }
+
     if(mFrameRetrieved) {
         // encode and setConfig need to be thread safe
         pthread_mutex_lock(&mSerializationLock);
