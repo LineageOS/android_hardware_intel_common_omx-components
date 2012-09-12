@@ -137,6 +137,7 @@ LOCAL_SHARED_LIBRARIES := \
         libva-android \
         libva-tpi \
         libutils \
+        libhardware \
         libintelmetadatabuffer
 
 LOCAL_C_INCLUDES := \
@@ -145,6 +146,7 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
     $(TARGET_OUT_HEADERS)/libsharedbuffer \
+    $(TOP)/hardware/libhardware/include \
     $(TOP)/frameworks/native/include/media/hardware \
     $(TOP)/frameworks/native/include/media/openmax
 
@@ -171,6 +173,7 @@ LOCAL_SHARED_LIBRARIES := \
         libva-android \
         libva-tpi \
         libutils \
+        libhardware \
         libintelmetadatabuffer
 
 LOCAL_C_INCLUDES := \
@@ -179,6 +182,7 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
     $(TARGET_OUT_HEADERS)/libsharedbuffer \
+    $(TOP)/hardware/libhardware/include \
     $(TOP)/frameworks/native/include/media/hardware \
     $(TOP)/frameworks/native/include/media/openmax
 
@@ -204,6 +208,7 @@ LOCAL_SHARED_LIBRARIES := \
         libva-android \
         libva-tpi \
         libutils \
+        libhardware \
         libintelmetadatabuffer
 
 LOCAL_C_INCLUDES := \
@@ -212,6 +217,7 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
     $(TARGET_OUT_HEADERS)/libsharedbuffer \
+    $(TOP)/hardware/libhardware/include \
     $(TOP)/frameworks/native/include/media/hardware \
     $(TOP)/frameworks/native/include/media/openmax
 

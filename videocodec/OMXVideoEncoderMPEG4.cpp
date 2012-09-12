@@ -105,6 +105,9 @@ OMX_ERRORTYPE OMXVideoEncoderMPEG4::ProcessorProcess(
     inBuf.data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
     inBuf.size = buffers[INPORT_INDEX]->nFilledLen;
 
+    if (bAndroidOpaqueFormat) {
+        mCurHandle = rgba2nv12conversion(buffers[INPORT_INDEX]);
+    }
 
     LOGV("inBuf.data=%x, size=%d", (unsigned)inBuf.data, inBuf.size);
 
@@ -221,6 +224,14 @@ out:
 
     if (retains[OUTPORT_INDEX] == BUFFER_RETAIN_NOT_RETAIN)
         mFrameOutputCount ++;
+
+    if (bAndroidOpaqueFormat && buffers[INPORT_INDEX]->nFilledLen != 0) {
+        // Restore input buffer's content
+        buffers[INPORT_INDEX]->nFilledLen = 4 + sizeof(buffer_handle_t);
+        memcpy(buffers[INPORT_INDEX]->pBuffer, mBufferHandleMaps[mCurHandle].backBuffer,
+                buffers[INPORT_INDEX]->nFilledLen);
+
+    }
 
     return oret;
 

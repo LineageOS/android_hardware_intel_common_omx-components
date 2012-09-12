@@ -24,10 +24,12 @@
 #include <va/va_tpi.h>
 #include <va/va_android.h>
 #include<VideoEncoderHost.h>
+#include "hal_public.h"
 
 using android::sp;
 
 #define SHARED_BUFFER_CNT 7
+#define OMX_COLOR_FormatAndroidOpaque  0x7F000789
 
 class OMXVideoEncoderBase : public OMXComponentCodecBase {
 public:
@@ -91,7 +93,8 @@ private:
     enum {
         // OMX_PARAM_PORTDEFINITIONTYPE
         INPORT_MIN_BUFFER_COUNT = 1,
-        INPORT_ACTUAL_BUFFER_COUNT = 2,
+        // FIXME: increate input buffer count to 5
+        INPORT_ACTUAL_BUFFER_COUNT = 5,
         INPORT_BUFFER_SIZE = 1382400,
 
         // OMX_PARAM_PORTDEFINITIONTYPE
@@ -101,6 +104,22 @@ private:
     };
 
     OMX_U32 mPFrames;
+
+public:
+    struct {
+        OMX_BUFFERHEADERTYPE* mHeader;
+        buffer_handle_t srcBuffer;
+        uint8_t backBuffer[4 + sizeof(buffer_handle_t)];
+        IMG_native_handle_t* mHandle;
+        int32_t mStride;
+        void *vaddr[3];
+    } mBufferHandleMaps[INPORT_ACTUAL_BUFFER_COUNT];
+    OMX_BOOL bAndroidOpaqueFormat;
+    alloc_device_t *mAllocDev;
+    IMG_gralloc_module_public_t const *mGrallocMod;
+    int32_t mCurHandle;
+    int32_t rgba2nv12conversion(OMX_BUFFERHEADERTYPE*);
+
 };
 
 #endif /* OMX_VIDEO_ENCODER_BASE_H_ */

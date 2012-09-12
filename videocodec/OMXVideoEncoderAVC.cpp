@@ -19,6 +19,7 @@
 #define LOG_TAG "OMXVideoEncoderAVC"
 #include <utils/Log.h>
 #include "OMXVideoEncoderAVC.h"
+#include "IntelMetadataBuffer.h"
 
 static const char *AVC_MIME_TYPE = "video/h264";
 
@@ -188,6 +189,10 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
     if (!buffers[INPORT_INDEX]->nFilledLen) {
         LOGE("%s(),%d: input buffer's nFilledLen is zero\n",  __func__, __LINE__);
         goto out;
+    }
+
+    if (bAndroidOpaqueFormat) {
+        mCurHandle = rgba2nv12conversion(buffers[INPORT_INDEX]);
     }
 
     inBuf.data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
@@ -428,6 +433,14 @@ out:
     }
 
     if (retains[OUTPORT_INDEX] == BUFFER_RETAIN_NOT_RETAIN) mFrameOutputCount  ++;
+
+    if (bAndroidOpaqueFormat && buffers[INPORT_INDEX]->nFilledLen != 0) {
+        // Restore input buffer's content
+        buffers[INPORT_INDEX]->nFilledLen = 4 + sizeof(buffer_handle_t);
+        memcpy(buffers[INPORT_INDEX]->pBuffer, mBufferHandleMaps[mCurHandle].backBuffer,
+                buffers[INPORT_INDEX]->nFilledLen);
+
+    }
 
 #if 0
     if (avcEncParamIntelBitrateType.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {

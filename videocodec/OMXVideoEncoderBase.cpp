@@ -35,6 +35,7 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
     mEncoderParams = new VideoParamsCommon();
     if (!mEncoderParams) LOGE("OMX_ErrorInsufficientResources");
 
+    bAndroidOpaqueFormat = OMX_FALSE;
     LOGV("OMXVideoEncoderBase::OMXVideoEncoderBase end");
 }
 
@@ -349,6 +350,38 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorInit(void) {
     ret = SetVideoEncoderParam();
     CHECK_STATUS("SetVideoEncoderParam");
 
+    if (bAndroidOpaqueFormat) {
+        hw_module_t const* module;
+        int err = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &module);
+        if (err == 0) {
+            mGrallocMod = (IMG_gralloc_module_public_t const*)module;
+            gralloc_open(module, &mAllocDev);
+            for (int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
+                status_t err = mAllocDev->alloc(mAllocDev,
+                        mEncoderParams->resolution.width,
+                        mEncoderParams->resolution.height,
+                        OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar,
+                        GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_TEXTURE,
+                        (buffer_handle_t*)&(mBufferHandleMaps[i].mHandle),
+                        &mBufferHandleMaps[i].mStride);
+                ALOGE_IF(err, "alloc(%u, %u, %d, %08x, ...) failed %d (%s)",
+                        mEncoderParams->resolution.width,
+                        mEncoderParams->resolution.height,
+                        OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar,
+                        GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_TEXTURE, err, strerror(-err));
+                mBufferHandleMaps[i].mHeader = NULL;
+                ALOGI("width %d, height %d, iWidth %d, iHeight %d, iFormat %x",
+                        mEncoderParams->resolution.width,
+                        mEncoderParams->resolution.height,
+                        mBufferHandleMaps[i].mHandle->iWidth,
+                        mBufferHandleMaps[i].mHandle->iHeight, mBufferHandleMaps[i].mHandle->iFormat);
+            }
+        } else {
+            ALOGE("FATAL: can't find the %s module", GRALLOC_HARDWARE_MODULE_ID);
+            return OMX_ErrorUndefined;
+        }
+    }
+
     if (mVideoEncoder->start() != ENCODE_SUCCESS) {
         LOGE("Start failed, ret = 0x%08x\n", ret);
         return OMX_ErrorUndefined;
@@ -362,6 +395,16 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorDeinit(void) {
 
     if(mVideoEncoder) {
         mVideoEncoder->stop();
+    }
+
+    if(bAndroidOpaqueFormat) {
+        for (int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
+            status_t err = mAllocDev->free(mAllocDev,
+                    (buffer_handle_t)mBufferHandleMaps[i].mHandle);
+            ALOGW_IF(err, "free(...) failed %d (%s)", err, strerror(-err));
+            mBufferHandleMaps[i].mHandle = NULL;
+        }
+        gralloc_close(mAllocDev);
     }
     return OMX_ErrorNone;
 }
@@ -408,15 +451,22 @@ OMX_ERRORTYPE OMXVideoEncoderBase::BuildHandlerList(void) {
 
 OMX_ERRORTYPE OMXVideoEncoderBase::GetParamVideoPortFormat(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
+    OMX_U32 index;
     OMX_VIDEO_PARAM_PORTFORMATTYPE *p = (OMX_VIDEO_PARAM_PORTFORMATTYPE *)pStructure;
 
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX_RANGE(p);
-    CHECK_ENUMERATION_RANGE(p->nIndex, 1);
+    CHECK_ENUMERATION_RANGE(p->nIndex, 2);
 
     PortVideo *port = NULL;
     port = static_cast<PortVideo *>(this->ports[p->nPortIndex]);
+    index = p->nIndex;
     memcpy(p, port->GetPortVideoParam(), sizeof(*p));
+    // FIXME: port only supports OMX_COLOR_FormatYUV420SemiPlanar
+    if (index == 1) {
+        p->nIndex = 1;
+        p->eColorFormat = (OMX_COLOR_FORMATTYPE)OMX_COLOR_FormatAndroidOpaque;
+    }
     return OMX_ErrorNone;
 }
 
@@ -431,6 +481,12 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetParamVideoPortFormat(OMX_PTR pStructure) {
     // TODO: do we need to check if port is enabled?
     PortVideo *port = NULL;
     port = static_cast<PortVideo *>(this->ports[p->nPortIndex]);
+    // FIXME: port only supports OMX_COLOR_FormatYUV420SemiPlanar
+    if (p->eColorFormat ==  OMX_COLOR_FormatAndroidOpaque) {
+        p->nIndex = 0;
+        p->eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
+        bAndroidOpaqueFormat = OMX_TRUE;
+    }
     port->SetPortVideoParam(p, false);
     return OMX_ErrorNone;
 }
@@ -760,7 +816,6 @@ OMX_ERRORTYPE OMXVideoEncoderBase::GetStoreMetaDataInBuffers(OMX_PTR pStructure)
 
     return OMX_ErrorNone;
 };
-
 OMX_ERRORTYPE OMXVideoEncoderBase::SetStoreMetaDataInBuffers(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     StoreMetaDataInBuffersParams *p = (StoreMetaDataInBuffersParams *)pStructure;
@@ -799,4 +854,47 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetStoreMetaDataInBuffers(OMX_PTR pStructure)
     LOGD("SetStoreMetaDataInBuffers success");
     return OMX_ErrorNone;
 };
+
+// Utility function that blits the original source buffer in RGBA format to a temporary
+// buffer in NV12 format, and use the temporary buffer as the source buffer
+int32_t OMXVideoEncoderBase::rgba2nv12conversion(OMX_BUFFERHEADERTYPE *pBuffer)
+{
+    int i, err;
+
+    // Every input buffer keeps its own state
+    for (i = 0; i < sizeof(mBufferHandleMaps) / sizeof(mBufferHandleMaps[0]); i++) {
+        if (mBufferHandleMaps[i].mHeader == pBuffer)
+            break;
+    }
+    if (i == sizeof(mBufferHandleMaps) / sizeof(mBufferHandleMaps[0])) {
+        for (i = 0; i < sizeof(mBufferHandleMaps) / sizeof(mBufferHandleMaps[0]); i++) {
+            if (mBufferHandleMaps[i].mHeader == NULL) {
+                mBufferHandleMaps[i].mHeader = pBuffer;
+                break;
+            }
+        }
+    }
+
+    // Backup input buffer content
+    memcpy(mBufferHandleMaps[i].backBuffer, pBuffer->pBuffer,
+            pBuffer->nFilledLen);
+
+    // Get source buffer handle
+    memcpy(&mBufferHandleMaps[i].srcBuffer, pBuffer->pBuffer + 4, 4);
+
+    // Color space conversion
+    err = mGrallocMod->Blit2(mGrallocMod, (native_handle_t*)mBufferHandleMaps[i].srcBuffer,
+            (native_handle_t*)mBufferHandleMaps[i].mHandle,
+            mEncoderParams->resolution.width, mEncoderParams->resolution.height, 0, 0);
+    ALOGE_IF(err, "Blit2(mBufferHandleMaps[%d].srcBuffer)", i);
+
+    // Wrap destination buffer handle to encoder's input format
+    IntelMetadataBuffer *imb = new IntelMetadataBuffer(MetadataBufferTypeGrallocSource,
+            (int32_t)mBufferHandleMaps[i].mHandle);
+    imb->Serialize((uint8_t*&)pBuffer->pBuffer,
+            (uint32_t&)pBuffer->nFilledLen);
+
+    return i;
+
+}
 

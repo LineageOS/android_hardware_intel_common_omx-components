@@ -108,6 +108,10 @@ OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorProcess(
         goto out;
     }
 
+    if (bAndroidOpaqueFormat) {
+        mCurHandle = rgba2nv12conversion(buffers[INPORT_INDEX]);
+    }
+
     inBuf.data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
     inBuf.size = buffers[INPORT_INDEX]->nFilledLen;
 
@@ -214,6 +218,14 @@ out:
 
     if (retains[OUTPORT_INDEX] == BUFFER_RETAIN_NOT_RETAIN)
         mFrameOutputCount ++;
+
+    if (bAndroidOpaqueFormat && buffers[INPORT_INDEX]->nFilledLen != 0) {
+        // Restore input buffer's content
+        buffers[INPORT_INDEX]->nFilledLen = 4 + sizeof(buffer_handle_t);
+        memcpy(buffers[INPORT_INDEX]->pBuffer, mBufferHandleMaps[mCurHandle].backBuffer,
+                buffers[INPORT_INDEX]->nFilledLen);
+
+    }
 
     LOGV_IF(oret == OMX_ErrorNone, "%s(),%d: exit, encode is done\n", __func__, __LINE__);
 
