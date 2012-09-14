@@ -24,7 +24,11 @@
 #include <pthread.h>
 
 extern "C" {
-    #include <sepdrm.h>
+#include <sepdrm.h>
+#include <fcntl.h>
+#include "psb_drm.h"
+#include "xf86drm.h"
+#include "xf86drmMode.h"
 }
 
 // Be sure to have an equal string in VideoDecoderHost.cpp (libmix)
@@ -48,10 +52,10 @@ struct IMRDataBuffer {
 };
 #pragma pack(pop)
 
-
 OMXVideoDecoderAVCSecure::OMXVideoDecoderAVCSecure()
     : mKeepAliveTimer(0),
-      mSessionPaused(false) {
+      mSessionPaused(false),
+      mDrmDevFd(-1) {
     LOGV("OMXVideoDecoderAVCSecure is constructed.");
     mVideoDecoder = createVideoDecoder(AVC_SECURE_MIME_TYPE);
     if (!mVideoDecoder) {
@@ -61,10 +65,20 @@ OMXVideoDecoderAVCSecure::OMXVideoDecoderAVCSecure()
     mNativeBufferCount = OUTPORT_NATIVE_BUFFER_COUNT;
 
     BuildHandlerList();
+
+    mDrmDevFd = open("/dev/card0", O_RDWR, 0);
+    if (mDrmDevFd < 0) {
+        LOGE("Failed to open drm device.");
+    }
 }
 
 OMXVideoDecoderAVCSecure::~OMXVideoDecoderAVCSecure() {
     LOGV("OMXVideoDecoderAVCSecure is destructed.");
+
+    if (mDrmDevFd) {
+        close(mDrmDevFd);
+        mDrmDevFd = 0;
+    }
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::InitInputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionInput) {
@@ -105,10 +119,12 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorInit(void) {
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
     // Session should be torn down in ProcessorStop, delayed to ProcessorDeinit
     // to allow remaining frames completely rendered.
+    LOGI("Calling Drm_DestroySession.");
     sec_result_t sepres = Drm_DestroySession(WV_SESSION_ID);
     if (sepres != 0) {
         LOGW("Drm_DestroySession returns %#x", sepres);
     }
+    EnableIEDSession(false);
 
     return OMXVideoDecoderBase::ProcessorDeinit();
 }
@@ -117,6 +133,8 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
     uint32_t imrOffset = 0;
     uint32_t imrBufferSize = IMR_BUFFER_SIZE;
     uint32_t sessionID;
+
+    EnableIEDSession(true);
     sec_result_t sepres = Drm_WV_CreateSession(&imrOffset, &imrBufferSize, &sessionID);
     if (sepres != 0) {
         LOGW("Drm_WV_CreateSession failed. Result = %#x", sepres);
@@ -409,5 +427,15 @@ void OMXVideoDecoderAVCSecure::KeepAliveTimerCallback() {
     Drm_KeepAlive(WV_SESSION_ID, &timeout);
 }
 
+
+bool OMXVideoDecoderAVCSecure::EnableIEDSession(bool enable)
+{
+    if (mDrmDevFd < 0) {
+        return false;
+    }
+    int request = enable ?  DRM_PSB_ENABLE_IED_SESSION : DRM_PSB_DISABLE_IED_SESSION;
+    int ret = drmCommandNone(mDrmDevFd, request);
+    return ret == 0;
+}
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.AVC.secure", "video_decoder.avc", OMXVideoDecoderAVCSecure);
