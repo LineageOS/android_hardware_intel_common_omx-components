@@ -103,8 +103,6 @@ private:
         OUTPORT_BUFFER_SIZE = 1382400,
     };
 
-    OMX_U32 mPFrames;
-
 public:
     struct {
         OMX_BUFFERHEADERTYPE* mHeader;
