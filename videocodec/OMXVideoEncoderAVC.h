@@ -46,7 +46,7 @@ protected:
     DECLARE_HANDLER(OMXVideoEncoderAVC, ParamIntelAVCVUI);
     DECLARE_HANDLER(OMXVideoEncoderAVC, ParamVideoBytestream);
     DECLARE_HANDLER(OMXVideoEncoderAVC, ConfigIntelSliceNumbers);
-
+    DECLARE_HANDLER(OMXVideoEncoderAVC, ParamVideoProfileLevelQuerySupported);
 
 private:
     enum {
