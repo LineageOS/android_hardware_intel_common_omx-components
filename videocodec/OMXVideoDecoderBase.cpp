@@ -578,13 +578,6 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
         }
     }
 
-    if (mWorkingMode == RAWDATA_MODE &&
-            width == paramPortDefinitionInput.format.video.nFrameWidth &&
-            height == paramPortDefinitionInput.format.video.nFrameHeight) {
-        // FIXME: This is a workaroud for video editor issue, if contains crop msg we don't report to
-        // the client.
-        return OMX_ErrorNone;
-    }
     paramPortDefinitionInput.format.video.nFrameWidth = width;
     paramPortDefinitionInput.format.video.nFrameHeight = height;
     paramPortDefinitionInput.format.video.nStride = stride;
