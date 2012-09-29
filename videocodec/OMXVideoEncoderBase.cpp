@@ -875,6 +875,12 @@ int32_t OMXVideoEncoderBase::rgba2nv12conversion(OMX_BUFFERHEADERTYPE *pBuffer)
         }
     }
 
+    if(i >= sizeof(mBufferHandleMaps) / sizeof(mBufferHandleMaps[0]))
+    {
+        LOGE("mBufferHandleMaps array index out of bound\n");
+        return -1;
+    }
+
     // Backup input buffer content
     memcpy(mBufferHandleMaps[i].backBuffer, pBuffer->pBuffer,
             pBuffer->nFilledLen);
