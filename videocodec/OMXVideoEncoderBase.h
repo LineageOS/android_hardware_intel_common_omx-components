@@ -65,7 +65,7 @@ protected:
     DECLARE_HANDLER(OMXVideoEncoderBase, ConfigVideoFramerate);
     DECLARE_HANDLER(OMXVideoEncoderBase, ConfigVideoIntraVOPRefresh);
     DECLARE_HANDLER(OMXVideoEncoderBase, ParamIntelAdaptiveSliceControl);
-    //DECLARE_HANDLER(OMXVideoEncoderBase, ParamVideoProfileLevelQuerySupported);
+    DECLARE_HANDLER(OMXVideoEncoderBase, ParamVideoProfileLevelQuerySupported);
     DECLARE_HANDLER(OMXVideoEncoderBase, StoreMetaDataInBuffers);
 
 protected:

@@ -240,36 +240,7 @@ out:
 OMX_ERRORTYPE OMXVideoEncoderMPEG4::BuildHandlerList(void) {
     OMXVideoEncoderBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoMpeg4, GetParamVideoMpeg4, SetParamVideoMpeg4);
-    AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoProfileLevelQuerySupported, SetParamVideoProfileLevelQuerySupported);    
     return OMX_ErrorNone;
-}
-
-
-OMX_ERRORTYPE OMXVideoEncoderMPEG4::GetParamVideoProfileLevelQuerySupported(OMX_PTR pStructure) {
-    OMX_ERRORTYPE ret;
-    OMX_VIDEO_PARAM_PROFILELEVELTYPE *p = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)pStructure;
-    CHECK_TYPE_HEADER(p);
-    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
-
-    struct ProfileLevelTable {
-        OMX_U32 profile;
-        OMX_U32 level;
-    } plTable[] = {
-        {OMX_VIDEO_MPEG4ProfileSimple, OMX_VIDEO_MPEG4Level5},
-    };
-
-    OMX_U32 count = sizeof(plTable)/sizeof(ProfileLevelTable);
-    CHECK_ENUMERATION_RANGE(p->nProfileIndex,count);
-
-    p->eProfile = plTable[p->nProfileIndex].profile;
-    p->eLevel = plTable[p->nProfileIndex].level;
-
-    return OMX_ErrorNone;
-}
-
-OMX_ERRORTYPE OMXVideoEncoderMPEG4::SetParamVideoProfileLevelQuerySupported(OMX_PTR pStructure) {
-    LOGW("SetParamVideoMpeg4ProfileLevel is not supported.");
-    return OMX_ErrorUnsupportedSetting;
 }
 
 OMX_ERRORTYPE OMXVideoEncoderMPEG4::GetParamVideoMpeg4(OMX_PTR pStructure) {
