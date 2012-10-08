@@ -40,7 +40,7 @@ OMX_ERRORTYPE OMXVideoEncoderH263::InitOutputPortFormatSpecific(OMX_PARAM_PORTDE
     mParamH263.nPortIndex = OUTPORT_INDEX;
     mParamH263.eProfile = OMX_VIDEO_H263ProfileBaseline;
     // TODO: check eLevel, 10
-    mParamH263.eLevel = OMX_VIDEO_H263Level70; //OMX_VIDEO_H263Level10;
+    mParamH263.eLevel = OMX_VIDEO_H263Level45; //OMX_VIDEO_H263Level10;
 
     // override OMX_PARAM_PORTDEFINITIONTYPE
     paramPortDefinitionOutput->nBufferCountActual = OUTPORT_ACTUAL_BUFFER_COUNT;
@@ -236,7 +236,35 @@ out:
 OMX_ERRORTYPE OMXVideoEncoderH263::BuildHandlerList(void) {
     OMXVideoEncoderBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoH263, GetParamVideoH263, SetParamVideoH263);
+    AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoProfileLevelQuerySupported, SetParamVideoProfileLevelQuerySupported);    
     return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoEncoderH263::GetParamVideoProfileLevelQuerySupported(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_PARAM_PROFILELEVELTYPE *p = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)pStructure;
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+
+    struct ProfileLevelTable {
+        OMX_U32 profile;
+        OMX_U32 level;
+    } plTable[] = {
+        {OMX_VIDEO_H263ProfileBaseline, OMX_VIDEO_H263Level45}
+    };
+
+    OMX_U32 count = sizeof(plTable)/sizeof(ProfileLevelTable);
+    CHECK_ENUMERATION_RANGE(p->nProfileIndex,count);
+
+    p->eProfile = plTable[p->nProfileIndex].profile;
+    p->eLevel = plTable[p->nProfileIndex].level;
+
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoEncoderH263::SetParamVideoProfileLevelQuerySupported(OMX_PTR pStructure) {
+    LOGW("SetParamVideoH263ProfileLevel is not supported.");
+    return OMX_ErrorUnsupportedSetting;
 }
 
 OMX_ERRORTYPE OMXVideoEncoderH263::GetParamVideoH263(OMX_PTR pStructure) {

@@ -39,6 +39,7 @@ protected:
     virtual OMX_ERRORTYPE BuildHandlerList(void);
     virtual OMX_ERRORTYPE SetVideoEncoderParam();
     DECLARE_HANDLER(OMXVideoEncoderMPEG4, ParamVideoMpeg4);
+    DECLARE_HANDLER(OMXVideoEncoderMPEG4, ParamVideoProfileLevelQuerySupported);
 
 private:
     enum {
