@@ -663,7 +663,6 @@ OMX_ERRORTYPE OMXVideoDecoderBase::TranslateDecodeStatus(Decode_Status status) {
 OMX_ERRORTYPE OMXVideoDecoderBase::BuildHandlerList(void) {
     OMXComponentCodecBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoPortFormat, GetParamVideoPortFormat, SetParamVideoPortFormat);
-    //AddHandler(PV_OMX_COMPONENT_CAPABILITY_TYPE_INDEX, GetCapabilityFlags, SetCapabilityFlags); 
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtGetNativeBufferUsage), GetNativeBufferUsage, SetNativeBufferUsage);
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtUseNativeBuffer), GetNativeBuffer, SetNativeBuffer);
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer), GetNativeBufferMode, SetNativeBufferMode);
@@ -873,29 +872,3 @@ OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuf
     }
     return OMX_ErrorNone;
 }
-
-OMX_ERRORTYPE OMXVideoDecoderBase::GetCapabilityFlags(OMX_PTR pStructure) {
-#if 0
-    OMX_ERRORTYPE ret;
-    PV_OMXComponentCapabilityFlagsType *p = (PV_OMXComponentCapabilityFlagsType *)pStructure;
-
-    CHECK_TYPE_HEADER(p);
-    CHECK_PORT_INDEX_RANGE(p);
-
-    p->iIsOMXComponentMultiThreaded = OMX_TRUE;
-    p->iOMXComponentSupportsExternalInputBufferAlloc = OMX_TRUE;
-    p->iOMXComponentSupportsExternalOutputBufferAlloc = OMX_TRUE;
-    p->iOMXComponentSupportsMovableInputBuffers = OMX_TRUE;
-    p->iOMXComponentSupportsPartialFrames = OMX_TRUE;
-    p->iOMXComponentCanHandleIncompleteFrames = OMX_TRUE;
-    p->iOMXComponentUsesNALStartCodes = OMX_FALSE;
-    p->iOMXComponentUsesFullAVCFrames = OMX_FALSE;
-#endif
-    return OMX_ErrorNone;
-}
-
-OMX_ERRORTYPE OMXVideoDecoderBase::SetCapabilityFlags(OMX_PTR pStructure) {
-    LOGE("SetCapabilityFlags is not supported.");
-    return OMX_ErrorUnsupportedSetting;
-}
-
