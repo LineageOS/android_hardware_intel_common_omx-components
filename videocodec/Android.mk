@@ -268,7 +268,6 @@ LOCAL_LDFLAGS :=
 
 LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
-    libdrm \
     libva_videodecoder \
     liblog \
     libva \
@@ -282,12 +281,8 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
     $(TARGET_OUT_HEADERS)/libsepdrm \
-    $(TARGET_OUT_HEADERS)/drm \
-    $(TARGET_OUT_HEADERS)/libdrm \
-    $(TARGET_OUT_HEADERS)/libttm \
     $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax \
-    $(TOP)/hardware/intel/linux-2.6/drivers/staging/intel_media/common
+    $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
