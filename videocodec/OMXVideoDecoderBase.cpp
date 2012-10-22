@@ -705,7 +705,6 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBufferUsage(OMX_PTR pStructure) {
      OMX_ERRORTYPE ret;
      GetAndroidNativeBufferUsageParams *param = (GetAndroidNativeBufferUsageParams*)pStructure;
      CHECK_TYPE_HEADER(param);
-     param->nUsage |= GRALLOC_USAGE_SW_WRITE_OFTEN;
      param->nUsage |= GRALLOC_USAGE_HW_TEXTURE;
      return OMX_ErrorNone;
 }
