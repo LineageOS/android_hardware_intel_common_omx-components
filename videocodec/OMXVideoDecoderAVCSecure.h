@@ -53,6 +53,7 @@ private:
     void  MemFreeIMR(OMX_U8 *pBuffer);
     static void KeepAliveTimerCallback(sigval v);
     void KeepAliveTimerCallback();
+    bool EnableIEDSession(bool enable);
 
 private:
     enum {
@@ -78,6 +79,7 @@ private:
     timer_t mKeepAliveTimer;
 
     bool mSessionPaused;
+    int mDrmDevFd;
 };
 
 #endif /* OMX_VIDEO_DECODER_AVC_SECURE_H_ */
