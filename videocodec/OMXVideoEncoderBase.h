@@ -24,7 +24,7 @@
 #include <va/va_tpi.h>
 #include <va/va_android.h>
 #include<VideoEncoderHost.h>
-#include "hal_public.h"
+#include <hal/hal_public.h>
 
 using android::sp;
 

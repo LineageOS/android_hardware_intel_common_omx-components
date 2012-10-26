@@ -148,7 +148,8 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libsharedbuffer \
     $(TOP)/hardware/libhardware/include \
     $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax
+    $(TOP)/frameworks/native/include/media/openmax \
+    $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
@@ -184,7 +185,8 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libsharedbuffer \
     $(TOP)/hardware/libhardware/include \
     $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax
+    $(TOP)/frameworks/native/include/media/openmax \
+    $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
@@ -219,7 +221,8 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libsharedbuffer \
     $(TOP)/hardware/libhardware/include \
     $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax
+    $(TOP)/frameworks/native/include/media/openmax \
+    $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
