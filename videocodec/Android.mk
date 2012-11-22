@@ -43,6 +43,14 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderAVC
+CTP_PRODUCT := \
+        ctp_pr1 \
+        ctp_nomodem \
+        redhookbay
+ifneq ($(filter $(TARGET_PRODUCT),$(CTP_PRODUCT)),)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 
@@ -74,6 +82,14 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderMPEG4
+CTP_PRODUCT := \
+        ctp_pr1 \
+        ctp_nomodem \
+        redhookbay
+ifneq ($(filter $(TARGET_PRODUCT),$(CTP_PRODUCT)),)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -104,6 +120,14 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderH263
+CTP_PRODUCT := \
+        ctp_pr1 \
+        ctp_nomodem \
+        redhookbay
+ifneq ($(filter $(TARGET_PRODUCT),$(CTP_PRODUCT)),)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 
@@ -135,6 +159,14 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderWMV
+CTP_PRODUCT := \
+        ctp_pr1 \
+        ctp_nomodem \
+        redhookbay
+ifneq ($(filter $(TARGET_PRODUCT),$(CTP_PRODUCT)),)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -289,6 +321,14 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderPAVC
+CTP_PRODUCT := \
+        ctp_pr1 \
+        ctp_nomodem \
+        redhookbay
+ifneq ($(filter $(TARGET_PRODUCT),$(CTP_PRODUCT)),)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -362,6 +402,14 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderAVCSecure
+CTP_PRODUCT := \
+        ctp_pr1 \
+        ctp_nomodem \
+        redhookbay
+ifneq ($(filter $(TARGET_PRODUCT),$(CTP_PRODUCT)),)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 # Add source codes for Merrifield
