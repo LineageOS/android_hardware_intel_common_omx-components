@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009-2011 Intel Corporation.  All rights reserved.
+* Copyright (c) 2009-2012 Intel Corporation.  All rights reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ static const char* AVC_SECURE_MIME_TYPE = "video/avc-secure";
 
 #define IMR_INITIAL_OFFSET      0 //1024
 #define KEEP_ALIVE_INTERVAL     5 // seconds
-#define IMR_BUFFER_SIZE         (8 * 1024 * 1024)
+#define DRM_KEEP_ALIVE_TIMER    1000000
 #define WV_SESSION_ID           0x00000011
 #define NALU_BUFFER_SIZE        8192
 #define FLUSH_WAIT_INTERVAL     (30 * 1000) //30 ms
@@ -131,7 +131,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
     uint32_t imrOffset = 0;
-    uint32_t imrBufferSize = IMR_BUFFER_SIZE;
+    uint32_t imrBufferSize;
     uint32_t sessionID;
 
     EnableIEDSession(true);
@@ -157,19 +157,18 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
     ret = timer_create(CLOCK_REALTIME, &sev, &mKeepAliveTimer);
     if (ret != 0) {
         LOGE("Failed to create timer.");
+    } else {
+        struct itimerspec its;
+        its.it_value.tv_sec = -1; // never expire
+        its.it_value.tv_nsec = 0;
+        its.it_interval.tv_sec = KEEP_ALIVE_INTERVAL;
+        its.it_interval.tv_nsec = 0;
+
+        ret = timer_settime(mKeepAliveTimer, TIMER_ABSTIME, &its, NULL);
+        if (ret != 0) {
+            LOGE("Failed to set timer.");
+        }
     }
-
-    struct itimerspec its;
-    its.it_value.tv_sec = -1; // never expire
-    its.it_value.tv_nsec = 0;
-    its.it_interval.tv_sec = KEEP_ALIVE_INTERVAL;
-    its.it_interval.tv_nsec = 0;
-
-    ret = timer_settime(mKeepAliveTimer, TIMER_ABSTIME, &its, NULL);
-    if (ret != 0) {
-        LOGE("Failed to set timer.");
-    }
-
     mSessionPaused = false;
     return OMXVideoDecoderBase::ProcessorStart();
 }
@@ -203,7 +202,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorProcess(
         OMX_BUFFERHEADERTYPE *pOutput = *pBuffers[OUTPORT_INDEX];
         pOutput->nFilledLen = 0;
         // reset IMR buffer size
-        imrBuffer->size = IMR_BUFFER_SIZE;
+        imrBuffer->size = INPORT_BUFFER_SIZE;
         this->ports[INPORT_INDEX]->FlushPort();
         this->ports[OUTPORT_INDEX]->FlushPort();
         return OMX_ErrorNone;
@@ -212,6 +211,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorProcess(
     OMX_ERRORTYPE ret;
     ret = OMXVideoDecoderBase::ProcessorProcess(pBuffers, retains, numberBuffers);
     if (ret != OMX_ErrorNone) {
+        LOGE("OMXVideoDecoderBase::ProcessorProcess failed. Result: %#x", ret);
         return ret;
     }
 
@@ -423,8 +423,11 @@ void OMXVideoDecoderAVCSecure::KeepAliveTimerCallback(sigval v) {
 }
 
 void OMXVideoDecoderAVCSecure::KeepAliveTimerCallback() {
-    uint32_t timeout = 1000000;
-    Drm_KeepAlive(WV_SESSION_ID, &timeout);
+    uint32_t timeout = DRM_KEEP_ALIVE_TIMER;
+    sec_result_t sepres =  Drm_KeepAlive(WV_SESSION_ID, &timeout);
+    if (sepres != 0) {
+        LOGE("Drm_KeepAlive failed. Result = %#x", sepres);
+    }
 }
 
 
