@@ -301,7 +301,40 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderAVCSecure
 include $(BUILD_SHARED_LIBRARY)
 
+# Add source codes for Merrifield
+MERRIFIELD_PRODUCT := \
+        mrfl_vp \
+        mrfl_hvp \
+        mrfl_sle
+ifneq ($(filter $(TARGET_PRODUCT),$(MERRIFIELD_PRODUCT)),)
+include $(CLEAR_VARS)
+LOCAL_CPPFLAGS :=
+LOCAL_LDFLAGS :=
 
+LOCAL_SHARED_LIBRARIES := \
+    libwrs_omxil_common \
+    libva_videodecoder \
+    liblog \
+    libva \
+    libva-android
 
+LOCAL_C_INCLUDES := \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
+    $(PV_INCLUDES) \
+    $(TARGET_OUT_HEADERS)/libmix_videodecoder \
+    $(TARGET_OUT_HEADERS)/libva \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax
+
+LOCAL_SRC_FILES := \
+    OMXComponentCodecBase.cpp\
+    OMXVideoDecoderBase.cpp\
+    OMXVideoDecoderVP8.cpp
+
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE := libOMXVideoDecoderVP8
+include $(BUILD_SHARED_LIBRARY)
+endif
 
 endif
