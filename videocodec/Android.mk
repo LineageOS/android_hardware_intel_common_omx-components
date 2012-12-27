@@ -291,6 +291,41 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderPAVC
 include $(BUILD_SHARED_LIBRARY)
 
+include $(CLEAR_VARS)
+
+LOCAL_CPPFLAGS :=
+LOCAL_LDFLAGS :=
+
+LOCAL_SHARED_LIBRARIES := \
+        libwrs_omxil_common \
+        liblog \
+        libva_videoencoder \
+        libva \
+        libva-android \
+        libva-tpi \
+        libutils \
+        libhardware \
+        libintelmetadatabuffer
+
+LOCAL_C_INCLUDES := \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
+    $(TARGET_OUT_HEADERS)/libmix_videoencoder \
+    $(TARGET_OUT_HEADERS)/libva	\
+    $(TARGET_OUT_HEADERS)/libsharedbuffer \
+    $(TOP)/hardware/libhardware/include \
+    $(TOP)/frameworks/native/include/media/hardware \
+    $(TOP)/frameworks/native/include/media/openmax \
+    $(TARGET_OUT_HEADERS)/pvr
+
+LOCAL_SRC_FILES := \
+    OMXComponentCodecBase.cpp \
+    OMXVideoEncoderBase.cpp \
+    OMXVideoEncoderVP8.cpp
+
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE := libOMXVideoEncoderVP8
+include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 
