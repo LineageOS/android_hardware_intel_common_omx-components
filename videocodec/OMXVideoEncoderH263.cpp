@@ -141,6 +141,13 @@ OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorProcess(
         ports[INPORT_INDEX]->ReturnAllRetainedBuffers();
     }
 
+    if (mFrameInputCount == 0) {
+        retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+        retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+        mFrameRetrieved = OMX_TRUE;
+        goto out;
+    }
+
     outBuf.format = OUTPUT_EVERYTHING;
     ret = mVideoEncoder->getOutput(&outBuf);
     // CHECK_ENCODE_STATUS("encode");
@@ -241,7 +248,7 @@ out:
 OMX_ERRORTYPE OMXVideoEncoderH263::BuildHandlerList(void) {
     OMXVideoEncoderBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoH263, GetParamVideoH263, SetParamVideoH263);
-    AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoProfileLevelQuerySupported, SetParamVideoProfileLevelQuerySupported);    
+    AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoProfileLevelQuerySupported, SetParamVideoProfileLevelQuerySupported);
     return OMX_ErrorNone;
 }
 

@@ -22,13 +22,96 @@
 
 static const char *AVC_MIME_TYPE = "video/h264";
 
+struct ProfileMap {
+    OMX_VIDEO_AVCPROFILETYPE key;
+    VAProfile value;
+    const char *name;
+};
+
+struct LevelMap {
+    OMX_VIDEO_AVCLEVELTYPE key;
+    uint32_t value;
+    const char *name;
+};
+
+static ProfileMap ProfileTable[] = {
+    { OMX_VIDEO_AVCProfileBaseline, VAProfileH264Baseline, "AVC Baseline" },
+    { OMX_VIDEO_AVCProfileMain, VAProfileH264Main, "AVC Main" },
+    { OMX_VIDEO_AVCProfileHigh, VAProfileH264High, "AVC High" },
+    { (OMX_VIDEO_AVCPROFILETYPE) 0, (VAProfile) 0, "Not Supported" },
+};
+
+static LevelMap LevelTable[] = {
+    { OMX_VIDEO_AVCLevel4, 40, "AVC Level4" },
+    { OMX_VIDEO_AVCLevel41, 41, "AVC Level41" },
+    { OMX_VIDEO_AVCLevel42, 42, "AVC Level42" },
+    { OMX_VIDEO_AVCLevel5, 50, "AVC Level5" },
+    { OMX_VIDEO_AVCLevel51, 51, "AVC Level51" },
+    { (OMX_VIDEO_AVCLEVELTYPE) 0, 0, "Not Supported" },
+};
+
+#define FIND_BYKEY(table, x, y)  {\
+        for(int ii = 0; ; ii++) { \
+            if (table[ii].key == x || table[ii].key == 0) { \
+                y = ii; \
+                break; \
+            } \
+        } \
+    }\
+
+#define FIND_BYVALUE(table, x, y)  {\
+        for(int ii = 0; ; ii++) { \
+            if (table[ii].value == x || table[ii].value == 0) { \
+                y = ii; \
+                break; \
+            } \
+        } \
+    } \
+
 OMXVideoEncoderAVC::OMXVideoEncoderAVC() {
     BuildHandlerList();
     mVideoEncoder = createVideoEncoder(AVC_MIME_TYPE);
-    if (!mVideoEncoder) LOGE("OMX_ErrorInsufficientResources");
+    if (!mVideoEncoder) {
+        LOGE("OMX_ErrorInsufficientResources");
+        return;
+    }
 
     mAVCParams = new VideoParamsAVC();
-    if (!mAVCParams) LOGE("OMX_ErrorInsufficientResources");
+    if (!mAVCParams) {
+        LOGE("OMX_ErrorInsufficientResources");
+        return;
+    }
+
+    //Query supported Profile/Level
+    mPLTableCount = 0;
+
+    VAProfile profiles[MAX_H264_PROFILE] = {VAProfileH264High, VAProfileH264Main, VAProfileH264Baseline};
+
+    VideoParamsProfileLevel pl;
+    for (int i=0; i < MAX_H264_PROFILE; i++) {
+        pl.profile = profiles[i];
+        pl.level = 0;
+        pl.isSupported = false;
+
+        mVideoEncoder->getParameters(&pl);
+        if (pl.isSupported) {
+            uint32_t profile_index;
+            uint32_t level_index;
+
+            FIND_BYVALUE(ProfileTable, pl.profile,  profile_index);
+            if (ProfileTable[profile_index].key == (OMX_VIDEO_AVCPROFILETYPE) 0)
+                continue;
+
+            FIND_BYVALUE(LevelTable, pl.level,  level_index);
+            if (LevelTable[level_index].key == (OMX_VIDEO_AVCLEVELTYPE) 0)
+                continue;
+
+            mPLTable[mPLTableCount].profile = ProfileTable[profile_index].key;
+            mPLTable[mPLTableCount].level = LevelTable[level_index].key;
+            mPLTableCount ++;
+            LOGV("Support Profile:%s, Level:%s\n", ProfileTable[profile_index].name, LevelTable[level_index].name);
+        }
+    }
 }
 
 OMXVideoEncoderAVC::~OMXVideoEncoderAVC() {
@@ -43,9 +126,16 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     memset(&mParamAvc, 0, sizeof(mParamAvc));
     SetTypeHeader(&mParamAvc, sizeof(mParamAvc));
     mParamAvc.nPortIndex = OUTPORT_INDEX;
-    mParamAvc.eProfile = OMX_VIDEO_AVCProfileBaseline;
-    mParamAvc.eLevel = OMX_VIDEO_AVCLevel41;
-    mParamAvc.nPFrames = 30;
+
+    if (mPLTableCount > 0) {
+        mParamAvc.eProfile = (OMX_VIDEO_AVCPROFILETYPE) mPLTable[0].profile;
+        mParamAvc.eLevel = (OMX_VIDEO_AVCLEVELTYPE)mPLTable[0].level;
+    } else {
+        LOGE("No supported profile/level\n");
+        return OMX_ErrorUndefined;
+    }
+    mParamAvc.nAllowedPictureTypes = OMX_VIDEO_PictureTypeI | OMX_VIDEO_PictureTypeP;
+    mParamAvc.nPFrames = 29;
     mParamAvc.nBFrames = 0;
 
     // OMX_NALSTREAMFORMATTYPE
@@ -61,7 +151,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     mConfigAvcIntraPeriod.nPortIndex = OUTPORT_INDEX;
     // TODO: need to be populated from Video Encoder
     mConfigAvcIntraPeriod.nIDRPeriod = 1;
-    mConfigAvcIntraPeriod.nPFrames = 30;
+    mConfigAvcIntraPeriod.nPFrames = 29;
 
     // OMX_VIDEO_CONFIG_NALSIZE
     memset(&mConfigNalSize, 0, sizeof(mConfigNalSize));
@@ -114,19 +204,21 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetVideoEncoderParam(void) {
     }
 
     mVideoEncoder->getParameters(mEncoderParams);
-    if (mParamAvc.eProfile == OMX_VIDEO_AVCProfileBaseline) {
-        mEncoderParams->profile = (VAProfile)VAProfileH264Baseline;
-        mEncoderParams->intraPeriod = mParamAvc.nPFrames;  //intraperiod
-    } else if (mParamAvc.eProfile == OMX_VIDEO_AVCProfileHigh) {
-        mEncoderParams->profile = (VAProfile)VAProfileH264High;
-        mEncoderParams->intraPeriod = mParamAvc.nPFrames + mParamAvc.nBFrames; //intraperiod
-    }
+    uint32_t index;
+    FIND_BYKEY(ProfileTable, mParamAvc.eProfile, index);
+    if (ProfileTable[index].value != 0)
+        mEncoderParams->profile = ProfileTable[index].value;
+
+    if (mParamAvc.nAllowedPictureTypes & OMX_VIDEO_PictureTypeB)
+        mEncoderParams->intraPeriod = mParamAvc.nPFrames + mParamAvc.nBFrames;
+    else
+        mEncoderParams->intraPeriod = mParamAvc.nPFrames + 1;
+
     // 0 - all luma and chroma block edges of the slice are filtered
     // 1 - deblocking is disabled for all block edges of the slice
     // 2 - all luma and chroma block edges of the slice are filtered
     // with exception of the block edges that coincide with slice boundaries
     mEncoderParams->disableDeblocking = 0;
-
 
     OMXVideoEncoderBase::SetVideoEncoderParam();
 
@@ -142,17 +234,18 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetVideoEncoderParam(void) {
     mAVCParams->sliceNum.iSliceNum = mConfigIntelSliceNumbers.nISliceNumber;
     mAVCParams->sliceNum.pSliceNum = mConfigIntelSliceNumbers.nPSliceNumber;
     mAVCParams->maxSliceSize = mConfigNalSize.nNaluBytes * 8;
+
     if (mEncoderParams->intraPeriod == 0) {
         mAVCParams->idrInterval = 0;
-        mAVCParams->ipPeriod = 0;
+        mAVCParams->ipPeriod = 1;
     } else {
         mAVCParams->idrInterval = mConfigAvcIntraPeriod.nIDRPeriod; //idrinterval
-        if (mParamAvc.eProfile == OMX_VIDEO_AVCProfileBaseline) {
-            mAVCParams->ipPeriod = 1;   //ipperiod
-        } else if (mParamAvc.eProfile == OMX_VIDEO_AVCProfileHigh) {
-            mAVCParams->ipPeriod = mEncoderParams->intraPeriod / mParamAvc.nPFrames; //ipperiod
-        }
+        if (mParamAvc.nAllowedPictureTypes & OMX_VIDEO_PictureTypeB)
+            mAVCParams->ipPeriod = mEncoderParams->intraPeriod / mParamAvc.nPFrames;
+        else
+            mAVCParams->ipPeriod = 1;
     }
+
     ret = mVideoEncoder ->setParameters(mAVCParams);
     CHECK_ENCODE_STATUS("setParameters");
 
@@ -195,23 +288,28 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorPreEmptyBuffer(OMX_BUFFERHEADERTYPE* 
 
     uint32_t poc = 0;
     uint32_t idrPeriod = mAVCParams->idrInterval;
-    uint32_t IntraPeriod = mEncoderParams->intraPeriod; /*6*/
-    uint32_t IpPeriod = mAVCParams->ipPeriod;  /*3 */
+    uint32_t IntraPeriod = mEncoderParams->intraPeriod;
+    uint32_t IpPeriod = mAVCParams->ipPeriod;
     bool BFrameEnabled = IpPeriod > 1;
+    uint32_t GOP = 0;
+
+    if (idrPeriod == 0 || IntraPeriod == 0) {
+        GOP = 0xFFFFFFFF;
+        if (IntraPeriod == 0)
+            IntraPeriod = 0xFFFFFFFF;
+    } else if (BFrameEnabled)
+        GOP = IntraPeriod*idrPeriod + 1;
+    else
+        GOP = IntraPeriod*idrPeriod;
 
     LOGV("ProcessorPreEmptyBuffer idrPeriod=%d, IntraPeriod=%d, IpPeriod=%d, BFrameEnabled=%d\n", idrPeriod, IntraPeriod, IpPeriod, BFrameEnabled);
 
-    //decide frame type, refer Merrifield Video Encoder Driver HLD Chapter 3.15
-    if (idrPeriod == 0)
-        poc = mInputPictureCount;
-    else if (BFrameEnabled)
-        poc = mInputPictureCount % (IntraPeriod*idrPeriod + 1);
-    else
-        poc = mInputPictureCount % (IntraPeriod*idrPeriod);
+    //decide frame type, refer Merrifield Video Encoder Driver HLD Chapter 3.17
+    poc = mInputPictureCount % GOP;
 
     if (poc == 0 /*IDR*/) {
             EncodeFrameType = F_IDR;
-    } else if (IntraPeriod == 0) {
+    } else if (IntraPeriod == 1) {
             EncodeFrameType = F_I;
     }else if ((poc > IpPeriod) && ((poc - IpPeriod) % IntraPeriod == 0))/*I*/{
             EncodeFrameType = F_I;
@@ -574,19 +672,10 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::GetParamVideoProfileLevelQuerySupported(OMX_PT
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
 
-    struct ProfileLevelTable {
-        OMX_U32 profile;
-        OMX_U32 level;
-    } plTable[] = {
-        {OMX_VIDEO_AVCProfileBaseline, OMX_VIDEO_AVCLevel41},
-//        {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel41},
-    };
+    CHECK_ENUMERATION_RANGE(p->nProfileIndex,mPLTableCount);
 
-    OMX_U32 count = sizeof(plTable)/sizeof(ProfileLevelTable);
-    CHECK_ENUMERATION_RANGE(p->nProfileIndex,count);
-
-    p->eProfile = plTable[p->nProfileIndex].profile;
-    p->eLevel = plTable[p->nProfileIndex].level;
+    p->eProfile = mPLTable[p->nProfileIndex].profile;
+    p->eLevel = mPLTable[p->nProfileIndex].level;
 
     return OMX_ErrorNone;
 }
@@ -613,6 +702,8 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamVideoAvc(OMX_PTR pStructure) {
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
     CHECK_SET_PARAM_STATE();
 
+    //Check if parameters are valid
+
     if(p->bEnableASO == OMX_TRUE)
         return OMX_ErrorUnsupportedSetting;
 
@@ -625,9 +716,32 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamVideoAvc(OMX_PTR pStructure) {
     if(p->bEnableRS == OMX_TRUE)
         return OMX_ErrorUnsupportedSetting;
 
+    if (p->eProfile == OMX_VIDEO_AVCProfileBaseline &&
+            (p->nAllowedPictureTypes & OMX_VIDEO_PictureTypeB) )
+        return OMX_ErrorBadParameter;
+
+    if (p->nAllowedPictureTypes & OMX_VIDEO_PictureTypeP && (p->nPFrames == 0))
+        return OMX_ErrorBadParameter;
+
+    if (p->nAllowedPictureTypes & OMX_VIDEO_PictureTypeB ) {
+        if (p->nBFrames == 0)
+            return OMX_ErrorBadParameter;
+
+        //IpPeriod must be integer
+        uint32_t IntraPeriod = mParamAvc.nPFrames + mParamAvc.nBFrames ;
+        if (IntraPeriod % mParamAvc.nPFrames != 0)
+            return OMX_ErrorBadParameter;
+
+        //IntraPeriod must be multipe of IpPeriod.
+        uint32_t IpPeriod = IntraPeriod /mParamAvc.nPFrames;
+        if (IntraPeriod % IpPeriod != 0)
+            return OMX_ErrorBadParameter;
+    }
+
     // TODO: do we need to check if port is enabled?
     // TODO: see SetPortAvcParam implementation - Can we make simple copy????
     memcpy(&mParamAvc, p, sizeof(mParamAvc));
+
     return OMX_ErrorNone;
 }
 
@@ -730,27 +844,38 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetConfigVideoAVCIntraPeriod(OMX_PTR pStructur
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
 
-    // set in either Loaded state (ComponentSetParam) or Executing state (ComponentSetConfig)
-    mConfigAvcIntraPeriod = *p;
-
     // return OMX_ErrorNone if not in Executing state
     // TODO:  return OMX_ErrorIncorrectStateOperation?
     CHECK_SET_CONFIG_STATE();
 
+    //check if parameters are valid
+    if ( ( (mParamAvc.nAllowedPictureTypes & OMX_VIDEO_PictureTypeP) || 
+           (mParamAvc.nAllowedPictureTypes & OMX_VIDEO_PictureTypeB) ) && 
+         p->nPFrames == 0 )
+        return OMX_ErrorBadParameter;
+
     // TODO: apply AVC Intra Period configuration in Executing state
     VideoConfigAVCIntraPeriod avcIntraPreriod;
-    avcIntraPreriod.intraPeriod = mConfigAvcIntraPeriod.nPFrames;
-    if (avcIntraPreriod.intraPeriod == 0) {
-        avcIntraPreriod.idrInterval = 0;
-        avcIntraPreriod.ipPeriod = 0;
+
+    if (mParamAvc.nAllowedPictureTypes & OMX_VIDEO_PictureTypeB) {
+        avcIntraPreriod.intraPeriod = p->nPFrames;
+        if (p->nPFrames % mParamAvc.nBFrames != 0)
+            return OMX_ErrorBadParameter;
+        avcIntraPreriod.ipPeriod = p->nPFrames / mParamAvc.nBFrames;
+
+        if (avcIntraPreriod.intraPeriod % avcIntraPreriod.ipPeriod != 0)
+            return OMX_ErrorBadParameter;
+
+        avcIntraPreriod.idrInterval = p->nIDRPeriod;
     } else {
-        avcIntraPreriod.idrInterval = mConfigAvcIntraPeriod.nIDRPeriod;
-        if (mParamAvc.eProfile == OMX_VIDEO_AVCProfileBaseline) {
-            avcIntraPreriod.ipPeriod = 1;
-        } else if (mParamAvc.eProfile == OMX_VIDEO_AVCProfileHigh) {
-            avcIntraPreriod.ipPeriod = avcIntraPreriod.intraPeriod / mParamAvc.nPFrames;
-        }
+        avcIntraPreriod.intraPeriod = p->nPFrames + 1;
+        avcIntraPreriod.ipPeriod = 1;
+        if (avcIntraPreriod.intraPeriod == 0)
+            avcIntraPreriod.idrInterval = 0;
+        else
+            avcIntraPreriod.idrInterval = p->nIDRPeriod;
     }
+
     retStatus = mVideoEncoder->setConfig(&avcIntraPreriod);
     if(retStatus !=  ENCODE_SUCCESS) {
         LOGW("set avc intra period config failed");
@@ -759,6 +884,10 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetConfigVideoAVCIntraPeriod(OMX_PTR pStructur
     mEncoderParams->intraPeriod = avcIntraPreriod.intraPeriod;
     mAVCParams->idrInterval = avcIntraPreriod.idrInterval;
     mAVCParams->ipPeriod = avcIntraPreriod.ipPeriod;
+
+    mConfigAvcIntraPeriod = *p;
+    mConfigAvcIntraPeriod.nIDRPeriod = avcIntraPreriod.idrInterval;
+
     return OMX_ErrorNone;
 }
 

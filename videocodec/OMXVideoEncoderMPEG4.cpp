@@ -157,6 +157,13 @@ OMX_ERRORTYPE OMXVideoEncoderMPEG4::ProcessorProcess(
         outfilledlen = outBuf.dataSize;
         mFirstFrame = OMX_FALSE;
     } else {
+        if (mFrameInputCount == 1) {
+            retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+            retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+            mFrameRetrieved = OMX_TRUE;
+            goto out;
+        }
+
         outBuf.format = OUTPUT_EVERYTHING;
         mVideoEncoder->getOutput(&outBuf);
         CHECK_ENCODE_STATUS("getOutput");
@@ -245,7 +252,7 @@ out:
 OMX_ERRORTYPE OMXVideoEncoderMPEG4::BuildHandlerList(void) {
     OMXVideoEncoderBase::BuildHandlerList();
     AddHandler(OMX_IndexParamVideoMpeg4, GetParamVideoMpeg4, SetParamVideoMpeg4);
-    AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoProfileLevelQuerySupported, SetParamVideoProfileLevelQuerySupported);    
+    AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoProfileLevelQuerySupported, SetParamVideoProfileLevelQuerySupported);
     return OMX_ErrorNone;
 }
 

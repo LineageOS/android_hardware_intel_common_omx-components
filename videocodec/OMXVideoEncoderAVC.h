@@ -68,6 +68,8 @@ typedef struct {
     uint32_t FrameCount;
 }Encode_Info;
 
+#define MAX_H264_PROFILE 3
+
 class OMXVideoEncoderAVC : public OMXVideoEncoderBase {
 public:
     OMXVideoEncoderAVC();
@@ -129,6 +131,13 @@ private:
             buffer_retain_t *retains,
             Encode_Info *pInfo);
 
+    struct ProfileLevelTable {
+        OMX_U32 profile;
+        OMX_U32 level;
+    };
+
+    ProfileLevelTable mPLTable[MAX_H264_PROFILE];
+    OMX_U32 mPLTableCount;
 };
 
 #endif /* OMX_VIDEO_ENCODER_AVC_H_ */
