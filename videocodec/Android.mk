@@ -393,7 +393,7 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libttm \
     $(TOP)/frameworks/native/include/media/hardware \
     $(TOP)/frameworks/native/include/media/openmax \
-    $(TOP)/hardware/intel/linux-2.6/drivers/staging/intel_media/common
+    $(TOP)/$(KERNEL_SRC_DIR)/drivers/staging/intel_media/common
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
