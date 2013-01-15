@@ -104,9 +104,6 @@ OMX_ERRORTYPE OMXVideoEncoderMPEG4::ProcessorProcess(
 
     inBuf.data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
     inBuf.size = buffers[INPORT_INDEX]->nFilledLen;
-    inBuf.type = FTYPE_UNKNOWN;
-    inBuf.flag = 0;
-    inBuf.timeStamp = buffers[INPORT_INDEX]->nTimeStamp;
 
     if (bAndroidOpaqueFormat) {
         mCurHandle = rgba2nv12conversion(buffers[INPORT_INDEX]);
@@ -163,7 +160,7 @@ OMX_ERRORTYPE OMXVideoEncoderMPEG4::ProcessorProcess(
 
 
         outfilledlen = outBuf.dataSize;
-        outtimestamp = outBuf.timeStamp;
+        outtimestamp = buffers[INPORT_INDEX]->nTimeStamp;
 
         if (outBuf.flag & ENCODE_BUFFERFLAG_SYNCFRAME) {
             outflags |= OMX_BUFFERFLAG_SYNCFRAME;

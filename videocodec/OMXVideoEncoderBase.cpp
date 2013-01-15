@@ -28,6 +28,7 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
     ,mEncoderParams(NULL)
     ,mFrameInputCount(0)
     ,mFrameOutputCount(0)
+    ,mPFrames(0)
     ,mFrameRetrieved(OMX_TRUE)
     ,mFirstFrame(OMX_TRUE)
     ,mStoreMetaDataInBuffers(OMX_FALSE) {
@@ -270,11 +271,11 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetVideoEncoderParam() {
         mConfigFramerate.xEncodeFramerate = paramPortDefinitionInput->format.video.xFramerate >> 16;
     }
 
-    if(mEncoderParams->intraPeriod == 0) {
-        OMX_U32 intraPeriod = mEncoderParams->frameRate.frameRateNum / 2;
-        mEncoderParams->intraPeriod = (intraPeriod < 15) ? 15 : intraPeriod;   // Limit intra frame period to ensure video quality for low bitrate application.
+    if(mPFrames == 0) {
+        mPFrames = mEncoderParams->frameRate.frameRateNum / 2;
+        mPFrames = (mPFrames < 15) ? 15 : mPFrames;   // Limit intra frame period to ensure video quality for low bitrate application.
     }
-
+    mEncoderParams->intraPeriod = mPFrames;
     mEncoderParams->rawFormat = RAW_FORMAT_NV12;
 
     LOGV("frameRate.frameRateDenom = %d\n", mEncoderParams->frameRate.frameRateDenom);
