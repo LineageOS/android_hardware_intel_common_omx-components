@@ -110,10 +110,15 @@ OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorProcess(
 
     if (bAndroidOpaqueFormat) {
         mCurHandle = rgba2nv12conversion(buffers[INPORT_INDEX]);
+        if (mCurHandle < 0)
+            return OMX_ErrorUndefined;
     }
 
     inBuf.data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
     inBuf.size = buffers[INPORT_INDEX]->nFilledLen;
+    inBuf.type = FTYPE_UNKNOWN;
+    inBuf.flag = 0;
+    inBuf.timeStamp = buffers[INPORT_INDEX]->nTimeStamp;
 
     LOGV("buffer_in.data=%x, data_size=%d",
          (unsigned)inBuf.data, inBuf.size);
@@ -148,7 +153,7 @@ OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorProcess(
 
     LOGV("output data size = %d", outBuf.dataSize);
     outfilledlen = outBuf.dataSize;
-    outtimestamp = buffers[INPORT_INDEX]->nTimeStamp;
+    outtimestamp = outBuf.timeStamp;
 
 
     if (outBuf.flag & ENCODE_BUFFERFLAG_SYNCFRAME) {

@@ -20,6 +20,53 @@
 
 
 #include "OMXVideoEncoderBase.h"
+#include <utils/List.h>
+
+enum {
+    F_UNKNOWN = 0x00,    // Unknown
+    F_I       = 0x01,    // General I-frame type
+    F_P       = 0x02,    // General P-frame type
+    F_B       = 0x03,    // General B-frame type
+    F_SI      = 0x04,    // H.263 SI-frame type
+    F_SP      = 0x05,    // H.263 SP-frame type
+    F_EI      = 0x06,    // H.264 EI-frame type
+    F_EP      = 0x07,    // H.264 EP-frame type
+    F_S       = 0x08,    // MPEG-4 S-frame type
+    F_IDR     = 0x09,    // IDR-frame type
+};
+
+enum {
+    CACHE_NONE    = 0x00,    //nothing to be done
+    CACHE_PUSH    = 0x01,    //push this frame into cache
+    CACHE_POP     = 0x02,    //pop all from cache into queue head by STACK rule
+    CACHE_RESET   = 0x03,    //reset cache, clear all cached frames
+};
+
+#define ENC_EC     0x08000000
+#define ENC_DR     0x04000000
+#define ENC_EOE    0x00800000
+#define ENC_NSTOP    0x00400000
+
+#define GET_FT(x)  ( (x & 0xF0000000 ) >> 28 )       //get frame type
+#define GET_CO(x)  ( (x & 0x03000000 ) >> 24 )       //get cache operation
+#define GET_FC(x)  ( (x & 0x003FFFFF ) )             //get frame count
+
+#define SET_FT(x, y)  { x = ((x & ~0xF0000000) | (y << 28)); }
+#define SET_CO(x, y)  { x = ((x & ~0x03000000) | (y << 24 )); }
+#define SET_FC(x, y)  { x = ((x & ~0x003FFFFF) | (y & 0x003FFFFF )); }
+
+const char* FrameTypeStr[10] = {"UNKNOWN", "I", "P", "B", "SI", "SP", "EI", "EP", "S", "IDR"};
+const char* CacheOperationStr[4]= {"NONE", "PUSH", "POP", "RESET"};
+
+typedef struct {
+    uint32_t FrameType;
+    bool EncodeComplete;
+    bool DataRetrieved;
+    uint32_t CacheOperation;
+    bool EndOfEncode;
+    bool NotStopFrame;
+    uint32_t FrameCount;
+}Encode_Info;
 
 class OMXVideoEncoderAVC : public OMXVideoEncoderBase {
 public:
@@ -30,10 +77,12 @@ protected:
     virtual OMX_ERRORTYPE InitOutputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionOutput);
     virtual OMX_ERRORTYPE ProcessorInit(void);
     virtual OMX_ERRORTYPE ProcessorDeinit(void);
+    virtual OMX_ERRORTYPE ProcessorStop(void);
     virtual OMX_ERRORTYPE ProcessorProcess(
             OMX_BUFFERHEADERTYPE **buffers,
             buffer_retain_t *retains,
             OMX_U32 numberBuffers);
+    virtual OMX_ERRORTYPE ProcessorPreEmptyBuffer(OMX_BUFFERHEADERTYPE* buffer);
 
     virtual OMX_ERRORTYPE BuildHandlerList(void);
     virtual OMX_ERRORTYPE SetVideoEncoderParam();
@@ -65,6 +114,21 @@ private:
     OMX_VIDEO_PARAM_INTEL_AVCVUI mParamIntelAvcVui;
     OMX_VIDEO_CONFIG_INTEL_SLICE_NUMBERS mConfigIntelSliceNumbers;
     VideoParamsAVC *mAVCParams;
+
+    OMX_U32 mInputPictureCount;
+    OMX_U32 mFrameEncodedCount;
+
+    List<OMX_BUFFERHEADERTYPE*> mBFrameList;
+
+    OMX_ERRORTYPE ProcessCacheOperation(
+            OMX_BUFFERHEADERTYPE **buffers,
+            buffer_retain_t *retains,
+            Encode_Info *pInfo);
+    OMX_ERRORTYPE ProcessDataRetrieve(
+            OMX_BUFFERHEADERTYPE **buffers,
+            buffer_retain_t *retains,
+            Encode_Info *pInfo);
+
 };
 
 #endif /* OMX_VIDEO_ENCODER_AVC_H_ */
