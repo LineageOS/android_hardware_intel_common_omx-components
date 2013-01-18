@@ -890,10 +890,17 @@ int32_t OMXVideoEncoderBase::rgba2nv12conversion(OMX_BUFFERHEADERTYPE *pBuffer)
     memcpy(&mBufferHandleMaps[i].srcBuffer, pBuffer->pBuffer + 4, 4);
 
     // Color space conversion
+#ifdef MRFLD_OMX
+    err = mGrallocMod->Blit(mGrallocMod, (native_handle_t*)mBufferHandleMaps[i].srcBuffer,
+            (native_handle_t*)mBufferHandleMaps[i].mHandle,
+            mEncoderParams->resolution.width, mEncoderParams->resolution.height, 0, 0, 1);
+    ALOGE_IF(err, "Blit2(mBufferHandleMaps[%d].srcBuffer)", i);
+#else
     err = mGrallocMod->Blit2(mGrallocMod, (native_handle_t*)mBufferHandleMaps[i].srcBuffer,
             (native_handle_t*)mBufferHandleMaps[i].mHandle,
             mEncoderParams->resolution.width, mEncoderParams->resolution.height, 0, 0);
     ALOGE_IF(err, "Blit2(mBufferHandleMaps[%d].srcBuffer)", i);
+#endif
 
     // Wrap destination buffer handle to encoder's input format
     IntelMetadataBuffer *imb = new IntelMetadataBuffer(MetadataBufferTypeGrallocSource,

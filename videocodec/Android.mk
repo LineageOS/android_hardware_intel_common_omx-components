@@ -170,6 +170,9 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderAVC.cpp
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
+ifeq ($(ENABLE_MRFL_GRAPHICS),true)
+LOCAL_CFLAGS += -DMRFLD_OMX
+endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderAVC
@@ -209,6 +212,9 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderH263.cpp
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
+ifeq ($(ENABLE_MRFL_GRAPHICS),true)
+LOCAL_CFLAGS += -DMRFLD_OMX
+endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderH263
@@ -247,6 +253,9 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderMPEG4.cpp
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
+ifeq ($(ENABLE_MRFL_GRAPHICS),true)
+LOCAL_CFLAGS += -DMRFLD_OMX
+endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderMPEG4
