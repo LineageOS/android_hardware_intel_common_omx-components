@@ -487,6 +487,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
         mFrameEncodedCount ++;
         if (mFrameEncodedCount == 2) {//not getoutput for second encode frame to keep in async mode
             eInfo.DataRetrieved = true;
+            ports[INPORT_INDEX]->ReturnAllRetainedBuffers();
             retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
             retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
         }
