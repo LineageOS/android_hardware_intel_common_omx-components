@@ -36,6 +36,7 @@ static const char* AVC_MIME_TYPE = "video/avc";
 static const char* AVC_SECURE_MIME_TYPE = "video/avc-secure";
 
 #define IMR_INITIAL_OFFSET      0 //1024
+#define IMR_BUFFER_SIZE         (8 * 1024 * 1024)
 #define KEEP_ALIVE_INTERVAL     5 // seconds
 #define DRM_KEEP_ALIVE_TIMER    1000000
 #define WV_SESSION_ID           0x00000011
@@ -131,7 +132,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
     uint32_t imrOffset = 0;
-    uint32_t imrBufferSize;
+    uint32_t imrBufferSize = IMR_BUFFER_SIZE;
     uint32_t sessionID;
 
     EnableIEDSession(true);
@@ -146,6 +147,10 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
         //return OMX_ErrorHardware;
     }
     LOGI("Drm_WV_CreateSession: IMR Offset = %d, IMR size = %#x", imrOffset, imrBufferSize);
+    if (imrBufferSize != IMR_BUFFER_SIZE) {
+        LOGE("Mismatch in IMR size: Requested: %#x Obtained: %#x", IMR_BUFFER_SIZE, imrBufferSize);
+    }
+
 
     int ret;
     struct sigevent sev;
