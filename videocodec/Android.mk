@@ -416,7 +416,8 @@ include $(BUILD_SHARED_LIBRARY)
 MERRIFIELD_PRODUCT := \
         mrfl_vp \
         mrfl_hvp \
-        mrfl_sle
+        mrfl_sle \
+        merr_vv
 ifneq ($(filter $(TARGET_PRODUCT),$(MERRIFIELD_PRODUCT)),)
 include $(CLEAR_VARS)
 LOCAL_CPPFLAGS :=
