@@ -29,6 +29,7 @@ OMXVideoDecoderMPEG4::OMXVideoDecoderMPEG4() {
     if (!mVideoDecoder) {
         LOGE("createVideoDecoder failed for \"%s\"", MPEG4_MIME_TYPE);
     }
+    mNativeBufferCount = OUTPORT_NATIVE_BUFFER_COUNT;
     BuildHandlerList();
 }
 
