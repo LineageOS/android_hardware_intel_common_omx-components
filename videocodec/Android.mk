@@ -389,12 +389,7 @@ endif
 include $(BUILD_SHARED_LIBRARY)
 
 # Add source codes for Merrifield
-MERRIFIELD_PRODUCT := \
-        mrfl_vp \
-        mrfl_hvp \
-        mrfl_sle \
-        merr_vv
-ifneq ($(filter $(TARGET_PRODUCT),$(MERRIFIELD_PRODUCT)),)
+ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 include $(CLEAR_VARS)
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
