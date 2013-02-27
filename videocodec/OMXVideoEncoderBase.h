@@ -94,10 +94,10 @@ private:
         // OMX_PARAM_PORTDEFINITIONTYPE
         INPORT_MIN_BUFFER_COUNT = 1,
         // FIXME: increate input buffer count to 5
-#if (MFLD_GI || YUKKA)
-        INPORT_ACTUAL_BUFFER_COUNT = 2,
-#else
+#ifdef USE_VIDEO_EFFECT
         INPORT_ACTUAL_BUFFER_COUNT = 5,
+#else
+        INPORT_ACTUAL_BUFFER_COUNT = 2,
 #endif
         INPORT_BUFFER_SIZE = 1382400,
 

@@ -1,18 +1,8 @@
 ifeq ($(strip $(BOARD_USES_WRS_OMXIL_CORE)),true)
 LOCAL_PATH := $(call my-dir)
 
-ifeq ($(REF_PRODUCT_NAME),mfld_gi)
-LOCAL_C_FLAGS := -DMFLD_GI
-else ifneq (,$(findstring $(REF_PRODUCT_NAME),salitpa))
-LOCAL_C_FLAGS := -DMFLD_DV10
-else ifneq (,$(findstring $(REF_PRODUCT_NAME),victoriabay redhookbay))
-LOCAL_C_FLAGS := -DCLVT
-else ifeq ($(REF_PRODUCT_NAME), mrfl_vp)
-LOCAL_C_FLAGS := -DMRFL_VP
-else ifeq ($(REF_PRODUCT_NAME),yukkabeach)
-LOCAL_C_FLAGS := -DYUKKA
-else
-LOCAL_C_FLAGS := -DMFLD_PR2
+ifeq ($(strip $(USE_VIDEO_EFFECT)),true)
+LOCAL_C_FLAGS := -DUSE_VIDEO_EFFECT
 endif
 
 include $(CLEAR_VARS)
