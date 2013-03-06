@@ -44,7 +44,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetVideoEncoderParam() {
     }
 
     mVideoEncoder->getParameters(mEncoderParams);
-    mEncoderParams->profile = (VAProfile)PROFILE_VP8;
+    mEncoderParams->profile = VAProfileVP8Version0_3;
     return OMXVideoEncoderBase::SetVideoEncoderParam();
 }
 
