@@ -208,13 +208,13 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorReset(void) {
 
 
 OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorDeinit(void) {
-    if (mVideoDecoder == NULL) {
-        LOGE("ProcessorDeinit: Video decoder is not created.");
-        return OMX_ErrorDynamicResourcesUnavailable;
+    if (mWorkingMode != GRAPHICBUFFER_MODE) {
+        if (mVideoDecoder == NULL) {
+            LOGE("ProcessorDeinit: Video decoder is not created.");
+            return OMX_ErrorDynamicResourcesUnavailable;
+        }
+        mVideoDecoder->stop();
     }
-    //pthread_mutex_lock(&mSerializationLock);
-    mVideoDecoder->stop();
-    //pthread_mutex_unlock(&mSerializationLock);
     mOMXBufferHeaderTypePtrNum = 0;
     memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
     mRotationDegrees = 0;
@@ -231,7 +231,15 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorStop(void) {
 
     // TODO: this is new code
     ProcessorFlush(OMX_ALL);
-
+    if (mWorkingMode == GRAPHICBUFFER_MODE) {
+        // for GRAPHICBUFFER_MODE mode, va_destroySurface need to lock the graphicbuffer,
+        // Make sure va_destroySurface is called(ExecutingToIdle) before graphicbuffer is freed(IdleToLoaded).
+        if (mVideoDecoder == NULL) {
+            LOGE("ProcessorStop: Video decoder is not created.");
+            return OMX_ErrorDynamicResourcesUnavailable;
+        }
+        mVideoDecoder->stop();
+    }
     return OMXComponentCodecBase::ProcessorStop();
 }
 
