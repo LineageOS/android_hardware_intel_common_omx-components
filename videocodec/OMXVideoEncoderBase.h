@@ -23,8 +23,10 @@
 #include <IntelBufferSharing.h>
 #include <va/va_tpi.h>
 #include <va/va_android.h>
-#include<VideoEncoderHost.h>
+#include <VideoEncoderHost.h>
+#ifdef IMG_GFX
 #include <hal/hal_public.h>
+#endif
 
 using android::sp;
 
@@ -108,6 +110,7 @@ private:
     };
 
 public:
+#ifdef IMG_GFX
     struct {
         OMX_BUFFERHEADERTYPE* mHeader;
         buffer_handle_t srcBuffer;
@@ -116,11 +119,12 @@ public:
         int32_t mStride;
         void *vaddr[3];
     } mBufferHandleMaps[INPORT_ACTUAL_BUFFER_COUNT];
-    OMX_BOOL bAndroidOpaqueFormat;
     alloc_device_t *mAllocDev;
     IMG_gralloc_module_public_t const *mGrallocMod;
     int32_t mCurHandle;
     int32_t rgba2nv12conversion(OMX_BUFFERHEADERTYPE*);
+#endif
+    OMX_BOOL bAndroidOpaqueFormat;
 
 };
 

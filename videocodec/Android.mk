@@ -211,6 +211,10 @@ ifeq ($(ENABLE_MRFL_GRAPHICS),true)
 LOCAL_CFLAGS += -DMRFLD_OMX
 endif
 
+ifeq ($(ENABLE_IMG_GRAPHICS),true)
+    LOCAL_CFLAGS += -DIMG_GFX
+endif
+
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderAVC
 include $(BUILD_SHARED_LIBRARY)
@@ -253,6 +257,10 @@ ifeq ($(ENABLE_MRFL_GRAPHICS),true)
 LOCAL_CFLAGS += -DMRFLD_OMX
 endif
 
+ifeq ($(ENABLE_IMG_GRAPHICS),true)
+    LOCAL_CFLAGS += -DIMG_GFX
+endif
+
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderH263
 include $(BUILD_SHARED_LIBRARY)
@@ -292,6 +300,10 @@ LOCAL_SRC_FILES := \
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
 ifeq ($(ENABLE_MRFL_GRAPHICS),true)
 LOCAL_CFLAGS += -DMRFLD_OMX
+endif
+
+ifeq ($(ENABLE_IMG_GRAPHICS),true)
+    LOCAL_CFLAGS += -DIMG_GFX
 endif
 
 LOCAL_MODULE_TAGS := optional
@@ -363,6 +375,10 @@ LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
     OMXVideoEncoderBase.cpp \
     OMXVideoEncoderVP8.cpp
+
+ifeq ($(ENABLE_IMG_GRAPHICS),true)
+    LOCAL_CFLAGS += -DIMG_GFX
+endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderVP8

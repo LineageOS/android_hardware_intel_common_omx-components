@@ -108,11 +108,13 @@ OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorProcess(
         goto out;
     }
 
+#ifdef IMG_GFX
     if (bAndroidOpaqueFormat) {
         mCurHandle = rgba2nv12conversion(buffers[INPORT_INDEX]);
         if (mCurHandle < 0)
             return OMX_ErrorUndefined;
     }
+#endif
 
     inBuf.data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
     inBuf.size = buffers[INPORT_INDEX]->nFilledLen;
@@ -231,6 +233,7 @@ out:
     if (retains[OUTPORT_INDEX] == BUFFER_RETAIN_NOT_RETAIN)
         mFrameOutputCount ++;
 
+#ifdef IMG_GFX
     if (bAndroidOpaqueFormat && buffers[INPORT_INDEX]->nFilledLen != 0) {
         // Restore input buffer's content
         buffers[INPORT_INDEX]->nFilledLen = 4 + sizeof(buffer_handle_t);
@@ -238,6 +241,7 @@ out:
                 buffers[INPORT_INDEX]->nFilledLen);
 
     }
+#endif
 
     LOGV_IF(oret == OMX_ErrorNone, "%s(),%d: exit, encode is done\n", __func__, __LINE__);
 

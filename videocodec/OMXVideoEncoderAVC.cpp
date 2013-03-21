@@ -553,11 +553,13 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
             eInfo.DataRetrieved, CacheOperationStr[eInfo.CacheOperation], eInfo.EndOfEncode );
 
     //for live effect
+#ifdef IMG_GFX
     if (bAndroidOpaqueFormat) {
         mCurHandle = rgba2nv12conversion(buffers[INPORT_INDEX]);
         if (mCurHandle < 0)
             return OMX_ErrorUndefined;
     }
+#endif
 
     if (eInfo.CacheOperation == CACHE_PUSH) {
         ProcessCacheOperation(buffers, retains, &eInfo);
@@ -615,12 +617,14 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
 
 exit:
 
+#ifdef IMG_GFX
     if (bAndroidOpaqueFormat && buffers[INPORT_INDEX]->nFilledLen != 0) {
         // Restore input buffer's content
         buffers[INPORT_INDEX]->nFilledLen = 4 + sizeof(buffer_handle_t);
         memcpy(buffers[INPORT_INDEX]->pBuffer, mBufferHandleMaps[mCurHandle].backBuffer,
                 buffers[INPORT_INDEX]->nFilledLen);
     }
+#endif
 
     /* restore all states into input OMX buffer
     */

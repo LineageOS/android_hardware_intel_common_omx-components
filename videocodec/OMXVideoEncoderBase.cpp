@@ -349,6 +349,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorInit(void) {
     ret = SetVideoEncoderParam();
     CHECK_STATUS("SetVideoEncoderParam");
 
+#ifdef IMG_GFX
     if (bAndroidOpaqueFormat) {
         hw_module_t const* module;
         int err = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &module);
@@ -380,6 +381,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorInit(void) {
             return OMX_ErrorUndefined;
         }
     }
+#endif
 
     if (mVideoEncoder->start() != ENCODE_SUCCESS) {
         LOGE("Start failed, ret = 0x%08x\n", ret);
@@ -396,6 +398,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorDeinit(void) {
         mVideoEncoder->stop();
     }
 
+#ifdef IMG_GFX
     if(bAndroidOpaqueFormat) {
         for (int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
             status_t err = mAllocDev->free(mAllocDev,
@@ -405,6 +408,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorDeinit(void) {
         }
         gralloc_close(mAllocDev);
     }
+#endif
     return OMX_ErrorNone;
 }
 
@@ -856,6 +860,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetStoreMetaDataInBuffers(OMX_PTR pStructure)
     return OMX_ErrorNone;
 };
 
+#ifdef IMG_GFX
 // Utility function that blits the original source buffer in RGBA format to a temporary
 // buffer in NV12 format, and use the temporary buffer as the source buffer
 int32_t OMXVideoEncoderBase::rgba2nv12conversion(OMX_BUFFERHEADERTYPE *pBuffer)
@@ -911,4 +916,4 @@ int32_t OMXVideoEncoderBase::rgba2nv12conversion(OMX_BUFFERHEADERTYPE *pBuffer)
     return i;
 
 }
-
+#endif
