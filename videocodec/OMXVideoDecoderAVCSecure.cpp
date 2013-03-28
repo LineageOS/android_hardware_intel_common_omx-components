@@ -150,6 +150,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
     if (imrBufferSize != IMR_BUFFER_SIZE) {
         LOGE("Mismatch in IMR size: Requested: %#x Obtained: %#x", IMR_BUFFER_SIZE, imrBufferSize);
     }
+    drmCommandNone(mDrmDevFd, DRM_PSB_HDCP_DISPLAY_IED_OFF);
 
 
     int ret;
