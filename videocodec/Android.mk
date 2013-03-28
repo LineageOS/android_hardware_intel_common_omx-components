@@ -43,8 +43,12 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
-# Add source codes for Merrifield
-ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+
+PLATFORM_SUPPORT_VP8 := \
+    merrifield \
+    baytrail
+
+ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_SUPPORT_VP8)),)
 include $(CLEAR_VARS)
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
