@@ -37,6 +37,10 @@ ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
+ifeq ($(TARGET_VPP_USE_GEN),true)
+LOCAL_CFLAGS += -DBUFFERFLAG_EXT
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 # Add source codes for Merrifield
@@ -170,6 +174,10 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderWMV
 ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
 LOCAL_CFLAGS += -DVED_TILING
+endif
+
+ifeq ($(TARGET_VPP_USE_GEN),true)
+LOCAL_CFLAGS += -DBUFFERFLAG_EXT
 endif
 
 include $(BUILD_SHARED_LIBRARY)
