@@ -33,12 +33,18 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderAVC
+
 ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
 ifeq ($(TARGET_VPP_USE_GEN),true)
 LOCAL_CFLAGS += -DBUFFERFLAG_EXT
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_YV12_MODE
+LOCAL_C_INCLUDES += $(TOP)/system/core/include/system/
 endif
 
 include $(BUILD_SHARED_LIBRARY)
@@ -52,6 +58,11 @@ ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_SUPPORT_VP8)),)
 include $(CLEAR_VARS)
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_YV12_MODE
+LOCAL_C_INCLUDES += $(TOP)/system/core/include/system/
+endif
 
 LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
@@ -83,6 +94,11 @@ include $(CLEAR_VARS)
 
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_YV12_MODE
+LOCAL_C_INCLUDES += $(TOP)/system/core/include/system/
+endif
 
 LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
@@ -117,6 +133,11 @@ include $(CLEAR_VARS)
 
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_YV12_MODE
+LOCAL_C_INCLUDES += $(TOP)/system/core/include/system/
+endif
 
 LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
