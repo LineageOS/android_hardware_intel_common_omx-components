@@ -826,6 +826,8 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetStoreMetaDataInBuffers(OMX_PTR pStructure)
     StoreMetaDataInBuffersParams *p = (StoreMetaDataInBuffersParams *)pStructure;
     VideoParamsStoreMetaDataInBuffers StoreMetaDataInBuffers;
     PortVideo *port = static_cast<PortVideo *>(this->ports[INPORT_INDEX]);
+    PortVideo *output_port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
+    uint32_t maxSize = 0;
 
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, INPORT_INDEX);
@@ -841,6 +843,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetStoreMetaDataInBuffers(OMX_PTR pStructure)
     mStoreMetaDataInBuffers = p->bStoreMetaData;
 
     if(mStoreMetaDataInBuffers){
+        // for input port buffer
         OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionInput;
         const OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionInput_get;
 
@@ -855,6 +858,17 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetStoreMetaDataInBuffers(OMX_PTR pStructure)
         paramPortDefinitionInput_get = port->GetPortDefinition();
         port->SetPortDefinition(paramPortDefinitionInput_get, true);
     }
+
+    // for output port buffer
+    OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionOutput;
+    const OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionOutput_get;
+
+    paramPortDefinitionOutput_get = output_port->GetPortDefinition();
+    paramPortDefinitionOutput = (OMX_PARAM_PORTDEFINITIONTYPE *)paramPortDefinitionOutput_get;
+    maxSize = mParamBitrate.nTargetBitrate/8;
+    maxSize = min(maxSize, paramPortDefinitionOutput->format.video.nFrameHeight*paramPortDefinitionOutput->format.video.nFrameWidth*1.5/2);
+    paramPortDefinitionOutput->nBufferSize =  maxSize;
+    LOGD("overwrite output port buffer paramPortDefinitionOutput->nBufferSize is %d",paramPortDefinitionOutput->nBufferSize);
 
     LOGD("SetStoreMetaDataInBuffers success");
     return OMX_ErrorNone;
