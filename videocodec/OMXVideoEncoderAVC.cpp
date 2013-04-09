@@ -695,6 +695,17 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::GetParamVideoAvc(OMX_PTR pStructure) {
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
 
+    mVideoEncoder->getParameters(mAVCParams);
+    mParamAvc.bEntropyCodingCABAC = (OMX_BOOL)mAVCParams->bEntropyCodingCABAC;
+    mParamAvc.bWeightedPPrediction = (OMX_BOOL)mAVCParams->bWeightedPPrediction;
+    mParamAvc.nRefIdx10ActiveMinus1 = mAVCParams->refIdx10ActiveMinus1;
+    mParamAvc.nRefIdx11ActiveMinus1 = mAVCParams->refIdx11ActiveMinus1;
+    mParamAvc.nWeightedBipredicitonMode = mAVCParams->weightedBipredicitonMode;
+    mParamAvc.bDirect8x8Inference = (OMX_BOOL)mAVCParams->bDirect8x8Inference;
+    mParamAvc.bDirectSpatialTemporal = (OMX_BOOL)mAVCParams->bDirectSpatialTemporal;
+    mParamAvc.nCabacInitIdc = mAVCParams->cabacInitIdc;
+    mParamAvc.bFrameMBsOnly = (OMX_BOOL)mAVCParams->bFrameMBsOnly;
+    mParamAvc.bconstIpred = (OMX_BOOL)mAVCParams->bConstIpred;
     memcpy(p, &mParamAvc, sizeof(*p));
     return OMX_ErrorNone;
 }
@@ -745,6 +756,10 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamVideoAvc(OMX_PTR pStructure) {
     // TODO: do we need to check if port is enabled?
     // TODO: see SetPortAvcParam implementation - Can we make simple copy????
     memcpy(&mParamAvc, p, sizeof(mParamAvc));
+    mVideoEncoder->getParameters(mAVCParams);
+    mAVCParams->bEntropyCodingCABAC = mParamAvc.bEntropyCodingCABAC;
+    mVideoEncoder->setParameters(mAVCParams);
+
 
     return OMX_ErrorNone;
 }
