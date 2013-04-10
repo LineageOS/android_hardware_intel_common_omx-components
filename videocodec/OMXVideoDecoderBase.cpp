@@ -519,9 +519,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
      }
 
     buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME;
-#ifdef BUFFERFLAG_EXT
+#ifdef DEINTERLACE_EXT
     if (renderBuffer->scanFormat & (VA_TOP_FIELD | VA_BOTTOM_FIELD))
-        buffer->nFlags |= OMX_BUFFERFLAG_FIELD;
+        buffer->nFlags |= OMX_BUFFERFLAG_TFF;
 #endif
     buffer->nTimeStamp = renderBuffer->timeStamp;
 
