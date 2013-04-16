@@ -922,10 +922,13 @@ int32_t OMXVideoEncoderBase::rgba2nv12conversion(OMX_BUFFERHEADERTYPE *pBuffer)
 #endif
 
     // Wrap destination buffer handle to encoder's input format
-    IntelMetadataBuffer *imb = new IntelMetadataBuffer(MetadataBufferTypeGrallocSource,
-            (int32_t)mBufferHandleMaps[i].mHandle);
-    imb->Serialize((uint8_t*&)pBuffer->pBuffer,
-            (uint32_t&)pBuffer->nFilledLen);
+    uint8_t* metadata = NULL;
+    uint32_t len = 0;
+
+    IntelMetadataBuffer imb(MetadataBufferTypeGrallocSource, (int32_t)mBufferHandleMaps[i].mHandle);
+    imb.Serialize(metadata, len);
+    memcpy(pBuffer->pBuffer,metadata, len);
+    pBuffer->nFilledLen = len;
 
     return i;
 
