@@ -185,6 +185,7 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
+ifeq (0, 1)
 include $(CLEAR_VARS)
 
 LOCAL_CPPFLAGS :=
@@ -271,6 +272,7 @@ LOCAL_MODULE := libOMXVideoDecoderAVCSecure
 
 
 include $(BUILD_SHARED_LIBRARY)
+endif
 
 include $(CLEAR_VARS)
 
