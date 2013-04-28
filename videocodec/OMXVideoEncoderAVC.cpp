@@ -401,9 +401,9 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
     // NaluFormat not set, setting default
     if (NaluFormat == 0) {
         if (mStoreMetaDataInBuffers) {
-            NaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
+            NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
         } else {
-            NaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
+            NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader;
         }
         mNalStreamFormat.eNaluFormat = NaluFormat;
     }
@@ -1042,7 +1042,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamVideoBytestream(OMX_PTR pStructure) {
         mNalStreamFormat.eNaluFormat = OMX_NaluFormatStartCodes;
     } else {
         // TODO: do we need to override the Nalu format?
-        mNalStreamFormat.eNaluFormat = OMX_NaluFormatZeroByteInterleaveLength;
+        mNalStreamFormat.eNaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatZeroByteInterleaveLength;
     }
 
     return OMX_ErrorNone;

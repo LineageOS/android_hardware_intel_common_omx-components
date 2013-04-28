@@ -80,7 +80,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP8::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buff
 
 OMX_ERRORTYPE OMXVideoDecoderVP8::BuildHandlerList(void) {
     OMXVideoDecoderBase::BuildHandlerList();
-    AddHandler(OMX_IndexParamVideoVp8, GetParamVideoVp8, SetParamVideoVp8);
+    AddHandler((OMX_INDEXTYPE)OMX_IndexParamVideoVp8, GetParamVideoVp8, SetParamVideoVp8);
     return OMX_ErrorNone;
 }
 
