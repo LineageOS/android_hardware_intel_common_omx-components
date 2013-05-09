@@ -19,9 +19,6 @@
 #include <utils/Log.h>
 #include "OMXVideoDecoderBase.h"
 #include <va/va_android.h>
-#ifdef USE_YV12_MODE
-#include <system/window.h>
-#endif
 
 
 static const char* VA_RAW_MIME_TYPE = "video/x-raw-va";
@@ -787,14 +784,8 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
      port_def.nBufferCountMin = 1;
      port_def.nBufferCountActual = mNativeBufferCount;
      port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
-     port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;
-
-#ifndef USE_YV12_MODE
      port_def.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
-#else
-     port_def.format.video.eColorFormat = (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_YV12;
-#endif
-
+     port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;
 #ifdef VED_TILING
      if (port_def.format.video.nFrameWidth > 1280) {
         LOGI("HD Video and use tiled format");
