@@ -293,9 +293,9 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::GetParamVideoAVCProfileLevel(OMX_PTR pStructur
         OMX_U32 profile;
         OMX_U32 level;
     } plTable[] = {
-        {OMX_VIDEO_AVCProfileBaseline, OMX_VIDEO_AVCLevel41},
-        {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel41},
-        {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel41}
+        {OMX_VIDEO_AVCProfileBaseline, OMX_VIDEO_AVCLevel42},
+        {OMX_VIDEO_AVCProfileMain, OMX_VIDEO_AVCLevel42},
+        {OMX_VIDEO_AVCProfileHigh, OMX_VIDEO_AVCLevel42}
     };
 
     OMX_U32 count = sizeof(plTable)/sizeof(ProfileLevelTable);
