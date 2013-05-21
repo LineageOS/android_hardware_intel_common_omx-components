@@ -456,6 +456,11 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderBase.cpp \
     OMXVideoEncoderVP8.cpp
 
+LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
+ifeq ($(ENABLE_MRFL_GRAPHICS),true)
+LOCAL_CFLAGS += -DMRFLD_OMX
+endif
+
 ifeq ($(ENABLE_IMG_GRAPHICS),true)
     LOCAL_CFLAGS += -DIMG_GFX
 endif
