@@ -238,11 +238,29 @@ LOCAL_SRC_FILES += securevideo/merrifield/OMXVideoDecoderAVCSecure.cpp
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
-LOCAL_SHARED_LIBRARIES += libsepdrm
+LOCAL_SHARED_LIBRARIES += libstlport \
+                          libutils \
+                          libz \
+                          libdl \
+                          libcrypto \
+                          libssl \
+                          libicuuc \
+                          libcutils \
+                          libc \
+                          libmeimm \
+                          libpavp \
+                          libsecvideoparser
 
-LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/libsepdrm
+LOCAL_C_INCLUDES += bionic \
+                    external/stlport/stlport \
+                    external/openssl/include \
+                    external/libxml2/include \
+                    $(TARGET_OUT_HEADERS)/secvideoparser \
+                    $(LOCAL_PATH)/securevideo/baytrail/ \
+                    $(TOP)/vendor/intel/hardware/txei/meimm/ \
+                    $(TOP)/vendor/intel/hardware/PRIVATE/ufo/include
 
-LOCAL_SRC_FILES += securevideo/baytrail/OMXVideoDecoderAVCSecure.cpp
+LOCAL_SRC_FILES += securevideo/baytrail/OMXVideoDecoderAVCSecure.cpp 
 
 LOCAL_CFLAGS += -DVED_TILING
 endif
@@ -472,5 +490,10 @@ endif
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderVP8
 include $(BUILD_SHARED_LIBRARY)
+
+# prnz - prebuilt SEC video parser
+SAVE_LOCAL_PATH := $(LOCAL_PATH)
+include $(LOCAL_PATH)/securevideo/baytrail/secvideoparser/Android.mk
+LOCAL_PATH = $(SAVE_LOCAL_PATH)
 
 endif

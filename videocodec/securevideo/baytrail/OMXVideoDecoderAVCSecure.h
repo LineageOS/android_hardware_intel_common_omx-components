@@ -19,6 +19,11 @@
 
 
 #include "OMXVideoDecoderBase.h"
+extern "C" {
+#include "secvideoparser.h"
+#include "libpavp.h"
+#include "meimm.h"
+}
 
 class OMXVideoDecoderAVCSecure : public OMXVideoDecoderBase {
 public:
@@ -45,15 +50,22 @@ protected:
    virtual OMX_ERRORTYPE BuildHandlerList(void);
    DECLARE_HANDLER(OMXVideoDecoderAVCSecure, ParamVideoAvc);
    DECLARE_HANDLER(OMXVideoDecoderAVCSecure, ParamVideoAVCProfileLevel);
+   DECLARE_HANDLER(OMXVideoDecoderAVCSecure, NativeBufferMode);
 
+    static OMX_U8* MemAllocSEC(OMX_U32 nSizeBytes, OMX_PTR pUserData);
+    static void MemFreeSEC(OMX_U8 *pBuffer, OMX_PTR pUserData);
+    OMX_U8* MemAllocSEC(OMX_U32 nSizeBytes);
+    void  MemFreeSEC(OMX_U8 *pBuffer);
+
+    OMX_ERRORTYPE InitSECRegion(uint8_t* region, uint32_t size);
+    OMX_ERRORTYPE ConstructFrameInfo(uint8_t* frame_data, uint32_t frame_size,
+    pavp_info_t* pavp_info, uint8_t* nalu_data, uint32_t nalu_data_size,
+    frame_info_t* frame_info);
 private:
     static OMX_U8* MemAllocIMR(OMX_U32 nSizeBytes, OMX_PTR pUserData);
     static void MemFreeIMR(OMX_U8 *pBuffer, OMX_PTR pUserData);
     OMX_U8* MemAllocIMR(OMX_U32 nSizeBytes);
     void  MemFreeIMR(OMX_U8 *pBuffer);
-    static void KeepAliveTimerCallback(sigval v);
-    void KeepAliveTimerCallback();
-    bool EnableIEDSession(bool enable);
 
 private:
     enum {
@@ -66,7 +78,7 @@ private:
         // default number of reference frame
         NUM_REFERENCE_FRAME = 4,
 
-        OUTPORT_NATIVE_BUFFER_COUNT = 15,
+        OUTPORT_NATIVE_BUFFER_COUNT = 20,
     };
 
     OMX_VIDEO_PARAM_AVCTYPE mParamAvc;
@@ -76,10 +88,43 @@ private:
         uint8_t *owner;  // pointer to OMX buffer that owns this slot
     } mIMRSlot[INPORT_ACTUAL_BUFFER_COUNT];
 
-    timer_t mKeepAliveTimer;
-
     bool mSessionPaused;
-    int mDrmDevFd;
+
+    struct SECBuffer {
+        uint8_t allocated;
+        uint8_t* base;
+        uint32_t size;
+    };
+
+    struct SECSubRegion {
+        uint8_t* base;
+        uint32_t size;
+        SECBuffer buffers[INPORT_ACTUAL_BUFFER_COUNT];
+    };
+
+    struct SECRegion {
+        uint8_t initialized;
+        uint8_t* base;
+        uint32_t size;
+        SECSubRegion frameBuffers;
+        SECSubRegion naluBuffers;
+        SECSubRegion pavpInfo;
+    };
+
+    SECRegion mSECRegion;
+
+    struct SECParsedFrame {
+        uint8_t* nalu_data;
+        uint32_t nalu_data_size;
+        pavp_info_t* pavp_info;
+        frame_info_t frame_info;
+    };
+
+    SECParsedFrame mParsedFrames[INPORT_ACTUAL_BUFFER_COUNT];
+
+    struct meimm mMeiMm;
+    uint32_t mVADmaBase;
+    pavp_lib_session *mpLibInstance;
 };
 
 #endif /* OMX_VIDEO_DECODER_AVC_SECURE_H_ */
