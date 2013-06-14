@@ -744,17 +744,15 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigVideoIntraVOPRefresh(OMX_PTR pStruct
     // TODO: return OMX_ErrorIncorrectStateOperation?
     CHECK_SET_CONFIG_STATE();
 
-    // TODO: apply VOP refresh configuration in Executing state
-    VideoConfigIntraRefreshType configIntraRefreshType;
-    if(mConfigIntelAir.bAirEnable) {
-        configIntraRefreshType.refreshType = VIDEO_ENC_AIR;
-    } else {
-        configIntraRefreshType.refreshType = VIDEO_ENC_NONIR;
+    if(p->IntraRefreshVOP == OMX_TRUE) {
+        VideoParamConfigSet configIDRRequest;
+        configIDRRequest.type = VideoConfigTypeIDRRequest;
+        retStatus = mVideoEncoder->setConfig(&configIDRRequest);
+        if(retStatus != ENCODE_SUCCESS) {
+            LOGW("Failed to set refresh config");
+        }
     }
-    retStatus = mVideoEncoder->setConfig(&configIntraRefreshType);
-    if(retStatus != ENCODE_SUCCESS) {
-        LOGW("Failed to set refresh config");
-    }
+
     return OMX_ErrorNone;
 }
 
