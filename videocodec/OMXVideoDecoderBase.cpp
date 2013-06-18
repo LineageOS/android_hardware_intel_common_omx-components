@@ -31,10 +31,17 @@ OMXVideoDecoderBase::OMXVideoDecoderBase()
       mRotationDegrees(0),
       mWorkingMode(RAWDATA_MODE) {
       memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
+      pthread_mutex_init(&mOMXBufferArray_lock, NULL);
+      pthread_cond_init(&mOMXBufferArray_cond, NULL);
+      mSetNativeBuffer_completion = false;
 }
 
 OMXVideoDecoderBase::~OMXVideoDecoderBase() {
     releaseVideoDecoder(mVideoDecoder);
+
+    pthread_mutex_destroy(&mOMXBufferArray_lock);
+    pthread_cond_destroy(&mOMXBufferArray_cond);
+
     if (this->ports) {
         if (this->ports[INPORT_INDEX]) {
             delete this->ports[INPORT_INDEX];
@@ -196,10 +203,14 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorInit(void) {
 OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorReset(void) {
     OMX_ERRORTYPE ret;
     VideoConfigBuffer configBuffer;
+    pthread_mutex_lock(&mOMXBufferArray_lock);
+    if (!mSetNativeBuffer_completion)
+        pthread_cond_wait(&mOMXBufferArray_cond, &mOMXBufferArray_lock);
     // reset the configbuffer and set it to mix
     ret = PrepareConfigBuffer(&configBuffer);
     CHECK_RETURN_VALUE("PrepareConfigBuffer");
     mVideoDecoder->reset(&configBuffer);
+    pthread_mutex_unlock(&mOMXBufferArray_lock);
     return OMX_ErrorNone;
 }
 
@@ -570,13 +581,26 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
     int heightCropped = formatInfo->height - formatInfo->cropTop - formatInfo->cropBottom;
     int strideCropped = widthCropped;
     int sliceHeightCropped = heightCropped;
+    int force_realloc = 0;
+
+    if (paramPortDefinitionOutput.nBufferCountActual < formatInfo->actualBufferNeeded) {
+        if (mWorkingMode == GRAPHICBUFFER_MODE) {
+            LOGV("output port buffer number is not enough: %d to %d",
+                 paramPortDefinitionOutput.nBufferCountActual,
+                 formatInfo->actualBufferNeeded);
+            paramPortDefinitionOutput.nBufferCountActual = mNativeBufferCount = formatInfo->actualBufferNeeded;
+            force_realloc = 1;
+            mSetNativeBuffer_completion = false;
+        }
+    }
 
     LOGV("Original size = %lu x %lu, new size = %d x %d, cropped size = %d x %d",
         paramPortDefinitionInput.format.video.nFrameWidth,
         paramPortDefinitionInput.format.video.nFrameHeight,
         width, height, widthCropped, heightCropped);
 
-    if (widthCropped == paramPortDefinitionOutput.format.video.nFrameWidth &&
+    if (!force_realloc &&
+        widthCropped == paramPortDefinitionOutput.format.video.nFrameWidth &&
         heightCropped == paramPortDefinitionOutput.format.video.nFrameHeight) {
         if (mWorkingMode == GRAPHICBUFFER_MODE) {
             if (width <= formatInfo->surfaceWidth &&
@@ -603,7 +627,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
     } else if (mWorkingMode == GRAPHICBUFFER_MODE) {
         // when the width and height ES parse are not larger than allocated graphic buffer in outport,
         // there is no need to reallocate graphic buffer,just report the crop info to omx client
-        if (width <= formatInfo->surfaceWidth && height <= formatInfo->surfaceHeight) {
+        if (!force_realloc && width <= formatInfo->surfaceWidth && height <= formatInfo->surfaceHeight) {
             this->ports[INPORT_INDEX]->SetPortDefinition(&paramPortDefinitionInput, true);
             this->ports[OUTPORT_INDEX]->ReportOutputCrop();
             return OMX_ErrorNone;
@@ -741,6 +765,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBuffer(OMX_PTR pStructure) {
     if (param->nPortIndex != OUTPORT_INDEX)
         return OMX_ErrorBadParameter;
     OMX_BUFFERHEADERTYPE *buf_hdr = NULL;
+
     ret = this->ports[OUTPORT_INDEX]->UseBuffer(&buf_hdr, OUTPORT_INDEX, param->pAppPrivate, sizeof(OMX_U8*),
                                       const_cast<OMX_U8*>(reinterpret_cast<const OMX_U8*>(param->nativeBuffer->handle)));
     if (ret != OMX_ErrorNone)
@@ -753,8 +778,16 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBuffer(OMX_PTR pStructure) {
          mGraphicBufferParam.graphicBufferWidth = param->nativeBuffer->width;
          mGraphicBufferParam.graphicBufferHeight = param->nativeBuffer->height;
     }
+
+    pthread_mutex_lock(&mOMXBufferArray_lock);
     mOMXBufferHeaderTypePtrArray[mOMXBufferHeaderTypePtrNum++] = buf_hdr;
     *(param->bufferHeader) = buf_hdr;
+    if (mNativeBufferCount == mOMXBufferHeaderTypePtrNum) {
+        mSetNativeBuffer_completion = true;
+        pthread_cond_signal(&mOMXBufferArray_cond);
+    }
+
+    pthread_mutex_unlock(&mOMXBufferArray_lock);
     return OMX_ErrorNone;
 }
 

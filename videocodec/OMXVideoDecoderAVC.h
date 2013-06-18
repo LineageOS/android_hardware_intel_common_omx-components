@@ -46,8 +46,6 @@ protected:
 private:
     inline OMX_ERRORTYPE AccumulateBuffer(OMX_BUFFERHEADERTYPE *buffer);
     inline OMX_ERRORTYPE FillDecodeBuffer(VideoDecodeBuffer *p);
-    OMX_U32 GetDPBSize(OMX_U32 level, OMX_U32 picWidth, OMX_U32 picHeight);
-    void CalculateBufferCount();
 
 private:
     enum {
@@ -64,8 +62,8 @@ private:
         // total number of reference frame allocated by default  in video conferencing use case is 10.
         EXTRA_REFERENCE_FRAME = 6,
 
-        // max DBP + EXTRA_REFERENCE_FRAME + 1
-        OUTPORT_NATIVE_BUFFER_COUNT = 23,
+        // a typical value for 1080p clips
+        OUTPORT_NATIVE_BUFFER_COUNT = 17,
     };
 
     OMX_VIDEO_PARAM_AVCTYPE mParamAvc;

@@ -66,7 +66,8 @@ private:
         // default number of reference frame
         NUM_REFERENCE_FRAME = 4,
 
-        OUTPORT_NATIVE_BUFFER_COUNT = 15,
+        // a typical value for 1080p clips
+        OUTPORT_NATIVE_BUFFER_COUNT = 17,
     };
 
     OMX_VIDEO_PARAM_AVCTYPE mParamAvc;

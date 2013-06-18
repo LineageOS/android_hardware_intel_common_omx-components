@@ -255,7 +255,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::SetParamVideoAvc(OMX_PTR pStructure) {
     // TODO: see SetPortAvcParam implementation - Can we make simple copy????
     memcpy(&mParamAvc, p, sizeof(mParamAvc));
 
-    CalculateBufferCount();
     return OMX_ErrorNone;
 }
 
@@ -310,69 +309,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::GetParamVideoAVCProfileLevel(OMX_PTR pStructur
 OMX_ERRORTYPE OMXVideoDecoderAVC::SetParamVideoAVCProfileLevel(OMX_PTR pStructure) {
     LOGW("SetParamVideoAVCProfileLevel is not supported.");
     return OMX_ErrorUnsupportedSetting;
-}
-
-void OMXVideoDecoderAVC::CalculateBufferCount() {
-
-    OMX_U32 dpbSize = 0;
-    OMX_U32 width = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameWidth;
-    OMX_U32 height = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameHeight;
-
-    dpbSize = GetDPBSize(mParamAvc.eLevel, width, height);
-    mNativeBufferCount = ((dpbSize > 8) ? dpbSize : 8) + 1 + 8;
-}
-
-OMX_U32 OMXVideoDecoderAVC::GetDPBSize(OMX_U32 level, OMX_U32 picWidth, OMX_U32 picHeight) {
-
-    OMX_U32 widthInMbs = (picWidth + 15) / 16;
-    OMX_U32 heightInMbs = (picHeight + 15) / 16;
-
-    // 1024 * MaxDPB / ( PicWidthInMbs * FrameHeightInMbs * 384 ), 16
-    struct DPBTable {
-        OMX_U32 level;
-        float maxDPB;
-    } dpbTable[] = {
-        {9,  148.5},
-        {10, 148.5},
-        {11, 337.5},
-        {12, 891.0},
-        {13, 891.0},
-        {20, 891.0},
-        {21, 1782.0},
-        {22, 3037.5},
-        {30, 3037.5},
-        {31, 6750.0},
-        {32, 7680.0},
-        {40, 12288.0},
-        {41, 12288.0},
-        {42, 13056.0},
-        {50, 41400.0},
-        {51, 69120.0}
-    };
-
-    OMX_U32 count = sizeof(dpbTable)/sizeof(DPBTable);
-    float maxDPB = 0;
-    for (OMX_U32 i = 0; i < count; i++)
-    {
-        if (dpbTable[i].level == level) {
-            maxDPB = dpbTable[i].maxDPB;
-            break;
-        }
-    }
-
-    // HW only supports up to L4.2, set limit here
-    // will move this part to OMX IL later
-    if (level > 42) maxDPB = 13056.0;
-
-    OMX_U32 maxDPBSize = maxDPB * 1024 / (
-        widthInMbs * heightInMbs * 384);
-
-    if (maxDPBSize > 16) {
-        maxDPBSize = 16;
-    } else if (maxDPBSize == 0) {
-        maxDPBSize = 3;
-    }
-    return maxDPBSize;
 }
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.AVC", "video_decoder.avc", OMXVideoDecoderAVC);
