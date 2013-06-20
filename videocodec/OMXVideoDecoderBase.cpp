@@ -462,7 +462,6 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
     p->rotationDegrees = mRotationDegrees;
     p->width = paramPortDefinitionInput->format.video.nFrameWidth;
     p->height = paramPortDefinitionInput->format.video.nFrameHeight;
-    p->frameRate = paramPortDefinitionInput->format.video.xFramerate >> 16;
     return OMX_ErrorNone;
 }
 
