@@ -204,13 +204,13 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorReset(void) {
     OMX_ERRORTYPE ret;
     VideoConfigBuffer configBuffer;
     pthread_mutex_lock(&mOMXBufferArray_lock);
-    if (!mSetNativeBuffer_completion)
+    if (mWorkingMode == GRAPHICBUFFER_MODE && !mSetNativeBuffer_completion)
         pthread_cond_wait(&mOMXBufferArray_cond, &mOMXBufferArray_lock);
     // reset the configbuffer and set it to mix
     ret = PrepareConfigBuffer(&configBuffer);
+    pthread_mutex_unlock(&mOMXBufferArray_lock);
     CHECK_RETURN_VALUE("PrepareConfigBuffer");
     mVideoDecoder->reset(&configBuffer);
-    pthread_mutex_unlock(&mOMXBufferArray_lock);
     return OMX_ErrorNone;
 }
 
