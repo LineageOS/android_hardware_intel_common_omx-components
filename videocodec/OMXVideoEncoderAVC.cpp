@@ -143,7 +143,6 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     SetTypeHeader(&mNalStreamFormat, sizeof(mNalStreamFormat));
     mNalStreamFormat.nPortIndex = OUTPORT_INDEX;
     // TODO: check if this is desired Nalu Format
-    mNalStreamFormat.eNaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
     //mNalStreamFormat.eNaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
     // OMX_VIDEO_CONFIG_AVCINTRAPERIOD
     memset(&mConfigAvcIntraPeriod, 0, sizeof(mConfigAvcIntraPeriod));
@@ -399,8 +398,15 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
 
     OMX_NALUFORMATSTYPE NaluFormat = mNalStreamFormat.eNaluFormat;
 
-    if (mStoreMetaDataInBuffers)
-        NaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
+    // NaluFormat not set, setting default
+    if (NaluFormat == 0) {
+        if (mStoreMetaDataInBuffers) {
+            NaluFormat = OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
+        } else {
+            NaluFormat = OMX_NaluFormatStartCodesSeparateFirstHeader;
+        }
+        mNalStreamFormat.eNaluFormat = NaluFormat;
+    }
 
     VideoEncOutputBuffer outBuf;
     outBuf.data = buffers[OUTPORT_INDEX]->pBuffer + buffers[OUTPORT_INDEX]->nOffset;
