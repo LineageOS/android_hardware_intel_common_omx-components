@@ -23,8 +23,8 @@ LOCAL_C_INCLUDES := \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -66,8 +66,8 @@ LOCAL_C_INCLUDES := \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -97,8 +97,8 @@ LOCAL_C_INCLUDES := \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -131,8 +131,8 @@ LOCAL_C_INCLUDES := \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -165,8 +165,8 @@ LOCAL_C_INCLUDES := \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -207,8 +207,8 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/drm \
     $(TARGET_OUT_HEADERS)/libdrm \
     $(TARGET_OUT_HEADERS)/libttm \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax \
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax \
     $(TOP)/linux/modules/intel_media/common
 
 LOCAL_SRC_FILES := \
@@ -276,9 +276,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
     $(TARGET_OUT_HEADERS)/libsharedbuffer \
-    $(TOP)/hardware/libhardware/include \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax \
+    $(call include-path-for, libhardware) \
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax \
     $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
@@ -322,9 +322,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
     $(TARGET_OUT_HEADERS)/libsharedbuffer \
-    $(TOP)/hardware/libhardware/include \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax \
+    $(call include-path-for, libhardware) \
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax \
     $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
@@ -371,9 +371,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
     $(TARGET_OUT_HEADERS)/libsharedbuffer \
-    $(TOP)/hardware/libhardware/include \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax \
+    $(call include-path-for, libhardware) \
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax \
     $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
@@ -412,8 +412,8 @@ LOCAL_C_INCLUDES := \
     $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -450,9 +450,9 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
     $(TARGET_OUT_HEADERS)/libsharedbuffer \
-    $(TOP)/hardware/libhardware/include \
-    $(TOP)/frameworks/native/include/media/hardware \
-    $(TOP)/frameworks/native/include/media/openmax \
+    $(call include-path-for, libhardware) \
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax \
     $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
