@@ -269,9 +269,9 @@ LOCAL_SHARED_LIBRARIES += libstlport \
                           libsecvideoparser
 
 LOCAL_C_INCLUDES += bionic \
-                    external/stlport/stlport \
-                    external/openssl/include \
-                    external/libxml2/include \
+                    $(call include-path-for, stlport) \
+                    $(call include-path-for, openssl) \
+                    $(call include-path-for, libxml2) \
                     $(TARGET_OUT_HEADERS)/secvideoparser \
                     $(LOCAL_PATH)/securevideo/baytrail/ \
                     $(TOP)/vendor/intel/hardware/txei/meimm/ \
