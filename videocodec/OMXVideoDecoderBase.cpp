@@ -637,6 +637,8 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
         if (width > 1280) {
            LOGI("HD Video and use tiled format");
            paramPortDefinitionOutput.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
+        } else {
+           paramPortDefinitionOutput.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
         }
 #endif
         paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
