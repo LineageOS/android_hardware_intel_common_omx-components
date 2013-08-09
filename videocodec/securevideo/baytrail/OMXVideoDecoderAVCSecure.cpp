@@ -319,6 +319,8 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         input.metadata_offset = 1024 * 1024;    //Metadata offset is 1MB
         input.header_offset = (1024*1024)+512;  //Header offset is 1M + 512
 
+        memset(&output, 0, sizeof(wv_heci_process_video_frame_out));
+
         for(int pes_count=0, pesoffset =0, dmaoffset=0; pes_count < secBuffer->num_entries; pes_count++) {
 
              dmaoffset = WV_CEILING(dmaoffset,32);
