@@ -230,4 +230,4 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVideoVp8ReferenceFrame(OMX_PTR pStruc
     return OMX_ErrorNone;
 }
 
-DECLARE_OMX_COMPONENT("OMX.Intel.VideoEncoder.VP8", "video_encoder.vp8", OMXVideoEncoderVP8);
+DECLARE_OMX_COMPONENT("OMX.Intel.VideoEncoder.VP8", "video_encoder.vpx", OMXVideoEncoderVP8);
