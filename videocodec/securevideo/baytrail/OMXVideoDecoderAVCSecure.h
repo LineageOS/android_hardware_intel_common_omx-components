@@ -17,7 +17,7 @@
 #ifndef OMX_VIDEO_DECODER_AVC_SECURE_H_
 #define OMX_VIDEO_DECODER_AVC_SECURE_H_
 
-
+#include <utils/Mutex.h>
 #include "OMXVideoDecoderBase.h"
 extern "C" {
 #include "secvideoparser.h"
@@ -126,6 +126,7 @@ private:
     struct meimm mMeiMm;
     uint32_t mVADmaBase;
     pavp_lib_session *mpLibInstance;
+    android::Mutex *mLock;
 };
 
 #endif /* OMX_VIDEO_DECODER_AVC_SECURE_H_ */
