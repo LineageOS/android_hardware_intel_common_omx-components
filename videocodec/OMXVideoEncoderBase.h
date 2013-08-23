@@ -69,6 +69,7 @@ protected:
     DECLARE_HANDLER(OMXVideoEncoderBase, ParamIntelAdaptiveSliceControl);
     //DECLARE_HANDLER(OMXVideoEncoderBase, ParamVideoProfileLevelQuerySupported);
     DECLARE_HANDLER(OMXVideoEncoderBase, StoreMetaDataInBuffers);
+    DECLARE_HANDLER(OMXVideoEncoderBase, SyncEncoding);
 
 protected:
     virtual OMX_ERRORTYPE SetVideoEncoderParam();
@@ -89,6 +90,7 @@ protected:
     OMX_BOOL mFirstFrame;
     OMX_BOOL mFrameRetrieved;
     OMX_BOOL mStoreMetaDataInBuffers;
+    OMX_BOOL mSyncEncoding;
 
 private:
 

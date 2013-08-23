@@ -143,14 +143,12 @@ OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorProcess(
         ports[INPORT_INDEX]->ReturnAllRetainedBuffers();
     }
 
-#ifndef SYNC_MODE
-    if (mFrameInputCount == 0) {
+    if (mSyncEncoding == OMX_FALSE && mFrameInputCount == 0) {
         retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
         retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
         mFrameRetrieved = OMX_TRUE;
         goto out;
     }
-#endif
 
     outBuf.format = OUTPUT_EVERYTHING;
     ret = mVideoEncoder->getOutput(&outBuf);
@@ -158,7 +156,11 @@ OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorProcess(
     if(ret == ENCODE_NO_REQUEST_DATA) {
         mFrameRetrieved = OMX_TRUE;
         retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
-        retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+        if (mSyncEncoding)
+            retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+        else
+            retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+
         goto out;
     }
 
@@ -174,7 +176,10 @@ OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorProcess(
     if(outBuf.flag & ENCODE_BUFFERFLAG_ENDOFFRAME) {
         outflags |= OMX_BUFFERFLAG_ENDOFFRAME;
         mFrameRetrieved = OMX_TRUE;
-        retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+        if (mSyncEncoding)
+            retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+        else
+            retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
 
     } else {
         retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;  //get again

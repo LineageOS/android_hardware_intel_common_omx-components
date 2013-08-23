@@ -487,9 +487,10 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
             ports[INPORT_INDEX]->ReturnAllRetainedBuffers();  //return last all retained frames
             if (outBuf.flag & ENCODE_BUFFERFLAG_ENDOFSTREAM)
                 retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+            else if (mSyncEncoding)
+                retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
             else
                 retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;   //retain current frame
-
             mFrameOutputCount  ++;
         }
     } else //not complete output all encoded data, push again to continue output
@@ -591,7 +592,8 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
         eInfo.EncodeComplete = true;
 
         mFrameEncodedCount ++;
-        if (mFrameEncodedCount == 2) {//not getoutput for second encode frame to keep in async mode
+
+        if (mSyncEncoding == OMX_FALSE && mFrameEncodedCount == 2) {//not getoutput for second encode frame to keep in async mode
             eInfo.DataRetrieved = true;
             ports[INPORT_INDEX]->ReturnAllRetainedBuffers();
             retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
@@ -607,7 +609,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
     /* Check EOE state, if yes, this is final encode frame, need to push this buffer again
          to call getOutput again for final output
     */
-    if (eInfo.EndOfEncode && eInfo.EncodeComplete && eInfo.DataRetrieved) {
+    if (mSyncEncoding == OMX_FALSE && eInfo.EndOfEncode && eInfo.EncodeComplete && eInfo.DataRetrieved) {
         eInfo.DataRetrieved = false;
         eInfo.EndOfEncode = false;
         retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;

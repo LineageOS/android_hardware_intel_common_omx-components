@@ -30,7 +30,8 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
     ,mFrameOutputCount(0)
     ,mFrameRetrieved(OMX_TRUE)
     ,mFirstFrame(OMX_TRUE)
-    ,mStoreMetaDataInBuffers(OMX_FALSE) {
+    ,mStoreMetaDataInBuffers(OMX_FALSE)
+    ,mSyncEncoding(OMX_FALSE){
     mEncoderParams = new VideoParamsCommon();
     if (!mEncoderParams) LOGE("OMX_ErrorInsufficientResources");
 
@@ -448,6 +449,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::BuildHandlerList(void) {
     //AddHandler(OMX_IndexParamIntelAdaptiveSliceControl, GetParamIntelAdaptiveSliceControl, SetParamIntelAdaptiveSliceControl);
     //AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoProfileLevelQuerySupported, SetParamVideoProfileLevelQuerySupported);
     AddHandler((OMX_INDEXTYPE)OMX_IndexStoreMetaDataInBuffers, GetStoreMetaDataInBuffers, SetStoreMetaDataInBuffers);
+    AddHandler((OMX_INDEXTYPE)OMX_IndexExtSyncEncoding, GetSyncEncoding, SetSyncEncoding);
 
     return OMX_ErrorNone;
 }
@@ -871,6 +873,24 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetStoreMetaDataInBuffers(OMX_PTR pStructure)
     LOGD("overwrite output port buffer paramPortDefinitionOutput->nBufferSize is %d",paramPortDefinitionOutput->nBufferSize);
 
     LOGD("SetStoreMetaDataInBuffers success");
+    return OMX_ErrorNone;
+};
+
+OMX_ERRORTYPE OMXVideoEncoderBase::GetSyncEncoding(OMX_PTR pStructure) {
+    OMX_BOOL* syncEncoding = static_cast<OMX_BOOL*>(pStructure);
+
+    *syncEncoding = mSyncEncoding;
+
+    return OMX_ErrorNone;
+};
+
+OMX_ERRORTYPE OMXVideoEncoderBase::SetSyncEncoding(OMX_PTR pStructure) {
+    CHECK_SET_PARAM_STATE();
+
+    mSyncEncoding = *(static_cast<OMX_BOOL*>(pStructure));
+
+    LOGD("SetSyncEncoding %d", mSyncEncoding);
+
     return OMX_ErrorNone;
 };
 
