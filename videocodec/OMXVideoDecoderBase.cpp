@@ -31,16 +31,10 @@ OMXVideoDecoderBase::OMXVideoDecoderBase()
       mRotationDegrees(0),
       mWorkingMode(RAWDATA_MODE) {
       memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
-      pthread_mutex_init(&mOMXBufferArray_lock, NULL);
-      pthread_cond_init(&mOMXBufferArray_cond, NULL);
-      mSetNativeBuffer_completion = false;
 }
 
 OMXVideoDecoderBase::~OMXVideoDecoderBase() {
     releaseVideoDecoder(mVideoDecoder);
-
-    pthread_mutex_destroy(&mOMXBufferArray_lock);
-    pthread_cond_destroy(&mOMXBufferArray_cond);
 
     if (this->ports) {
         if (this->ports[INPORT_INDEX]) {
@@ -203,12 +197,8 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorInit(void) {
 OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorReset(void) {
     OMX_ERRORTYPE ret;
     VideoConfigBuffer configBuffer;
-    pthread_mutex_lock(&mOMXBufferArray_lock);
-    if (mWorkingMode == GRAPHICBUFFER_MODE && !mSetNativeBuffer_completion)
-        pthread_cond_wait(&mOMXBufferArray_cond, &mOMXBufferArray_lock);
     // reset the configbuffer and set it to mix
     ret = PrepareConfigBuffer(&configBuffer);
-    pthread_mutex_unlock(&mOMXBufferArray_lock);
     CHECK_RETURN_VALUE("PrepareConfigBuffer");
     mVideoDecoder->reset(&configBuffer);
     return OMX_ErrorNone;
@@ -589,7 +579,6 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
                  formatInfo->actualBufferNeeded);
             paramPortDefinitionOutput.nBufferCountActual = mNativeBufferCount = formatInfo->actualBufferNeeded;
             force_realloc = 1;
-            mSetNativeBuffer_completion = false;
         }
     }
 
@@ -765,30 +754,28 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBuffer(OMX_PTR pStructure) {
     CHECK_TYPE_HEADER(param);
     if (param->nPortIndex != OUTPORT_INDEX)
         return OMX_ErrorBadParameter;
-    OMX_BUFFERHEADERTYPE *buf_hdr = NULL;
+    OMX_BUFFERHEADERTYPE **buf_hdr = NULL;
 
-    ret = this->ports[OUTPORT_INDEX]->UseBuffer(&buf_hdr, OUTPORT_INDEX, param->pAppPrivate, sizeof(OMX_U8*),
+    mOMXBufferHeaderTypePtrNum++;
+    if (mOMXBufferHeaderTypePtrNum > MAX_GRAPHIC_BUFFER_NUM)
+        return OMX_ErrorOverflow;
+
+    buf_hdr = &mOMXBufferHeaderTypePtrArray[mOMXBufferHeaderTypePtrNum-1];
+
+    ret = this->ports[OUTPORT_INDEX]->UseBuffer(buf_hdr, OUTPORT_INDEX, param->pAppPrivate, sizeof(OMX_U8*),
                                       const_cast<OMX_U8*>(reinterpret_cast<const OMX_U8*>(param->nativeBuffer->handle)));
     if (ret != OMX_ErrorNone)
         return ret;
-    if (mOMXBufferHeaderTypePtrNum >= MAX_GRAPHIC_BUFFER_NUM)
-        return OMX_ErrorOverflow;
-    if (!mOMXBufferHeaderTypePtrNum) {
+
+    if (mOMXBufferHeaderTypePtrNum == 1) {
          mGraphicBufferParam.graphicBufferColorFormat = param->nativeBuffer->format;
          mGraphicBufferParam.graphicBufferStride = param->nativeBuffer->stride;
          mGraphicBufferParam.graphicBufferWidth = param->nativeBuffer->width;
          mGraphicBufferParam.graphicBufferHeight = param->nativeBuffer->height;
     }
 
-    pthread_mutex_lock(&mOMXBufferArray_lock);
-    mOMXBufferHeaderTypePtrArray[mOMXBufferHeaderTypePtrNum++] = buf_hdr;
-    *(param->bufferHeader) = buf_hdr;
-    if (mNativeBufferCount == mOMXBufferHeaderTypePtrNum) {
-        mSetNativeBuffer_completion = true;
-        pthread_cond_signal(&mOMXBufferArray_cond);
-    }
+    *(param->bufferHeader) = *buf_hdr;
 
-    pthread_mutex_unlock(&mOMXBufferArray_lock);
     return OMX_ErrorNone;
 }
 

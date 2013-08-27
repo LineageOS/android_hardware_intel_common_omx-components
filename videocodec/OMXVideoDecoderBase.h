@@ -85,9 +85,6 @@ private:
     };
     uint32_t mOMXBufferHeaderTypePtrNum;
     OMX_BUFFERHEADERTYPE *mOMXBufferHeaderTypePtrArray[MAX_GRAPHIC_BUFFER_NUM];
-    bool mSetNativeBuffer_completion;
-    pthread_mutex_t mOMXBufferArray_lock;
-    pthread_cond_t mOMXBufferArray_cond;
 
     struct GraphicBufferParam {
         uint32_t graphicBufferStride;
