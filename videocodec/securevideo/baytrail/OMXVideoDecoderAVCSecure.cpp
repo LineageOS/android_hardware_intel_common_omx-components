@@ -682,4 +682,4 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ConstructFrameInfo(
     return OMX_ErrorNone;
 }
 
-DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.AVC.secure", "video_decoder.avc", OMXVideoDecoderAVCSecure);
+DECLARE_OMX_COMPONENT("OMX.Intel.hw_vd.h264.secure", "video_decoder.avc", OMXVideoDecoderAVCSecure);
