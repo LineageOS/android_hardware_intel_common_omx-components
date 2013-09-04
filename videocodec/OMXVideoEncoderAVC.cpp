@@ -112,6 +112,8 @@ OMXVideoEncoderAVC::OMXVideoEncoderAVC() {
             LOGV("Support Profile:%s, Level:%s\n", ProfileTable[profile_index].name, LevelTable[level_index].name);
         }
     }
+
+    mSourceType = MetadataBufferTypeCameraSource;
 }
 
 OMXVideoEncoderAVC::~OMXVideoEncoderAVC() {
@@ -292,6 +294,24 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorPreEmptyBuffer(OMX_BUFFERHEADERTYPE* 
     bool BFrameEnabled = IpPeriod > 1;
     uint32_t GOP = 0;
 
+    //extract SourceType from first frame in MetadataMode
+    if (mStoreMetaDataInBuffers && (mInputPictureCount == 0)) {
+        uint8_t* bytes = buffer->pBuffer + buffer->nOffset;
+        uint32_t size = buffer->nFilledLen;
+
+        IntelMetadataBuffer* buf = NULL;
+        if ((buf = new IntelMetadataBuffer()) == NULL)
+            return OMX_ErrorUndefined;
+
+        if (buf->UnSerialize(bytes, size) == IMB_SUCCESS) {
+            buf->GetType(mSourceType);
+            delete buf;
+        }else{
+            delete buf;
+            return OMX_ErrorUndefined;
+        }
+    }
+
     if (idrPeriod == 0 || IntraPeriod == 0) {
         GOP = 0xFFFFFFFF;
         if (IntraPeriod == 0)
@@ -342,9 +362,14 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessCacheOperation(
     /* Check and do cache operation
     */
     if (pInfo->CacheOperation == CACHE_NONE) {
-        if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS)
-            pInfo->EndOfEncode = true;
-
+        if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS) {
+            OMX_U8* data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
+            OMX_U32 size = buffers[INPORT_INDEX]->nFilledLen;
+            if (data != NULL && size > 0)
+                pInfo->EndOfEncode = true;  //still need to encode
+            else
+                pInfo->EncodeComplete = true; //no need to encode since no data in buffer
+        }
     } else if (pInfo->CacheOperation == CACHE_PUSH) {
         mBFrameList.push_front(buffers[INPORT_INDEX]);
         retains[INPORT_INDEX] = BUFFER_RETAIN_CACHE;
@@ -401,7 +426,11 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
     // NaluFormat not set, setting default
     if (NaluFormat == 0) {
         if (mStoreMetaDataInBuffers) {
-            NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
+            if(mSourceType == MetadataBufferTypeCameraSource)
+                NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
+            else
+                NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader;
+
         } else {
             NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader;
         }
@@ -530,14 +559,15 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
 
     if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS) {
         LOGV("%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
-        if(inBuf.size<=0 || inBuf.data == NULL) {
-            LOGE("The Input buf size is 0 or buf is NULL, return with no error\n");
+
+        if((inBuf.size<=0 || inBuf.data == NULL) && mSyncEncoding) {
+            LOGE("The Input buf is just a empty EOS buffer, in Sync encode,"
+                  "nothing to do, return with no error\n");
             retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+            retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
             return OMX_ErrorNone;
         }
-    }
-
-    if(inBuf.size<=0 || inBuf.data == NULL) {
+    } else if(inBuf.size<=0 || inBuf.data == NULL) {
         LOGE("The Input buf size is 0 or buf is NULL, return with error\n");
         return OMX_ErrorBadParameter;
     }
@@ -559,15 +589,6 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
             eInfo.FrameCount , FrameTypeStr[eInfo.FrameType], eInfo.EncodeComplete,
             eInfo.DataRetrieved, CacheOperationStr[eInfo.CacheOperation], eInfo.EndOfEncode );
 
-    //for live effect
-#ifdef IMG_GFX
-    if (bAndroidOpaqueFormat) {
-        mCurHandle = rgba2nv12conversion(buffers[INPORT_INDEX]);
-        if (mCurHandle < 0)
-            return OMX_ErrorUndefined;
-    }
-#endif
-
     if (eInfo.CacheOperation == CACHE_PUSH) {
         ProcessCacheOperation(buffers, retains, &eInfo);
         //nothing should be done in this case, just store status and return
@@ -578,6 +599,16 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
     /* Check encode state, if not, call libMIX encode()
     */
     if(!eInfo.EncodeComplete) {
+
+        //for live effect
+#ifdef IMG_GFX
+        if (bAndroidOpaqueFormat) {
+             mCurHandle = rgba2nv12conversion(buffers[INPORT_INDEX]);
+             if (mCurHandle < 0)
+                return OMX_ErrorUndefined;
+        }
+#endif
+
         // encode and setConfig need to be thread safe
         if (eInfo.EndOfEncode)
             inBuf.flag |= ENCODE_BUFFERFLAG_ENDOFSTREAM;

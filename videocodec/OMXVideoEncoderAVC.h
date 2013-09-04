@@ -21,6 +21,7 @@
 
 #include "OMXVideoEncoderBase.h"
 #include <utils/List.h>
+#include <IntelMetadataBuffer.h>
 
 enum {
     F_UNKNOWN = 0x00,    // Unknown
@@ -138,6 +139,8 @@ private:
 
     ProfileLevelTable mPLTable[MAX_H264_PROFILE];
     OMX_U32 mPLTableCount;
+
+    MetadataBufferType mSourceType;
 };
 
 #endif /* OMX_VIDEO_ENCODER_AVC_H_ */
