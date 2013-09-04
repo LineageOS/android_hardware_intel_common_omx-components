@@ -590,13 +590,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
     if (!force_realloc &&
         widthCropped == paramPortDefinitionOutput.format.video.nFrameWidth &&
         heightCropped == paramPortDefinitionOutput.format.video.nFrameHeight) {
-        if (mWorkingMode == GRAPHICBUFFER_MODE) {
-            if (width <= formatInfo->surfaceWidth &&
-                height <= formatInfo->surfaceHeight) {
-                LOGW("Change of portsetting is not reported as size is not changed.");
-                return OMX_ErrorNone;
-            }
-        } else if (mWorkingMode == RAWDATA_MODE) {
+        if (mWorkingMode == RAWDATA_MODE) {
             LOGW("Change of portsetting is not reported as size is not changed.");
             return OMX_ErrorNone;
         }
@@ -620,19 +614,23 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
             this->ports[OUTPORT_INDEX]->ReportOutputCrop();
             return OMX_ErrorNone;
         }
-        // set the real decoded resolution to outport instead of display resolution for graphic buffer reallocation
-        paramPortDefinitionOutput.format.video.nFrameWidth = width;
+
+        if (width > formatInfo->surfaceWidth ||  height > formatInfo->surfaceHeight) {
+            // update the real decoded resolution to outport instead of display resolution for graphic buffer reallocation
+            // when the width and height parsed from ES are larger than allocated graphic buffer in outport,
+            paramPortDefinitionOutput.format.video.nFrameWidth = width;
 #ifdef VED_TILING
-        if (width > 1280) {
-           LOGI("HD Video and use tiled format");
-           paramPortDefinitionOutput.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
-        } else {
-           paramPortDefinitionOutput.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
-        }
+            if (width > 1280) {
+               LOGI("HD Video and use tiled format");
+               paramPortDefinitionOutput.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
+            } else {
+               paramPortDefinitionOutput.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
+            }
 #endif
-        paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
-        paramPortDefinitionOutput.format.video.nStride = stride;
-        paramPortDefinitionOutput.format.video.nSliceHeight = sliceHeight;
+            paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
+            paramPortDefinitionOutput.format.video.nStride = stride;
+            paramPortDefinitionOutput.format.video.nSliceHeight = sliceHeight;
+       }
     }
 
     paramPortDefinitionOutput.bEnabled = (OMX_BOOL)false;
