@@ -46,6 +46,7 @@ include $(BUILD_SHARED_LIBRARY)
 
 PLATFORM_SUPPORT_VP8 := \
     merrifield \
+    moorefield \
     baytrail
 
 ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_SUPPORT_VP8)),)
@@ -225,7 +226,7 @@ LOCAL_SRC_FILES += securevideo/ctp/OMXVideoDecoderAVCSecure.cpp
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
-ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+ifeq ($(BUILD_WITH_SECURITY_FRAMEWORK),chaabi_token)
 LOCAL_SHARED_LIBRARIES += \
     libsepdrm_cc54 \
     libdx_cc7
@@ -235,9 +236,8 @@ LOCAL_C_INCLUDES += \
     $(TOP)/vendor/intel/hardware/cc54/libsepdrm/shared/inc
 
 LOCAL_SRC_FILES += securevideo/merrifield/OMXVideoDecoderAVCSecure.cpp
-endif
 
-ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+else ifeq ($(BUILD_WITH_SECURITY_FRAMEWORK),txei)
 LOCAL_SHARED_LIBRARIES += libstlport \
                           libutils \
                           libz \
