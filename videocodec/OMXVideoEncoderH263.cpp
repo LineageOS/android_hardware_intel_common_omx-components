@@ -27,6 +27,9 @@ OMXVideoEncoderH263::OMXVideoEncoderH263() {
     BuildHandlerList();
     mVideoEncoder = createVideoEncoder(H263_MIME_TYPE);
     if (!mVideoEncoder) LOGE("OMX_ErrorInsufficientResources");
+#ifdef SYNC_MODE
+    mSyncEncoding = OMX_TRUE;
+#endif
 }
 
 OMXVideoEncoderH263::~OMXVideoEncoderH263() {

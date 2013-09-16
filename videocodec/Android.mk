@@ -355,6 +355,10 @@ ifeq ($(ENABLE_MRFL_GRAPHICS),true)
 LOCAL_CFLAGS += -DMRFLD_OMX
 endif
 
+ifeq ($(SW_MPEG4_ENCODER),true)
+    LOCAL_CFLAGS += -DSYNC_MODE
+endif
+
 ifeq ($(ENABLE_IMG_GRAPHICS),true)
     LOCAL_CFLAGS += -DIMG_GFX
 endif
