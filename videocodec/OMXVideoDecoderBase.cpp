@@ -623,15 +623,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
             // update the real decoded resolution to outport instead of display resolution for graphic buffer reallocation
             // when the width and height parsed from ES are larger than allocated graphic buffer in outport,
             paramPortDefinitionOutput.format.video.nFrameWidth = width;
-#ifdef VED_TILING
-            if (width > 1280) {
-               LOGI("HD Video and use tiled format");
-               paramPortDefinitionOutput.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
-            } else {
-               paramPortDefinitionOutput.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
-            }
-#endif
             paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
+            paramPortDefinitionOutput.format.video.eColorFormat = GetOutputColorFormat(
+                    paramPortDefinitionOutput.format.video.nFrameWidth,
+                    paramPortDefinitionOutput.format.video.nFrameHeight);
             paramPortDefinitionOutput.format.video.nStride = stride;
             paramPortDefinitionOutput.format.video.nSliceHeight = sliceHeight;
        }
@@ -787,35 +782,32 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBufferMode(OMX_PTR pStructure) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
-     OMX_ERRORTYPE ret;
-     EnableAndroidNativeBuffersParams *param = (EnableAndroidNativeBuffersParams*)pStructure;
+    OMX_ERRORTYPE ret;
+    EnableAndroidNativeBuffersParams *param = (EnableAndroidNativeBuffersParams*)pStructure;
 
-     CHECK_TYPE_HEADER(param);
-     CHECK_PORT_INDEX_RANGE(param);
-     CHECK_SET_PARAM_STATE();
+    CHECK_TYPE_HEADER(param);
+    CHECK_PORT_INDEX_RANGE(param);
+    CHECK_SET_PARAM_STATE();
 
-     if (!param->enable) {
+    if (!param->enable) {
         mWorkingMode = RAWDATA_MODE;
         return OMX_ErrorNone;
-     }
-     mWorkingMode = GRAPHICBUFFER_MODE;
-     PortVideo *port = NULL;
-     port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
+    }
+    mWorkingMode = GRAPHICBUFFER_MODE;
+    PortVideo *port = NULL;
+    port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
 
-     OMX_PARAM_PORTDEFINITIONTYPE port_def;
-     memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
-     port_def.nBufferCountMin = 1;
-     port_def.nBufferCountActual = mNativeBufferCount;
-     port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
-     port_def.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
-     port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;
-#ifdef VED_TILING
-     if (port_def.format.video.nFrameWidth > 1280) {
-        LOGI("HD Video and use tiled format");
-        port_def.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
-     }
-#endif
-     port->SetPortDefinition(&port_def,true);
+    OMX_PARAM_PORTDEFINITIONTYPE port_def;
+    memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
+    port_def.nBufferCountMin = 1;
+    port_def.nBufferCountActual = mNativeBufferCount;
+    port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
+    port_def.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
+    port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;
+    port_def.format.video.eColorFormat = GetOutputColorFormat(
+                        port_def.format.video.nFrameWidth,
+                        port_def.format.video.nFrameHeight);
+    port->SetPortDefinition(&port_def,true);
 
      return OMX_ErrorNone;
 }
@@ -917,4 +909,18 @@ OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuf
         LOGW("vaDestroyImage failed. Error = %#x", vaStatus);
     }
     return OMX_ErrorNone;
+}
+
+
+OMX_COLOR_FORMATTYPE OMXVideoDecoderBase::GetOutputColorFormat(int width, int height) {
+#ifndef VED_TILING
+    return OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
+#else
+    if (width > 1280) {
+        LOGI("HD Video and use tiled format");
+        return OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
+    } else {
+        return OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
+    }
+#endif
 }

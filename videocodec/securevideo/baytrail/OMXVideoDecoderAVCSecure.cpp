@@ -267,17 +267,19 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
     pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
     uint32_t parse_size = 0;
 
-    if(!mpLibInstance && secBuffer->pLibInstance)
-    {
+    if(!mpLibInstance && secBuffer->pLibInstance) {
         pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
-        LOGE("PAVP Heavy session creation...\n");
+        LOGE("PAVP Heavy session creation...");
         rc = secBuffer->pLibInstance->pavp_create_session(true);
         if (rc != pavp_lib_session::status_ok) {
-            LOGE("PAVP Heavy: pavp_create_session failed with error 0x%x\n", rc);
+            LOGE("PAVP Heavy: pavp_create_session failed with error 0x%x", rc);
+            secBuffer->size = 0;
+            ret = OMX_ErrorNotReady;
         } else {
+            LOGE("PAVP Heavy session created succesfully");
 	    mpLibInstance = secBuffer->pLibInstance;
         }
-    	{
+        if ( ret == OMX_ErrorNone) {
             pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
             wv_set_xcript_key_in input;
             wv_set_xcript_key_out output;
@@ -296,13 +298,36 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
             }
  
             if (rc != pavp_lib_session::status_ok)
-                LOGE("sec_pass_through:wv_set_xcript_key() failed with error 0x%x\n", rc);
+                LOGE("sec_pass_through:wv_set_xcript_key() failed with error 0x%x", rc);
 
-            if (output.Header.Status)
-                LOGE("SEC failed: wv_set_xcript_key() returned 0x%x\n", output.Header.Status);
+            if (output.Header.Status) {
+                LOGE("SEC failed: wv_set_xcript_key() FAILED 0x%x", output.Header.Status);
+                secBuffer->size = 0;
+                ret = OMX_ErrorNotReady;
+            }
         }
     }
-    {
+
+    if(mpLibInstance) {
+	bool balive = false;
+        pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
+        rc = mpLibInstance->pavp_is_session_alive(&balive);
+        if (rc != pavp_lib_session::status_ok)
+            LOGE("pavp_is_session_alive failed with error 0x%x", rc);
+	if (balive == false || (ret == OMX_ErrorNotReady)) {
+            LOGE("PAVP session is %s", balive?"active":"in-active");
+            secBuffer->size = 0;
+            ret = OMX_ErrorNotReady;
+            //Destroy & re-create
+            LOGI("Destroying the PAVP session...");
+            rc = mpLibInstance->pavp_destroy_session();
+            if (rc != pavp_lib_session::status_ok)
+                LOGE("pavp_destroy_session failed with error 0x%x", rc);
+
+            mpLibInstance = NULL;
+        }
+    }
+    if ( ret == OMX_ErrorNone) {
         wv_heci_process_video_frame_in input;
         wv_heci_process_video_frame_out output;
         sec_wv_packet_metadata metadata;
@@ -347,10 +372,10 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         }
 
         if (rc != pavp_lib_session::status_ok)
-            LOGE(" sec_pass_through failed with error 0x%x\n", rc);
+            LOGE(" sec_pass_through failed with error 0x%x", rc);
 
-        if (output.Header.Status != 0x0){
-            LOGE(" SEC failed for wv_process_video_frame() returned 0x%x\n", output.Header.Status);
+        if (output.Header.Status != 0x0) {
+            LOGE(" SEC failed for wv_process_video_frame() returned 0x%x", output.Header.Status);
         } else {
             memcpy((unsigned char *)(secBuffer->data), (const unsigned int*) (mVADmaBase + (1024*512)), buffer->nFilledLen);
             parse_size = output.parsed_data_size;
@@ -392,6 +417,11 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
 #endif
     }
     return ret;
+}
+
+OMX_COLOR_FORMATTYPE OMXVideoDecoderAVCSecure::GetOutputColorFormat(int width, int height) {
+    // BYT HWC expects Tiled output color format for all resolution
+    return OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::BuildHandlerList(void) {

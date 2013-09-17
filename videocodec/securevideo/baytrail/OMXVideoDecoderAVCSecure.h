@@ -46,6 +46,7 @@ protected:
 
    virtual OMX_ERRORTYPE PrepareConfigBuffer(VideoConfigBuffer *p);
    virtual OMX_ERRORTYPE PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
+   virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width, int height);
 
    virtual OMX_ERRORTYPE BuildHandlerList(void);
    DECLARE_HANDLER(OMXVideoDecoderAVCSecure, ParamVideoAvc);
