@@ -530,6 +530,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
 #endif
     buffer->nTimeStamp = renderBuffer->timeStamp;
 
+    if (renderBuffer->flag & IS_EOS) {
+        buffer->nFlags |= OMX_BUFFERFLAG_EOS;
+    }
+
     if (mWorkingMode == GRAPHICBUFFER_MODE) {
         if (buffer_orign != buffer) {
             *retain = BUFFER_RETAIN_OVERRIDDEN;
