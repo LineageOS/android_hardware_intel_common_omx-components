@@ -460,6 +460,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::BuildHandlerList(void) {
     //AddHandler(OMX_IndexParamVideoProfileLevelQuerySupported, GetParamVideoProfileLevelQuerySupported, SetParamVideoProfileLevelQuerySupported);
     AddHandler((OMX_INDEXTYPE)OMX_IndexStoreMetaDataInBuffers, GetStoreMetaDataInBuffers, SetStoreMetaDataInBuffers);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtSyncEncoding, GetSyncEncoding, SetSyncEncoding);
+    AddHandler((OMX_INDEXTYPE)OMX_IndexExtPrependSPSPPS, GetPrependSPSPPS, SetPrependSPSPPS);
 
     return OMX_ErrorNone;
 }
@@ -958,6 +959,14 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetSyncEncoding(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 };
 
+OMX_ERRORTYPE OMXVideoEncoderBase::GetPrependSPSPPS(OMX_PTR pStructure) {
+    return OMX_ErrorNone;
+};
+
+OMX_ERRORTYPE OMXVideoEncoderBase::SetPrependSPSPPS(OMX_PTR pStructure) {
+    LOGD("SetPrependSPSPPS success");
+    return OMX_ErrorNone;
+};
 #ifdef IMG_GFX
 // Utility function that blits the original source buffer in RGBA format to a temporary
 // buffer in NV12 format, and use the temporary buffer as the source buffer

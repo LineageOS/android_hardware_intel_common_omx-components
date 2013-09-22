@@ -71,6 +71,7 @@ protected:
     //DECLARE_HANDLER(OMXVideoEncoderBase, ParamVideoProfileLevelQuerySupported);
     DECLARE_HANDLER(OMXVideoEncoderBase, StoreMetaDataInBuffers);
     DECLARE_HANDLER(OMXVideoEncoderBase, SyncEncoding);
+    DECLARE_HANDLER(OMXVideoEncoderBase, PrependSPSPPS);
 
 protected:
     virtual OMX_ERRORTYPE SetVideoEncoderParam();
