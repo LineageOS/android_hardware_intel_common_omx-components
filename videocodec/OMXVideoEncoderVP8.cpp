@@ -25,6 +25,16 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     mParamVp8.eProfile = OMX_VIDEO_VP8ProfileMain;
     mParamVp8.eLevel = OMX_VIDEO_VP8Level_Version3;
 
+    memset(&mConfigVideoVp8ReferenceFrame, 0, sizeof(mConfigVideoVp8ReferenceFrame));
+    SetTypeHeader(&mConfigVideoVp8ReferenceFrame, sizeof(mConfigVideoVp8ReferenceFrame));
+    mConfigVideoVp8ReferenceFrame.nPortIndex = OUTPORT_INDEX;
+    mConfigVideoVp8ReferenceFrame.bUsePreviousFrame = OMX_TRUE;
+    mConfigVideoVp8ReferenceFrame.bUseGoldenFrame = OMX_TRUE;
+    mConfigVideoVp8ReferenceFrame.bUseAlternateFrame = OMX_TRUE;
+    mConfigVideoVp8ReferenceFrame.bPreviousFrameRefresh = OMX_TRUE;
+    mConfigVideoVp8ReferenceFrame.bGoldenFrameRefresh = OMX_TRUE;
+    mConfigVideoVp8ReferenceFrame.bAlternateFrameRefresh = OMX_TRUE;
+
     paramPortDefinitionOutput->nBufferCountActual = OUTPORT_ACTUAL_BUFFER_COUNT;
     paramPortDefinitionOutput->nBufferCountMin = OUTPORT_MIN_BUFFER_COUNT;
     paramPortDefinitionOutput->nBufferSize = OUTPORT_BUFFER_SIZE;
@@ -104,7 +114,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::ProcessorProcess(OMX_BUFFERHEADERTYPE **buffer
         mVideoEncoder->getOutput(&outBuf);
         CHECK_ENCODE_STATUS("getOutput");
 
-        LOGV("output data size = %d", outBuf.dataSize);
+        LOGE("VP8 encode output data size = %d", outBuf.dataSize);
 
 
         outfilledlen = outBuf.dataSize;
@@ -209,6 +219,13 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetParamVideoVp8(OMX_PTR pStructure) {
 }
 
 OMX_ERRORTYPE OMXVideoEncoderVP8::GetConfigVideoVp8ReferenceFrame(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_VP8REFERENCEFRAMETYPE *p = (OMX_VIDEO_VP8REFERENCEFRAMETYPE*)pStructure;
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+
+    memcpy(p, &mConfigVideoVp8ReferenceFrame, sizeof(*p));
+
     return OMX_ErrorNone;
 }
 
@@ -221,12 +238,15 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVideoVp8ReferenceFrame(OMX_PTR pStruc
 
     CHECK_SET_CONFIG_STATE();
 
-    VideoConfigVP8 configVP8;
-    configVP8.no_ref_last = p->bUsePreviousFrame;
-    configVP8.no_ref_gf = p->bUseGoldenFrame;
-    configVP8.no_ref_arf = p->bUseAlternateFrame;
+    VideoConfigVP8ReferenceFrame configVP8ReferenceFrame;
+    configVP8ReferenceFrame.no_ref_last = !p->bUsePreviousFrame;
+    configVP8ReferenceFrame.no_ref_gf = !p->bUseGoldenFrame;
+    configVP8ReferenceFrame.no_ref_arf = !p->bUseAlternateFrame;
+    configVP8ReferenceFrame.refresh_alternate_frame = p->bAlternateFrameRefresh;
+    configVP8ReferenceFrame.refresh_golden_frame = p->bGoldenFrameRefresh;
+    configVP8ReferenceFrame.refresh_last = p->bPreviousFrameRefresh;
 
-    retStatus = mVideoEncoder->setConfig(&configVP8);
+    retStatus = mVideoEncoder->setConfig(&configVP8ReferenceFrame);
     if(retStatus != ENCODE_SUCCESS) {
         LOGW("Failed to set refresh config");
     }
