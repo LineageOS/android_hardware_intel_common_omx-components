@@ -31,14 +31,8 @@ public:
     virtual ~OMXVideoDecoderAVCSecure();
 
 protected:
-    virtual OMX_ERRORTYPE InitInputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionInput);
-    virtual OMX_ERRORTYPE ProcessorInit(void);
-    virtual OMX_ERRORTYPE ProcessorDeinit(void);
-    virtual OMX_ERRORTYPE ProcessorStart(void);
+    virtual OMX_ERRORTYPE InitInputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionInput);;
     virtual OMX_ERRORTYPE ProcessorStop(void);
-    virtual OMX_ERRORTYPE ProcessorPause(void);
-    virtual OMX_ERRORTYPE ProcessorResume(void);
-    virtual OMX_ERRORTYPE ProcessorFlush(OMX_U32 portIndex);
     virtual OMX_ERRORTYPE ProcessorProcess(
             OMX_BUFFERHEADERTYPE ***pBuffers,
             buffer_retain_t *retains,
@@ -127,6 +121,7 @@ private:
     uint32_t mVADmaBase;
     pavp_lib_session *mpLibInstance;
     android::Mutex *mLock;
+    bool mDropUntilIDR;
 };
 
 #endif /* OMX_VIDEO_DECODER_AVC_SECURE_H_ */

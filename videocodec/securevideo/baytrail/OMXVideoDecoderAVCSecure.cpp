@@ -22,6 +22,7 @@
 #include <time.h>
 #include <signal.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 extern "C" {
 #include "widevine.h"
@@ -81,9 +82,9 @@ struct SECFrameBuffer {
 
 uint8_t          outiv[WV_AES_IV_SIZE];
 OMXVideoDecoderAVCSecure::OMXVideoDecoderAVCSecure()
-    : mSessionPaused(false),
-      mVADmaBase(0),
-      mpLibInstance(NULL) {
+    : mVADmaBase(0),
+      mpLibInstance(NULL),
+      mDropUntilIDR(false) {
     LOGV("OMXVideoDecoderAVCSecure is constructed.");
     mVideoDecoder = createVideoDecoder(AVC_SECURE_MIME_TYPE);
     if (!mVideoDecoder) {
@@ -138,29 +139,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::InitInputPortFormatSpecific(OMX_PARAM_PO
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorInit(void) {
-
-
-    mSessionPaused = false;
-    return OMXVideoDecoderBase::ProcessorInit();
-}
-
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
-    // Session should be torn down in ProcessorStop, delayed to ProcessorDeinit
-    // to allow remaining frames completely rendered.
-
-    return OMXVideoDecoderBase::ProcessorDeinit();
-}
-
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
-    uint32_t secOffset = 0;
-    uint32_t secBufferSize = SEC_BUFFER_SIZE;
-    uint32_t sessionID;
-
-    mSessionPaused = false;
-    return OMXVideoDecoderBase::ProcessorStart();
-}
-
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStop(void) {
     // destroy PAVP session
     if(mpLibInstance) {
@@ -175,31 +153,10 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStop(void) {
     return OMXVideoDecoderBase::ProcessorStop();
 }
 
-
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorFlush(OMX_U32 portIndex) {
-    return OMXVideoDecoderBase::ProcessorFlush(portIndex);
-}
-
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorProcess(
         OMX_BUFFERHEADERTYPE ***pBuffers,
         buffer_retain_t *retains,
         OMX_U32 numberBuffers) {
-
-    OMX_BUFFERHEADERTYPE *pInput = *pBuffers[INPORT_INDEX];
-    SECFrameBuffer *secBuffer = (SECFrameBuffer *)pInput->pBuffer;
-    if (secBuffer->size == 0) {
-        // error occurs during decryption.
-        LOGW("size of returned SEC buffer is 0, decryption fails.");
-        mVideoDecoder->flush();
-        usleep(FLUSH_WAIT_INTERVAL);
-        OMX_BUFFERHEADERTYPE *pOutput = *pBuffers[OUTPORT_INDEX];
-        pOutput->nFilledLen = 0;
-        // reset SEC buffer size
-        secBuffer->size = INPORT_BUFFER_SIZE;
-        this->ports[INPORT_INDEX]->FlushPort();
-        this->ports[OUTPORT_INDEX]->FlushPort();
-        return OMX_ErrorNone;
-    }
 
     OMX_ERRORTYPE ret;
     ret = OMXVideoDecoderBase::ProcessorProcess(pBuffers, retains, numberBuffers);
@@ -208,23 +165,14 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorProcess(
         return ret;
     }
 
-    if (mSessionPaused && (retains[OUTPORT_INDEX] == BUFFER_RETAIN_GETAGAIN)) {
+    if (mDropUntilIDR) {
         retains[OUTPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
         OMX_BUFFERHEADERTYPE *pOutput = *pBuffers[OUTPORT_INDEX];
         pOutput->nFilledLen = 0;
-        this->ports[INPORT_INDEX]->FlushPort();
-        this->ports[OUTPORT_INDEX]->FlushPort();
+        return OMX_ErrorNone;
     }
 
     return ret;
-}
-
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorPause(void) {
-    return OMXVideoDecoderBase::ProcessorPause();
-}
-
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorResume(void) {
-    return OMXVideoDecoderBase::ProcessorResume();
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareConfigBuffer(VideoConfigBuffer *p) {
@@ -252,7 +200,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
     p->flag |= HAS_COMPLETE_FRAME;
 
     if (buffer->nOffset != 0) {
-        LOGW("buffer offset %d is not zero!!!", buffer->nOffset);
+        LOGW("buffer offset %lu is not zero!!!", buffer->nOffset);
     }
 
     SECFrameBuffer *secBuffer = (SECFrameBuffer *)buffer->pBuffer;
@@ -265,11 +213,10 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         rc = secBuffer->pLibInstance->pavp_create_session(true);
         if (rc != pavp_lib_session::status_ok) {
             LOGE("PAVP Heavy: pavp_create_session failed with error 0x%x", rc);
-            secBuffer->size = 0;
             ret = OMX_ErrorNotReady;
         } else {
             LOGE("PAVP Heavy session created succesfully");
-	    mpLibInstance = secBuffer->pLibInstance;
+            mpLibInstance = secBuffer->pLibInstance;
             mLock =  secBuffer->pWVPAVPLock;
         }
         if ( ret == OMX_ErrorNone) {
@@ -295,7 +242,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
 
             if (output.Header.Status) {
                 LOGE("SEC failed: wv_set_xcript_key() FAILED 0x%x", output.Header.Status);
-                secBuffer->size = 0;
                 ret = OMX_ErrorNotReady;
             }
         }
@@ -305,22 +251,31 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         mLock =  secBuffer->pWVPAVPLock;
     
     if(mpLibInstance) {
-	bool balive = false;
+        bool balive = false;
         pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
         rc = mpLibInstance->pavp_is_session_alive(&balive);
-        if (rc != pavp_lib_session::status_ok)
+        if (rc != pavp_lib_session::status_ok) {
             LOGE("pavp_is_session_alive failed with error 0x%x", rc);
-	if (balive == false || (ret == OMX_ErrorNotReady)) {
+        }
+
+        if (balive == false || (ret == OMX_ErrorNotReady)) {
+
             LOGE("PAVP session is %s", balive?"active":"in-active");
-            secBuffer->size = 0;
             ret = OMX_ErrorNotReady;
             //Destroy & re-create
             LOGI("Destroying the PAVP session...");
+            android::Mutex::Autolock autoLock(*mLock);
             rc = mpLibInstance->pavp_destroy_session();
             if (rc != pavp_lib_session::status_ok)
                 LOGE("pavp_destroy_session failed with error 0x%x", rc);
 
+            // Frames in the video decoder DPB are encrypted with the
+            // PAVP heavy mode key (IED key) for the destroyed session.
+            // Flush video decoder to remove them.
+            mVideoDecoder->flush();
+
             mpLibInstance = NULL;
+            mDropUntilIDR = true;
         }
     }
     if ( ret == OMX_ErrorNone) {
@@ -369,13 +324,11 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
 
             if (rc != pavp_lib_session::status_ok) {
                 LOGE("%s PAVP Failed: 0x%x", __FUNCTION__, rc);
-                secBuffer->size = 0;
                 ret = OMX_ErrorNotReady;
             }
 
             if (output.Header.Status != 0x0) {
                 LOGE("%s SEC Failed:0x%x", __FUNCTION__, output.Header.Status);
-                secBuffer->size = 0;
                 ret = OMX_ErrorNotReady;
             } else {
                 memcpy((unsigned char *)(secBuffer->data), (const unsigned int*) (mVADmaBase + (1024*512)), buffer->nFilledLen);
@@ -386,12 +339,13 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         }
     }
 
+    SECParsedFrame* parsedFrame = NULL;
     if(ret == OMX_ErrorNone) {
         p->data = secBuffer->data + buffer->nOffset;
         p->size = buffer->nFilledLen;
 
         // Call "SEC" to parse frame
-        SECParsedFrame* parsedFrame = &(mParsedFrames[secBuffer->index]);
+        parsedFrame = &(mParsedFrames[secBuffer->index]);
         memcpy(parsedFrame->nalu_data, (unsigned char *)(secBuffer->data + buffer->nFilledLen + 4), parse_size);
         parsedFrame->nalu_data_size = parse_size;
         memcpy(parsedFrame->pavp_info->iv, outiv, WV_AES_IV_SIZE);
@@ -402,9 +356,28 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
 
         if (parsedFrame->frame_info.num_nalus == 0 ) {
             LOGE("NALU parsing failed - num_nalus = 0!");
-            secBuffer->size = 0;
             ret = OMX_ErrorNotReady;
         } 
+
+        if(mDropUntilIDR) {
+            bool idr = false;
+            for(uint32_t n = 0; n < parsedFrame->frame_info.num_nalus; n++) {
+                if((parsedFrame->frame_info.nalus[n].type & 0x1F) == h264_NAL_UNIT_TYPE_IDR) {
+                    idr = true;
+                    break;
+                }
+            }
+            if(idr) {
+                LOGD("IDR frame found; restoring playback.");
+                mDropUntilIDR = false;
+            } else {
+                LOGD("Dropping non-IDR frame.");
+                ret = OMX_ErrorNotReady;
+            }
+        }
+    }
+
+    if(ret == OMX_ErrorNone) {
 #ifdef PASS_FRAME_INFO
         // Pass frame info to VideoDecoderAVCSecure in VideoDecodeBuffer
         p->data = (uint8_t *)&(parsedFrame->frame_info);
@@ -416,6 +389,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         p->size = buffer->nFilledLen;
 #endif
     }
+
     return ret;
 }
 
@@ -515,7 +489,7 @@ OMX_U8* OMXVideoDecoderAVCSecure::MemAllocSEC(OMX_U32 nSizeBytes) {
         LOGE("Invalid size (%lu) of memory to allocate.", nSizeBytes);
         return NULL;
     }
-    LOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE, "WARNING:MemAllocSEC asked to allocate buffer of size %lu (expected %lu)", nSizeBytes, INPORT_BUFFER_SIZE);
+    LOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE, "WARNING:MemAllocSEC asked to allocate buffer of size %lu (expected %d)", nSizeBytes, INPORT_BUFFER_SIZE);
 
     int index = 0;
     for (; index < INPORT_ACTUAL_BUFFER_COUNT; index++) {
