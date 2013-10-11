@@ -823,14 +823,22 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderRotation(OMX_PTR pStructure) {
     CHECK_SET_PARAM_STATE();
     int32_t rotationDegrees = 0;
 
-    rotationDegrees = *(static_cast<int32_t*>(pStructure));
-    mRotationDegrees = rotationDegrees;
+    if (pStructure) {
+        rotationDegrees = *(static_cast<int32_t*>(pStructure));
+        mRotationDegrees = rotationDegrees;
 
-    return OMX_ErrorNone;
+        return OMX_ErrorNone;
+    } else
+        return OMX_ErrorBadParameter;
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderOutputCrop(OMX_PTR pStructure) {
+
+    OMX_ERRORTYPE ret;
     OMX_CONFIG_RECTTYPE *rectParams = (OMX_CONFIG_RECTTYPE *)pStructure;
+
+    CHECK_TYPE_HEADER(rectParams);
+
     if (rectParams->nPortIndex != OUTPORT_INDEX) {
         return OMX_ErrorUndefined;
     }
