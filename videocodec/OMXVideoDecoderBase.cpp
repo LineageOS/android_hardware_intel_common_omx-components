@@ -540,8 +540,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
         }
          buffer->nFilledLen = sizeof(OMX_U8*);
     } else {
-        OMX_ERRORTYPE  ret = MapRawNV12(renderBuffer, buffer->pBuffer + buffer->nOffset, buffer->nFilledLen);
-        CHECK_RETURN_VALUE("MapRawNV12");
+        uint32_t size = 0;
+        Decode_Status status = mVideoDecoder->getRawDataFromSurface(const_cast<VideoRenderBuffer *>(renderBuffer), buffer->pBuffer + buffer->nOffset, &size, false);
+        if (status != DECODE_SUCCESS) {
+            return TranslateDecodeStatus(status);
+        }
+        buffer->nFilledLen = size;
         buffer->pPlatformPrivate = (void *)renderBuffer;
     }
 
@@ -845,72 +849,6 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderOutputCrop(OMX_PTR pStructure) {
 OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderOutputCrop(OMX_PTR pStructure) {
     return OMX_ErrorUnsupportedSetting;
 }
-
-OMX_ERRORTYPE OMXVideoDecoderBase::MapRawNV12(const VideoRenderBuffer* renderBuffer, OMX_U8 *rawData, OMX_U32& size) {
-
-    VAStatus vaStatus;
-    VAImageFormat imageFormat;
-    VAImage vaImage;
-    int32_t width = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameWidth;
-    int32_t height = this->ports[OUTPORT_INDEX]->GetPortDefinition()->format.video.nFrameHeight;
-
-    size = width * height * 3 / 2;
-
-    vaStatus = vaSyncSurface(renderBuffer->display, renderBuffer->surface);
-    if (vaStatus != VA_STATUS_SUCCESS) {
-        LOGE("vaSyncSurface failed. Error = %#x", vaStatus);
-        return OMX_ErrorHardware;
-    }
-
-    vaStatus = vaDeriveImage(renderBuffer->display, renderBuffer->surface, &vaImage);
-    if (vaStatus != VA_STATUS_SUCCESS) {
-        LOGW("vaDeriveImage failed. Error = %#x. A faked image is returned.", vaStatus);
-        int sizeY = width * height;
-        memset(rawData, 16, sizeY);
-        memset(rawData + sizeY, 128, sizeY/2);
-        return OMX_ErrorNone;
-    }
-
-    void *pBuf = NULL;
-    vaStatus = vaMapBuffer(renderBuffer->display, vaImage.buf, &pBuf);
-    if (vaStatus != VA_STATUS_SUCCESS) {
-        LOGE("vaMapBuffer failed. Error = %#x", vaStatus);
-        return OMX_ErrorHardware;
-    }
-
-    if (size == (int32_t)vaImage.data_size) {
-        memcpy(rawData, pBuf, size);
-    } else {
-        // copy Y data
-        uint8_t *src = (uint8_t*)pBuf;
-        uint8_t *dst = rawData;
-        int32_t row = 0;
-        for (row = height; row != 0 ; row--) {
-            memcpy(dst, src, width);
-            dst += width;
-            src += vaImage.pitches[0];
-        }
-        // copy interleaved V and  U data
-        src = (uint8_t*)pBuf + vaImage.offsets[1];
-        for (row = height/2; row != 0 ; row--) {
-            memcpy(dst, src, width);
-            dst += width;
-            src += vaImage.pitches[1];
-        }
-    }
-
-    vaStatus = vaUnmapBuffer(renderBuffer->display, vaImage.buf);
-    if (vaStatus != VA_STATUS_SUCCESS) {
-        LOGW("vaUnmapBuffer failed. Error = %#x", vaStatus);
-    }
-
-    vaStatus = vaDestroyImage(renderBuffer->display, vaImage.image_id);
-    if (vaStatus != VA_STATUS_SUCCESS) {
-        LOGW("vaDestroyImage failed. Error = %#x", vaStatus);
-    }
-    return OMX_ErrorNone;
-}
-
 
 OMX_COLOR_FORMATTYPE OMXVideoDecoderBase::GetOutputColorFormat(int width, int height) {
 #ifndef VED_TILING
