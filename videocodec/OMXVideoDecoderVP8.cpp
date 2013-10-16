@@ -42,7 +42,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP8::InitInputPortFormatSpecific(OMX_PARAM_PORTDEFI
     paramPortDefinitionInput->nBufferCountMin = INPORT_MIN_BUFFER_COUNT;
     paramPortDefinitionInput->nBufferSize = INPORT_BUFFER_SIZE;
     paramPortDefinitionInput->format.video.cMIMEType = (OMX_STRING)VP8_MIME_TYPE;
-    paramPortDefinitionInput->format.video.eCompressionFormat = OMX_VIDEO_CodingVPX;
+    paramPortDefinitionInput->format.video.eCompressionFormat = OMX_VIDEO_CodingVP8;
 
     // OMX_VIDEO_PARAM_VP8TYPE
     memset(&mParamVp8, 0, sizeof(mParamVp8));
@@ -107,6 +107,6 @@ OMX_ERRORTYPE OMXVideoDecoderVP8::SetParamVideoVp8(OMX_PTR pStructure) {
 }
 
 
-DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.VPX", "video_decoder.vpx", OMXVideoDecoderVP8);
+DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.VP8", "video_decoder.vp8", OMXVideoDecoderVP8);
 
 

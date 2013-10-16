@@ -39,7 +39,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     paramPortDefinitionOutput->nBufferCountMin = OUTPORT_MIN_BUFFER_COUNT;
     paramPortDefinitionOutput->nBufferSize = OUTPORT_BUFFER_SIZE;
     paramPortDefinitionOutput->format.video.cMIMEType = (OMX_STRING)VP8_MIME_TYPE;
-    paramPortDefinitionOutput->format.video.eCompressionFormat = OMX_VIDEO_CodingVPX;
+    paramPortDefinitionOutput->format.video.eCompressionFormat = OMX_VIDEO_CodingVP8;
 
     mParamProfileLevel.eProfile = OMX_VIDEO_VP8ProfileMain;
     mParamProfileLevel.eLevel = OMX_VIDEO_VP8Level_Version3;
