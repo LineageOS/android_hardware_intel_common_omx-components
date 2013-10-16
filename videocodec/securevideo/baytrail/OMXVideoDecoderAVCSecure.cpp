@@ -74,7 +74,6 @@ struct SECFrameBuffer {
     uint8_t num_entries;
     wv_packet_metadata  packet_metadata[WV_MAX_PACKETS_IN_FRAME];
     pavp_lib_session *pLibInstance;
-    android::Mutex* pWVPAVPLock;
     struct meimm MeiMm;
     uint32_t VADmaBase;
 };
@@ -217,7 +216,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         } else {
             LOGE("PAVP Heavy session created succesfully");
             mpLibInstance = secBuffer->pLibInstance;
-            mLock =  secBuffer->pWVPAVPLock;
         }
         if ( ret == OMX_ErrorNone) {
             pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
@@ -246,9 +244,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
             }
         }
     }
-
-    if(secBuffer->pWVPAVPLock)
-        mLock =  secBuffer->pWVPAVPLock;
     
     if(mpLibInstance) {
         bool balive = false;
@@ -264,7 +259,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
             ret = OMX_ErrorNotReady;
             //Destroy & re-create
             LOGI("Destroying the PAVP session...");
-            android::Mutex::Autolock autoLock(*mLock);
             rc = mpLibInstance->pavp_destroy_session();
             if (rc != pavp_lib_session::status_ok)
                 LOGE("pavp_destroy_session failed with error 0x%x", rc);
@@ -279,7 +273,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         }
     }
     if ( ret == OMX_ErrorNone) {
-        android::Mutex::Autolock autoLock(*mLock);
         wv_heci_process_video_frame_in input;
         wv_heci_process_video_frame_out output;
         sec_wv_packet_metadata metadata;

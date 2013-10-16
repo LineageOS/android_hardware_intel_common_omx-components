@@ -120,7 +120,6 @@ private:
     struct meimm mMeiMm;
     uint32_t mVADmaBase;
     pavp_lib_session *mpLibInstance;
-    android::Mutex *mLock;
     bool mDropUntilIDR;
 };
 
