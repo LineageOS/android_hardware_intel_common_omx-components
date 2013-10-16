@@ -113,7 +113,7 @@ OMXVideoEncoderAVC::OMXVideoEncoderAVC() {
         }
     }
 
-    mSourceType = MetadataBufferTypeCameraSource;
+    mSourceType = IntelMetadataBufferTypeCameraSource;
 }
 
 OMXVideoEncoderAVC::~OMXVideoEncoderAVC() {
@@ -426,7 +426,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
     // NaluFormat not set, setting default
     if (NaluFormat == 0) {
         if (mStoreMetaDataInBuffers) {
-            if(mSourceType == MetadataBufferTypeCameraSource)
+            if(mSourceType == IntelMetadataBufferTypeCameraSource)
                 NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
             else
                 NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader;

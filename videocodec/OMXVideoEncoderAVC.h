@@ -140,7 +140,7 @@ private:
     ProfileLevelTable mPLTable[MAX_H264_PROFILE];
     OMX_U32 mPLTableCount;
 
-    MetadataBufferType mSourceType;
+    IntelMetadataBufferType mSourceType;
 };
 
 #endif /* OMX_VIDEO_ENCODER_AVC_H_ */
