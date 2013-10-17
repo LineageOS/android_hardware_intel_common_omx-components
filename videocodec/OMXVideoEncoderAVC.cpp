@@ -557,23 +557,6 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
     inBuf.flag = 0;
     inBuf.timeStamp = buffers[INPORT_INDEX]->nTimeStamp;
 
-    if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS) {
-        LOGV("%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
-
-        if((inBuf.size<=0 || inBuf.data == NULL) && mSyncEncoding) {
-            LOGE("The Input buf is just a empty EOS buffer, in Sync encode,"
-                  "nothing to do, return with no error\n");
-            retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
-            retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
-            return OMX_ErrorNone;
-        }
-    } else if(inBuf.size<=0 || inBuf.data == NULL) {
-        LOGE("The Input buf size is 0 or buf is NULL, return with error\n");
-        return OMX_ErrorBadParameter;
-    }
-
-    LOGV("Input OMX Buffer = 0x%x, size=%d, ts = %lld", inBuf.data, inBuf.size, buffers[INPORT_INDEX]->nTimeStamp);
-
     //get frame encode info
     Encode_Info eInfo;
     uint32_t encodeInfo     = (uint32_t) buffers[INPORT_INDEX]->pPlatformPrivate;
@@ -588,6 +571,22 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
     LOGV("ProcessorProcess Frame %d, type:%s, EC:%d, DR:%d, CO:%s, EOE=%d\n",
             eInfo.FrameCount , FrameTypeStr[eInfo.FrameType], eInfo.EncodeComplete,
             eInfo.DataRetrieved, CacheOperationStr[eInfo.CacheOperation], eInfo.EndOfEncode );
+
+    if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS) {
+        LOGV("%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
+
+        if((inBuf.size<=0 || inBuf.data == NULL) && (mSyncEncoding || (eInfo.FrameCount == 0))) {
+            LOGV("The Input buf is just a empty EOS buffer, in Sync encode," "nothing to do, return with no error\n");
+            retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+            retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+            return OMX_ErrorNone;
+        }
+    } else if(inBuf.size<=0 || inBuf.data == NULL) {
+        LOGE("The Input buf size is 0 or buf is NULL, return with error\n");
+        return OMX_ErrorBadParameter;
+    }
+
+    LOGV("Input OMX Buffer = 0x%x, size=%d, ts = %lld", inBuf.data, inBuf.size, buffers[INPORT_INDEX]->nTimeStamp);
 
     if (eInfo.CacheOperation == CACHE_PUSH) {
         ProcessCacheOperation(buffers, retains, &eInfo);
