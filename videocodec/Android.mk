@@ -221,6 +221,9 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
+#Build secure AVC video decoder only on supported platforms
+ifeq ($(USE_INTEL_SECURE_AVC),true)
+
 include $(CLEAR_VARS)
 ifeq ($(TARGET_HAS_VPP),true)
 LOCAL_CFLAGS += -DTARGET_HAS_VPP
@@ -254,6 +257,7 @@ LOCAL_SRC_FILES := \
     OMXVideoDecoderBase.cpp
 
 ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
+# Secure AVC decoder for Clovertrail (uses IMR)
 LOCAL_SHARED_LIBRARIES += libsepdrm
 
 LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/libsepdrm
@@ -261,13 +265,9 @@ LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/libsepdrm
 LOCAL_SRC_FILES += securevideo/ctp/OMXVideoDecoderAVCSecure.cpp
 
 LOCAL_CFLAGS += -DVED_TILING
-endif
 
-ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
-LOCAL_CFLAGS += -DVED_TILING
-endif
-
-ifeq ($(BUILD_WITH_SECURITY_FRAMEWORK),chaabi_token)
+else ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+#Secure AVC decoder for Merrifield (uses IED)
 LOCAL_SHARED_LIBRARIES += \
     libsepdrm_cc54 \
     libdx_cc7
@@ -278,40 +278,22 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_SRC_FILES += securevideo/merrifield/OMXVideoDecoderAVCSecure.cpp
 
-else ifeq ($(BUILD_WITH_SECURITY_FRAMEWORK),txei)
-LOCAL_SHARED_LIBRARIES += libstlport \
-                          libutils \
-                          libz \
-                          libdl \
-                          libcrypto \
-                          libssl \
-                          libicuuc \
-                          libcutils \
-                          libc \
-                          libmeimm \
-                          libpavp \
-                          libsecvideoparser
-
-LOCAL_C_INCLUDES += bionic \
-                    $(call include-path-for, stlport) \
-                    $(call include-path-for, openssl) \
-                    $(call include-path-for, libxml2) \
-                    $(TARGET_OUT_HEADERS)/secvideoparser \
-                    $(LOCAL_PATH)/securevideo/baytrail/ \
-                    $(TOP)/vendor/intel/hardware/txei/meimm/ \
-                    $(TOP)/vendor/intel/hardware/PRIVATE/ufo/include
-
-LOCAL_SRC_FILES += securevideo/baytrail/OMXVideoDecoderAVCSecure.cpp 
-
 LOCAL_CFLAGS += -DVED_TILING
-endif
 
+else ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+#Secure AVC decoder for Baytrail (uses PAVP)
+LOCAL_SHARED_LIBRARIES += libpavp 
+
+LOCAL_SRC_FILES += securevideo/baytrail/OMXVideoDecoderAVCSecure.cpp
+
+endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderAVCSecure
 
-
 include $(BUILD_SHARED_LIBRARY)
+
+endif #USE_INTEL_SECURE_AVC
 
 include $(CLEAR_VARS)
 ifeq ($(TARGET_HAS_VPP),true)
@@ -545,10 +527,5 @@ endif
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderVP8
 include $(BUILD_SHARED_LIBRARY)
-
-# prnz - prebuilt SEC video parser
-SAVE_LOCAL_PATH := $(LOCAL_PATH)
-include $(LOCAL_PATH)/securevideo/baytrail/secvideoparser/Android.mk
-LOCAL_PATH = $(SAVE_LOCAL_PATH)
 
 endif

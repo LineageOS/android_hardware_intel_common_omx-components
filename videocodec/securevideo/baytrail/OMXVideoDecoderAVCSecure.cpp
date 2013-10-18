@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2009-2012 Intel Corporation.  All rights reserved.
+* Copyright (c) 2009-2013 Intel Corporation.  All rights reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 
-
 //#define LOG_NDEBUG 0
 #define LOG_TAG "OMXVideoDecoder"
 #include <utils/Log.h>
@@ -23,66 +22,17 @@
 #include <signal.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <byteswap.h>
 
-extern "C" {
-#include "widevine.h"
-}
+#define LOGVAR(v)   LOGD("LOGVAR: " #v " = %d", v)
 
 // Be sure to have an equal string in VideoDecoderHost.cpp (libmix)
 static const char* AVC_MIME_TYPE = "video/avc";
 static const char* AVC_SECURE_MIME_TYPE = "video/avc-secure";
 
-#define PASS_FRAME_INFO 1
-#define WV_CEILING(a,b) ((a)%(b)==0?(a):((a)/(b)+1)*(b))
-#define DMA_BUFFER_SIZE (4 * 1024 * 1024)
-#define SEC_INITIAL_OFFSET      0 //1024
-#define SEC_BUFFER_SIZE         (4 * 1024 * 1024)
-#define KEEP_ALIVE_INTERVAL     5 // seconds
-#define DRM_KEEP_ALIVE_TIMER    1000000
-#define WV_SESSION_ID           0x00000011
-#define NALU_BUFFER_SIZE        8192
-#define FLUSH_WAIT_INTERVAL     (30 * 1000) //30 ms
-
-// SEC addressable region
-#define SEC_REGION_SIZE                 (0x01000000) // 16 MB
-#define SEC_REGION_FRAME_BUFFERS_OFFSET (0)
-#define SEC_REGION_FRAME_BUFFERS_SIZE   (0x00F00000) // 15 MB
-#define SEC_REGION_NALU_BUFFERS_OFFSET  (SEC_REGION_FRAME_BUFFERS_OFFSET+SEC_REGION_FRAME_BUFFERS_SIZE)
-#define SEC_REGION_NALU_BUFFERS_SIZE    (NALU_BUFFER_SIZE*INPORT_ACTUAL_BUFFER_COUNT)
-#define SEC_REGION_PAVP_INFO_OFFSET     (SEC_REGION_NALU_BUFFERS_OFFSET+SEC_REGION_NALU_BUFFERS_SIZE)
-#define SEC_REGION_PAVP_INFO_SIZE       (sizeof(pavp_info_t)*INPORT_ACTUAL_BUFFER_COUNT)
-
-// TEST ONLY
-static uint8_t* g_SECRegionTest_REMOVE_ME;
-
-#pragma pack(push, 1)
-#define WV_AES_IV_SIZE 16
-#define WV_MAX_PACKETS_IN_FRAME 20 /* 20*64K=1.3M, max frame size */
-typedef struct {
-    uint16_t packet_byte_size; // number of bytes in this PES packet, same for input and output
-    uint16_t packet_is_not_encrypted; // 1 if this PES packet is not encrypted.  0 otherwise
-    uint8_t  packet_iv[WV_AES_IV_SIZE]; // IV used for CBC-CTS decryption, if the PES packet is encrypted
-} wv_packet_metadata;
-// TODO: synchronize SECFrameBuffer with SECDataBuffer in WVCrypto.cpp
-// - offset replaced by index.
-
-struct SECFrameBuffer {
-    uint32_t index;
-    uint32_t size;
-    uint8_t  *data;
-    uint8_t  clear;  // 0 when SEC offset is valid, 1 when data is valid
-    uint8_t num_entries;
-    wv_packet_metadata  packet_metadata[WV_MAX_PACKETS_IN_FRAME];
-    pavp_lib_session *pLibInstance;
-    struct meimm MeiMm;
-    uint32_t VADmaBase;
-};
-#pragma pack(pop)
-
-uint8_t          outiv[WV_AES_IV_SIZE];
 OMXVideoDecoderAVCSecure::OMXVideoDecoderAVCSecure()
-    : mVADmaBase(0),
-      mpLibInstance(NULL),
+    : mpLibInstance(NULL),
       mDropUntilIDR(false) {
     LOGV("OMXVideoDecoderAVCSecure is constructed.");
     mVideoDecoder = createVideoDecoder(AVC_SECURE_MIME_TYPE);
@@ -92,17 +42,18 @@ OMXVideoDecoderAVCSecure::OMXVideoDecoderAVCSecure()
     // Override default native buffer count defined in the base class
     mNativeBufferCount = OUTPORT_NATIVE_BUFFER_COUNT;
 
+    memset(mOMXSecureBuffers, 0, sizeof(mOMXSecureBuffers));
+    memset(mParsedFrames, 0, sizeof(mParsedFrames));
+
     BuildHandlerList();
-    mSECRegion.initialized = 0;
 }
 
 OMXVideoDecoderAVCSecure::~OMXVideoDecoderAVCSecure() {
-    LOGV("OMXVideoDecoderAVCSecure is destructed.");
-
-    if(g_SECRegionTest_REMOVE_ME)
-    {
-        delete[] g_SECRegionTest_REMOVE_ME;
-        g_SECRegionTest_REMOVE_ME = NULL;
+    // Cleanup any buffers that weren't freed
+    for(int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
+        if(mOMXSecureBuffers[i]) {
+            delete mOMXSecureBuffers[i];
+        }
     }
     LOGV("OMXVideoDecoderAVCSecure is destructed.");
 }
@@ -123,17 +74,8 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::InitInputPortFormatSpecific(OMX_PARAM_PO
     mParamAvc.eProfile = OMX_VIDEO_AVCProfileHigh; //OMX_VIDEO_AVCProfileBaseline;
     mParamAvc.eLevel = OMX_VIDEO_AVCLevel41; //OMX_VIDEO_AVCLevel1;
 
-    // PREPRODUCTION: allocate 16MB region off the heap
-    g_SECRegionTest_REMOVE_ME = new uint8_t[SEC_REGION_SIZE];
-    if(!g_SECRegionTest_REMOVE_ME) {
-        return OMX_ErrorInsufficientResources;
-    }
-
-    // Set up SEC-addressable memory region
-    InitSECRegion(g_SECRegionTest_REMOVE_ME, SEC_REGION_SIZE);
-
     // Set memory allocator
-    this->ports[INPORT_INDEX]->SetMemAllocator(MemAllocSEC, MemFreeSEC, this);
+    this->ports[INPORT_INDEX]->SetMemAllocator(MemAllocSecure, MemFreeSecure, this);
 
     return OMX_ErrorNone;
 }
@@ -147,8 +89,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStop(void) {
             if (rc != pavp_lib_session::status_ok)
                 LOGE("pavp_destroy_session failed with error 0x%x\n", rc);
     }
-    meimm_free_memory(&mMeiMm);
-    meimm_deinit(&mMeiMm);
     return OMXVideoDecoderBase::ProcessorStop();
 }
 
@@ -202,12 +142,20 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         LOGW("buffer offset %lu is not zero!!!", buffer->nOffset);
     }
 
-    SECFrameBuffer *secBuffer = (SECFrameBuffer *)buffer->pBuffer;
+    OMXSecureBuffer *secureBuffer = (OMXSecureBuffer*)buffer->pBuffer;
+    if(!secureBuffer) {
+        LOGE("OMXSecureBuffer is NULL");
+        return OMX_ErrorBadParameter;
+    }
+    SECVideoBuffer *secBuffer = (SECVideoBuffer*)secureBuffer->secBuffer;
+    if(!secureBuffer) {
+        LOGE("SECVideoBuffer is NULL");
+        return OMX_ErrorBadParameter;
+    }
+
     pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
-    uint32_t parse_size = 0;
 
     if(!mpLibInstance && secBuffer->pLibInstance) {
-        pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
         LOGE("PAVP Heavy session creation...");
         rc = secBuffer->pLibInstance->pavp_create_session(true);
         if (rc != pavp_lib_session::status_ok) {
@@ -221,20 +169,23 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
             pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
             wv_set_xcript_key_in input;
             wv_set_xcript_key_out output;
- 
+
             input.Header.ApiVersion = WV_API_VERSION;
             input.Header.CommandId =  wv_set_xcript_key;
             input.Header.Status = 0;
             input.Header.BufferLength = sizeof(input)-sizeof(PAVP_CMD_HEADER);
- 
+
+
             if (secBuffer->pLibInstance) {
+                LOGV("calling wv_set_xcript_key");
                 rc = secBuffer->pLibInstance->sec_pass_through(
                     reinterpret_cast<BYTE*>(&input),
                     sizeof(input),
                     reinterpret_cast<BYTE*>(&output),
                     sizeof(output));
+                LOGV("wv_set_xcript_key returned %d", rc);
             }
- 
+
             if (rc != pavp_lib_session::status_ok)
                 LOGE("sec_pass_through:wv_set_xcript_key() failed with error 0x%x", rc);
 
@@ -244,8 +195,9 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
             }
         }
     }
-    
+
     if(mpLibInstance) {
+        // PAVP auto teardown: check if PAVP session is alive
         bool balive = false;
         pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
         rc = mpLibInstance->pavp_is_session_alive(&balive);
@@ -272,48 +224,33 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
             mDropUntilIDR = true;
         }
     }
+
+    wv_heci_process_video_frame_in input;
+    wv_heci_process_video_frame_out output;
     if ( ret == OMX_ErrorNone) {
-        wv_heci_process_video_frame_in input;
-        wv_heci_process_video_frame_out output;
-        sec_wv_packet_metadata metadata;
 
         input.Header.ApiVersion = WV_API_VERSION;
         input.Header.CommandId = wv_process_video_frame;
         input.Header.Status = 0;
         input.Header.BufferLength = sizeof(input) - sizeof(PAVP_CMD_HEADER);
 
-        input.num_of_packets = secBuffer->num_entries;
+        input.num_of_packets = secBuffer->pes_packet_count;
         input.is_frame_not_encrypted = secBuffer->clear;
-        input.src_offset = 0x0;                 //Src Frame offset is 0
-        input.dest_offset = 1024 * 512;         //Dest Frame offset is 512KB
-        input.metadata_offset = 1024 * 1024;    //Metadata offset is 1MB
-        input.header_offset = (1024*1024)+512;  //Header offset is 1M + 512
+        input.src_offset = secBuffer->base_offset + secBuffer->partitions.src.offset;
+        input.dest_offset = secBuffer->base_offset + secBuffer->partitions.dest.offset;
+        input.metadata_offset = secBuffer->base_offset + secBuffer->partitions.metadata.offset;
+        input.header_offset = secBuffer->base_offset + secBuffer->partitions.headers.offset;
 
         memset(&output, 0, sizeof(wv_heci_process_video_frame_out));
 
-        for(int pes_count=0, pesoffset =0, dmaoffset=0; pes_count < secBuffer->num_entries; pes_count++) {
-
-             dmaoffset = WV_CEILING(dmaoffset,32);
-
-             metadata.packet_byte_size = secBuffer->packet_metadata[pes_count].packet_byte_size;
-             memset(&metadata.packet_iv[0], 0x0, sizeof(metadata.packet_iv));
-             memcpy(&secBuffer->data[(1024*1024)] + (pes_count * sizeof(metadata)), &metadata, sizeof(metadata));
-
-             //copy frame data
-             meimm_memcpy(&mMeiMm, dmaoffset, (secBuffer->data+pesoffset), metadata.packet_byte_size);
-             //copy meta data
-             meimm_memcpy(&mMeiMm, ((1024 * 1024)+(pes_count * sizeof(metadata))), &metadata, sizeof(metadata));
-             //update offset
-             dmaoffset += metadata.packet_byte_size;
-             pesoffset += metadata.packet_byte_size;
-        }
-
         if (secBuffer->pLibInstance) {
+            LOGV("calling wv_process_video_frame");
             rc = secBuffer->pLibInstance->sec_pass_through(
                       reinterpret_cast<BYTE*>(&input),
                       sizeof(input),
                       reinterpret_cast<BYTE*>(&output),
                       sizeof(output));
+            LOGV("wv_process_video_frame returned %d", rc);
 
             if (rc != pavp_lib_session::status_ok) {
                 LOGE("%s PAVP Failed: 0x%x", __FUNCTION__, rc);
@@ -321,36 +258,32 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
             }
 
             if (output.Header.Status != 0x0) {
-                LOGE("%s SEC Failed:0x%x", __FUNCTION__, output.Header.Status);
+                LOGE("%s SEC Failed: wv_process_video_frame: 0x%x", __FUNCTION__, output.Header.Status);
                 ret = OMX_ErrorNotReady;
-            } else {
-                memcpy((unsigned char *)(secBuffer->data), (const unsigned int*) (mVADmaBase + (1024*512)), buffer->nFilledLen);
-                parse_size = output.parsed_data_size;
-                memcpy((unsigned char *)(secBuffer->data + buffer->nFilledLen + 4), (const unsigned int*) (mVADmaBase + ((1024*1024)+512)), output.parsed_data_size);
-                memcpy(&outiv, output.iv, WV_AES_IV_SIZE);
             }
         }
     }
 
-    SECParsedFrame* parsedFrame = NULL;
+    SECParsedFrame* parsedFrame = &(mParsedFrames[secureBuffer->index]);
     if(ret == OMX_ErrorNone) {
-        p->data = secBuffer->data + buffer->nOffset;
-        p->size = buffer->nFilledLen;
+        // Assemble parsed frame information
 
-        // Call "SEC" to parse frame
-        parsedFrame = &(mParsedFrames[secBuffer->index]);
-        memcpy(parsedFrame->nalu_data, (unsigned char *)(secBuffer->data + buffer->nFilledLen + 4), parse_size);
-        parsedFrame->nalu_data_size = parse_size;
-        memcpy(parsedFrame->pavp_info->iv, outiv, WV_AES_IV_SIZE);
+        // NALU data
+        parsedFrame->nalu_data = secBuffer->base + secBuffer->partitions.headers.offset;
+        parsedFrame->nalu_data_size = output.parsed_data_size;
+
+        // Set up PAVP info
+        memcpy(parsedFrame->pavp_info.iv, output.iv, WV_AES_IV_SIZE);
 
         // construct frame_info
-        ret = ConstructFrameInfo(p->data, p->size, parsedFrame->pavp_info,
-            parsedFrame->nalu_data, parsedFrame->nalu_data_size, &(parsedFrame->frame_info));
+        ret = ConstructFrameInfo(secBuffer->base + secBuffer->partitions.dest.offset, secBuffer->frame_size,
+            &(parsedFrame->pavp_info), parsedFrame->nalu_data, parsedFrame->nalu_data_size,
+            &(parsedFrame->frame_info));
 
         if (parsedFrame->frame_info.num_nalus == 0 ) {
             LOGE("NALU parsing failed - num_nalus = 0!");
             ret = OMX_ErrorNotReady;
-        } 
+        }
 
         if(mDropUntilIDR) {
             bool idr = false;
@@ -371,16 +304,10 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
     }
 
     if(ret == OMX_ErrorNone) {
-#ifdef PASS_FRAME_INFO
         // Pass frame info to VideoDecoderAVCSecure in VideoDecodeBuffer
         p->data = (uint8_t *)&(parsedFrame->frame_info);
         p->size = sizeof(frame_info_t);
         p->flag = p->flag | IS_SECURE_DATA;
-#else
-        // Pass decrypted frame
-        p->data = secBuffer->data + buffer->nOffset;
-        p->size = buffer->nFilledLen;
-#endif
     }
 
     return ret;
@@ -459,126 +386,81 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::SetNativeBufferMode(OMX_PTR pStructure) 
     return OMX_ErrorNone;
 }
 
-OMX_U8* OMXVideoDecoderAVCSecure::MemAllocSEC(OMX_U32 nSizeBytes, OMX_PTR pUserData) {
+OMX_U8* OMXVideoDecoderAVCSecure::MemAllocSecure(OMX_U32 nSizeBytes, OMX_PTR pUserData) {
     OMXVideoDecoderAVCSecure* p = (OMXVideoDecoderAVCSecure *)pUserData;
     if (p) {
-        return p->MemAllocSEC(nSizeBytes);
+        return p->MemAllocSecure(nSizeBytes);
     }
     LOGE("NULL pUserData.");
     return NULL;
 }
 
-void OMXVideoDecoderAVCSecure::MemFreeSEC(OMX_U8 *pBuffer, OMX_PTR pUserData) {
+void OMXVideoDecoderAVCSecure::MemFreeSecure(OMX_U8 *pBuffer, OMX_PTR pUserData) {
     OMXVideoDecoderAVCSecure* p = (OMXVideoDecoderAVCSecure *)pUserData;
     if (p) {
-        p->MemFreeSEC(pBuffer);
+        p->MemFreeSecure(pBuffer);
         return;
     }
     LOGE("NULL pUserData.");
 }
 
-OMX_U8* OMXVideoDecoderAVCSecure::MemAllocSEC(OMX_U32 nSizeBytes) {
+OMX_U8* OMXVideoDecoderAVCSecure::MemAllocSecure(OMX_U32 nSizeBytes) {
     if (nSizeBytes > INPORT_BUFFER_SIZE) {
         LOGE("Invalid size (%lu) of memory to allocate.", nSizeBytes);
         return NULL;
     }
-    LOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE, "WARNING:MemAllocSEC asked to allocate buffer of size %lu (expected %d)", nSizeBytes, INPORT_BUFFER_SIZE);
+    LOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE, "WARNING: MemAllocSEC asked to allocate buffer of size %lu (expected %d)", nSizeBytes, INPORT_BUFFER_SIZE);
 
-    int index = 0;
-    for (; index < INPORT_ACTUAL_BUFFER_COUNT; index++) {
-        if(!mSECRegion.frameBuffers.buffers[index].allocated) {
-        break;
-	}
-    }
+    uint32_t index = 0;
+    do {
+        if(mOMXSecureBuffers[index] == NULL) {
+            break;
+        }
+    } while(++index < INPORT_ACTUAL_BUFFER_COUNT);
+
     if(index >= INPORT_ACTUAL_BUFFER_COUNT) {
         LOGE("No free buffers");
         return NULL;
     }
 
-    SECFrameBuffer *pBuffer = new SECFrameBuffer;
-    if (pBuffer == NULL) {
-        LOGE("Failed to allocate SECFrameBuffer.");
+    mOMXSecureBuffers[index] = new OMXSecureBuffer;
+    if(!mOMXSecureBuffers[index]) {
+        LOGE("Failed to allocate OMXSecureBuffer.");
         return NULL;
     }
 
-    if(!mVADmaBase) {
-        int status = meimm_init(&mMeiMm, true);
+    mOMXSecureBuffers[index]->index = index;
+    // SEC buffer will by assigned by WVCrypto
+    mOMXSecureBuffers[index]->secBuffer = NULL;
 
-        if (status)
-            LOGE("meimm_init FAILED ret: %#x", status);
-
-        status =  meimm_alloc_map_memory(&mMeiMm, DMA_BUFFER_SIZE);
-        if (status)
-           LOGE("meimm_alloc_map_memory FAILED ret: %#x", status);
-
-        mVADmaBase = (uint32_t)meimm_get_addr(&mMeiMm);
-
-        LOGI("mVADMAOffset: %#x", mVADmaBase);
-    }
-
-    pBuffer->index = index;
-    pBuffer->MeiMm = mMeiMm;
-    pBuffer->VADmaBase = mVADmaBase;
-    pBuffer->data = mSECRegion.frameBuffers.buffers[index].base;
-    pBuffer->size = mSECRegion.frameBuffers.buffers[index].size;
-    mParsedFrames[index].nalu_data = mSECRegion.naluBuffers.buffers[index].base;
-    mParsedFrames[index].nalu_data_size = mSECRegion.naluBuffers.buffers[index].size;
-    mParsedFrames[index].pavp_info = (pavp_info_t*)mSECRegion.pavpInfo.buffers[index].base;
-
-    mSECRegion.frameBuffers.buffers[index].allocated = 1;
-    mSECRegion.naluBuffers.buffers[index].allocated = 1;
-    mSECRegion.pavpInfo.buffers[index].allocated = 1;
-
-    return (OMX_U8 *) pBuffer;
+    return (OMX_U8*)mOMXSecureBuffers[index];
 }
 
-void OMXVideoDecoderAVCSecure::MemFreeSEC(OMX_U8 *pBuffer) {
-    SECFrameBuffer *p = (SECFrameBuffer*) pBuffer;
+void OMXVideoDecoderAVCSecure::MemFreeSecure(OMX_U8 *pBuffer) {
+    OMXSecureBuffer *p = (OMXSecureBuffer*) pBuffer;
     if (p == NULL) {
         return;
     }
 
-    mSECRegion.frameBuffers.buffers[p->index].allocated = 0;
-    mSECRegion.naluBuffers.buffers[p->index].allocated = 0;
-    mSECRegion.pavpInfo.buffers[p->index].allocated = 0;
-
-    delete(p);
+    uint32_t index = p->index;
+    if(mOMXSecureBuffers[index] == p) {
+        delete(p);
+        mOMXSecureBuffers[index] = NULL;
+    } else {
+        LOGE("ERROR: pBuffer (%p) does not match mOMXSecureBuffer[%d] pointer (%p)", p, index, mOMXSecureBuffers[index]);
+    }
 }
 
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::InitSECRegion(uint8_t* region, uint32_t size)
-{
-    if(mSECRegion.initialized) {
-        return OMX_ErrorNone;
-    }
-
-    mSECRegion.base = region;
-    mSECRegion.size = size;
-
-    // Partition the SEC region
-    mSECRegion.frameBuffers.base = mSECRegion.base + SEC_REGION_FRAME_BUFFERS_OFFSET;
-    mSECRegion.frameBuffers.size = SEC_REGION_FRAME_BUFFERS_SIZE;
-
-    mSECRegion.naluBuffers.base = mSECRegion.base + SEC_REGION_NALU_BUFFERS_OFFSET;
-    mSECRegion.naluBuffers.size = SEC_REGION_NALU_BUFFERS_SIZE;
-
-    mSECRegion.pavpInfo.base = mSECRegion.base + SEC_REGION_PAVP_INFO_OFFSET;
-    mSECRegion.pavpInfo.size = SEC_REGION_PAVP_INFO_SIZE;
-
-    for(int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
-        mSECRegion.frameBuffers.buffers[i].allocated = 0;
-        mSECRegion.frameBuffers.buffers[i].base = mSECRegion.frameBuffers.base + (i*INPORT_BUFFER_SIZE);
-        mSECRegion.frameBuffers.buffers[i].size = INPORT_BUFFER_SIZE;
-        mSECRegion.naluBuffers.buffers[i].allocated = 0;
-        mSECRegion.naluBuffers.buffers[i].base = mSECRegion.naluBuffers.base + (i*NALU_BUFFER_SIZE);
-        mSECRegion.naluBuffers.buffers[i].size = NALU_BUFFER_SIZE;
-        mSECRegion.pavpInfo.buffers[i].allocated = 0;
-        mSECRegion.pavpInfo.buffers[i].base = mSECRegion.pavpInfo.base + (i*sizeof(pavp_info_t));
-        mSECRegion.pavpInfo.buffers[i].size = sizeof(pavp_info_t);
-    }
-
-    mSECRegion.initialized = 1;
-
-    return OMX_ErrorNone;
+// Byteswap slice header (SEC returns the slice header with fields in big-endian byte order)
+inline void byteswap_slice_header(slice_header_t* slice_header) {
+    // Byteswap the fields of slice_header
+    slice_header->first_mb_in_slice = bswap_32(slice_header->first_mb_in_slice);
+    slice_header->frame_num = bswap_32(slice_header->frame_num);
+    slice_header->idr_pic_id = bswap_16(slice_header->idr_pic_id);
+    slice_header->pic_order_cnt_lsb = bswap_16(slice_header->pic_order_cnt_lsb);
+    slice_header->delta_pic_order_cnt_bottom = bswap_32(slice_header->delta_pic_order_cnt_bottom);
+    slice_header->delta_pic_order_cnt[0] = bswap_32(slice_header->delta_pic_order_cnt[0]);
+    slice_header->delta_pic_order_cnt[1] = bswap_32(slice_header->delta_pic_order_cnt[1]);
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ConstructFrameInfo(
@@ -596,20 +478,22 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ConstructFrameInfo(
     frame_info->data = frame_data;
     frame_info->length = frame_size;
     frame_info->pavp = pavp_info;
+    frame_info->dec_ref_pic_marking = NULL;
 
-    frame_info->num_nalus = byteswap_32(*dword_ptr);
+    // Byteswap nalu data (SEC returns fields in big-endian byte order)
+    frame_info->num_nalus = bswap_32(*dword_ptr);
     dword_ptr++;
     for(uint32_t n = 0; n < frame_info->num_nalus; n++) {
         // Byteswap offset
-        frame_info->nalus[n].offset = byteswap_32(*dword_ptr);
+        frame_info->nalus[n].offset = bswap_32(*dword_ptr);
         dword_ptr++;
 
        // Byteswap nalu_size
-        frame_info->nalus[n].length = byteswap_32(*dword_ptr);
+        frame_info->nalus[n].length = bswap_32(*dword_ptr);
         dword_ptr++;
 
         // Byteswap data_size
-        data_size = byteswap_32(*dword_ptr);
+        data_size = bswap_32(*dword_ptr);
         dword_ptr++;
 
         byte_ptr = (uint8_t*)dword_ptr;
@@ -628,8 +512,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ConstructFrameInfo(
             frame_info->nalus[n].data = frame_info->data + frame_info->nalus[n].offset;
             byteswap_slice_header((slice_header_t*)byte_ptr);
             frame_info->nalus[n].slice_header = (slice_header_t*)byte_ptr;
-
-            frame_info->dec_ref_pic_marking = NULL;
             if(data_size > sizeof(slice_header_t)) {
                 byte_ptr += sizeof(slice_header_t);
                 frame_info->dec_ref_pic_marking = (dec_ref_pic_marking_t*)byte_ptr;
