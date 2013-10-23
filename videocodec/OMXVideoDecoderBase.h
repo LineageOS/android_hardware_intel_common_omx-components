@@ -70,6 +70,7 @@ protected:
 #ifdef TARGET_HAS_VPP
     DECLARE_HANDLER(OMXVideoDecoderBase, DecoderVppBufferNum);
 #endif
+    DECLARE_HANDLER(OMXVideoDecoderBase, ErrorReportMode);
 
 private:
     enum {
@@ -108,6 +109,7 @@ protected:
         RAWDATA_MODE,
     };
     WorkingMode mWorkingMode;
+    bool mErrorReportEnabled;
 };
 
 #endif /* OMX_VIDEO_DECODER_BASE_H_ */
