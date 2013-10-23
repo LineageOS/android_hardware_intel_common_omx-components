@@ -41,6 +41,10 @@ ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 ifeq ($(TARGET_VPP_USE_GEN),true)
 LOCAL_CFLAGS += -DDEINTERLACE_EXT
 endif
@@ -123,6 +127,10 @@ ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -159,6 +167,9 @@ ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -192,6 +203,10 @@ LOCAL_SRC_FILES := \
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderWMV
 ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
@@ -240,6 +255,10 @@ LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/libsepdrm
 
 LOCAL_SRC_FILES += securevideo/ctp/OMXVideoDecoderAVCSecure.cpp
 
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
@@ -466,6 +485,10 @@ LOCAL_SRC_FILES := \
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderPAVC
 ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
