@@ -29,6 +29,9 @@ OMXVideoDecoderBase::OMXVideoDecoderBase()
       mNativeBufferCount(OUTPORT_NATIVE_BUFFER_COUNT),
       mOMXBufferHeaderTypePtrNum(0),
       mRotationDegrees(0),
+#ifdef TARGET_HAS_VPP
+      mVppBufferNum(0),
+#endif
       mWorkingMode(RAWDATA_MODE) {
       memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
 }
@@ -216,6 +219,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorDeinit(void) {
     mOMXBufferHeaderTypePtrNum = 0;
     memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
     mRotationDegrees = 0;
+#ifdef TARGET_HAS_VPP
+    mVppBufferNum = 0;
+#endif
     return OMXComponentCodecBase::ProcessorDeinit();
 }
 
@@ -450,6 +456,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
 
     }
     p->rotationDegrees = mRotationDegrees;
+#ifdef TARGET_HAS_VPP
+    p->vppBufferNum = mVppBufferNum;
+#endif
     p->width = paramPortDefinitionInput->format.video.nFrameWidth;
     p->height = paramPortDefinitionInput->format.video.nFrameHeight;
     return OMX_ErrorNone;
@@ -580,7 +589,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
     int sliceHeightCropped = heightCropped;
     int force_realloc = 0;
 
+#ifdef TARGET_HAS_VPP
+    LOGI("============== mVppBufferNum = %d\n", mVppBufferNum);
+    if (paramPortDefinitionOutput.nBufferCountActual - mVppBufferNum < formatInfo->actualBufferNeeded) {
+#else
     if (paramPortDefinitionOutput.nBufferCountActual < formatInfo->actualBufferNeeded) {
+#endif
         if (mWorkingMode == GRAPHICBUFFER_MODE) {
             LOGV("output port buffer number is not enough: %d to %d",
                  paramPortDefinitionOutput.nBufferCountActual,
@@ -700,6 +714,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::BuildHandlerList(void) {
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtUseNativeBuffer), GetNativeBuffer, SetNativeBuffer);
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableNativeBuffer), GetNativeBufferMode, SetNativeBufferMode);
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtRotationDegrees), GetDecoderRotation, SetDecoderRotation);
+#ifdef TARGET_HAS_VPP
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtVppBufferNum), GetDecoderVppBufferNum, SetDecoderVppBufferNum);
+#endif
     AddHandler(OMX_IndexConfigCommonOutputCrop, GetDecoderOutputCrop, SetDecoderOutputCrop);
 
     return OMX_ErrorNone;
@@ -831,6 +848,21 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderRotation(OMX_PTR pStructure) {
     } else
         return OMX_ErrorBadParameter;
 }
+
+#ifdef TARGET_HAS_VPP
+OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderVppBufferNum(OMX_PTR pStructure) {
+    return OMX_ErrorBadParameter;
+}
+OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderVppBufferNum(OMX_PTR pStructure) {
+    CHECK_SET_PARAM_STATE();
+    int32_t num = 0;
+
+    num = *(static_cast<int32_t*>(pStructure));
+    mVppBufferNum = num;
+
+    return OMX_ErrorNone;
+}
+#endif
 
 OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderOutputCrop(OMX_PTR pStructure) {
 

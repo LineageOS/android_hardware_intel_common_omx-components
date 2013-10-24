@@ -7,6 +7,10 @@ endif
 
 include $(CLEAR_VARS)
 
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
+
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
@@ -51,6 +55,11 @@ PLATFORM_SUPPORT_VP8 := \
 
 ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_SUPPORT_VP8)),)
 include $(CLEAR_VARS)
+
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
+
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
@@ -81,7 +90,9 @@ include $(BUILD_SHARED_LIBRARY)
 endif
 
 include $(CLEAR_VARS)
-
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
@@ -115,7 +126,9 @@ endif
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
-
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
@@ -149,7 +162,9 @@ endif
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
-
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
@@ -187,7 +202,9 @@ endif
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
-
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
@@ -273,7 +290,9 @@ LOCAL_MODULE := libOMXVideoDecoderAVCSecure
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
-
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
@@ -319,7 +338,9 @@ include $(BUILD_SHARED_LIBRARY)
 
 
 include $(CLEAR_VARS)
-
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
@@ -368,7 +389,9 @@ LOCAL_MODULE := libOMXVideoEncoderH263
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
-
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
@@ -413,7 +436,9 @@ LOCAL_MODULE := libOMXVideoEncoderMPEG4
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
-
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
@@ -447,7 +472,9 @@ endif
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
-
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
 LOCAL_CPPFLAGS :=
 LOCAL_LDFLAGS :=
 
