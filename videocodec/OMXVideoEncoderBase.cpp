@@ -933,7 +933,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetStoreMetaDataInBuffers(OMX_PTR pStructure)
 //  Fix me: just work around. Need tuning bitrate performance.
 //  maxSize = mParamBitrate.nTargetBitrate/8;
 //  maxSize = min(maxSize, paramPortDefinitionOutput->format.video.nFrameHeight*paramPortDefinitionOutput->format.video.nFrameWidth*1.5/2);
-    maxSize = paramPortDefinitionOutput->format.video.nFrameHeight*paramPortDefinitionOutput->format.video.nFrameWidth*1.5/2;
+    maxSize = paramPortDefinitionOutput->format.video.nFrameHeight*paramPortDefinitionOutput->format.video.nFrameWidth*1.5;
     paramPortDefinitionOutput->nBufferSize =  maxSize;
     LOGD("overwrite output port buffer paramPortDefinitionOutput->nBufferSize is %d",paramPortDefinitionOutput->nBufferSize);
 
