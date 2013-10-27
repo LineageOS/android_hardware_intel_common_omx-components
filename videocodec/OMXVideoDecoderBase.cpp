@@ -504,6 +504,15 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buf
         p->flag |= IS_SYNC_FRAME;
     }
 
+    if (buffer->pInputPortPrivate) {
+        uint32_t degree = 0;
+        memcpy ((void *) &degree, buffer->pInputPortPrivate, sizeof(uint32_t));
+        p->rotationDegrees = degree;
+        LOGV("rotationDegrees = %d", p->rotationDegrees);
+    } else {
+        p->rotationDegrees = 0;
+    }
+
     *retain= BUFFER_RETAIN_NOT_RETAIN;
     return OMX_ErrorNone;
 }
