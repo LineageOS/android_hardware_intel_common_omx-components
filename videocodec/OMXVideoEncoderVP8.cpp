@@ -114,7 +114,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::ProcessorProcess(OMX_BUFFERHEADERTYPE **buffer
         mVideoEncoder->getOutput(&outBuf);
         CHECK_ENCODE_STATUS("getOutput");
 
-        LOGE("VP8 encode output data size = %d", outBuf.dataSize);
+        LOGV("VP8 encode output data size = %d", outBuf.dataSize);
 
 
         outfilledlen = outBuf.dataSize;
