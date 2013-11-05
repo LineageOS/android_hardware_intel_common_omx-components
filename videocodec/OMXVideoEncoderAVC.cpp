@@ -575,10 +575,9 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
     if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS) {
         LOGV("%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
 
-        if((inBuf.size<=0 || inBuf.data == NULL) && (mSyncEncoding || (eInfo.FrameCount == 0))) {
+        if((inBuf.size<=0 || inBuf.data == NULL) && (mSyncEncoding || (eInfo.FrameCount <= 1))) {
             LOGV("The Input buf is just a empty EOS buffer, in Sync encode," "nothing to do, return with no error\n");
             retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
-            retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
             return OMX_ErrorNone;
         }
     } else if(inBuf.size<=0 || inBuf.data == NULL) {
