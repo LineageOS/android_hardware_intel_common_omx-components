@@ -510,7 +510,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buf
         p->rotationDegrees = degree;
         LOGV("rotationDegrees = %d", p->rotationDegrees);
     } else {
-        p->rotationDegrees = 0;
+        p->rotationDegrees = mRotationDegrees;
     }
 
     *retain= BUFFER_RETAIN_NOT_RETAIN;
@@ -789,6 +789,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferUsage(OMX_PTR pStructure) {
 OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBuffer(OMX_PTR pStructure) {
     return OMX_ErrorBadParameter;
 }
+
 OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBuffer(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     UseAndroidNativeBufferParams *param = (UseAndroidNativeBufferParams*)pStructure;
@@ -866,10 +867,11 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderRotation(OMX_PTR pStructure) {
     if (pStructure) {
         rotationDegrees = *(static_cast<int32_t*>(pStructure));
         mRotationDegrees = rotationDegrees;
-
+        LOGI("Rotation Degree = %d", rotationDegrees);
         return OMX_ErrorNone;
-    } else
+    } else {
         return OMX_ErrorBadParameter;
+    }
 }
 
 #ifdef TARGET_HAS_VPP
@@ -926,8 +928,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetErrorReportMode(OMX_PTR pStructure) {
         LOGD("Error reporting is %s", mErrorReportEnabled ? "enabled" : "disabled");
 
         return OMX_ErrorNone;
-    } else
+    } else {
         return OMX_ErrorBadParameter;
+    }
 }
 
 OMX_COLOR_FORMATTYPE OMXVideoDecoderBase::GetOutputColorFormat(int width, int height) {
