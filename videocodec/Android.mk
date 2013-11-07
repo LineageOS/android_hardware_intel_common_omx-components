@@ -90,6 +90,11 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderVP8
+
+ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 endif
 
