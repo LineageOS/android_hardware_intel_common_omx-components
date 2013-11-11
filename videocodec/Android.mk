@@ -318,11 +318,8 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
-    $(TARGET_OUT_HEADERS)/libsharedbuffer \
-    $(call include-path-for, libhardware) \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax \
-    $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
@@ -330,13 +327,6 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderAVC.cpp
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
-ifeq ($(ENABLE_MRFL_GRAPHICS),true)
-LOCAL_CFLAGS += -DMRFLD_OMX
-endif
-
-ifeq ($(ENABLE_IMG_GRAPHICS),true)
-    LOCAL_CFLAGS += -DIMG_GFX
-endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderAVC
@@ -366,11 +356,8 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
-    $(TARGET_OUT_HEADERS)/libsharedbuffer \
-    $(call include-path-for, libhardware) \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax \
-    $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
@@ -378,16 +365,9 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderH263.cpp
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
-ifeq ($(ENABLE_MRFL_GRAPHICS),true)
-LOCAL_CFLAGS += -DMRFLD_OMX
-endif
 
 ifeq ($(SW_MPEG4_ENCODER),true)
     LOCAL_CFLAGS += -DSYNC_MODE
-endif
-
-ifeq ($(ENABLE_IMG_GRAPHICS),true)
-    LOCAL_CFLAGS += -DIMG_GFX
 endif
 
 LOCAL_MODULE_TAGS := optional
@@ -417,11 +397,8 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
-    $(TARGET_OUT_HEADERS)/libsharedbuffer \
-    $(call include-path-for, libhardware) \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax \
-    $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
@@ -429,13 +406,6 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderMPEG4.cpp
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
-ifeq ($(ENABLE_MRFL_GRAPHICS),true)
-LOCAL_CFLAGS += -DMRFLD_OMX
-endif
-
-ifeq ($(ENABLE_IMG_GRAPHICS),true)
-    LOCAL_CFLAGS += -DIMG_GFX
-endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderMPEG4
@@ -504,11 +474,8 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
     $(TARGET_OUT_HEADERS)/libva	\
-    $(TARGET_OUT_HEADERS)/libsharedbuffer \
-    $(call include-path-for, libhardware) \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax \
-    $(TARGET_OUT_HEADERS)/pvr
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp \
@@ -516,13 +483,6 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderVP8.cpp
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
-ifeq ($(ENABLE_MRFL_GRAPHICS),true)
-LOCAL_CFLAGS += -DMRFLD_OMX
-endif
-
-ifeq ($(ENABLE_IMG_GRAPHICS),true)
-    LOCAL_CFLAGS += -DIMG_GFX
-endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderVP8

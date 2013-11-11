@@ -35,7 +35,6 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
     mEncoderParams = new VideoParamsCommon();
     if (!mEncoderParams) LOGE("OMX_ErrorInsufficientResources");
 
-    bAndroidOpaqueFormat = OMX_FALSE;
     LOGV("OMXVideoEncoderBase::OMXVideoEncoderBase end");
 }
 
@@ -285,7 +284,10 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetVideoEncoderParam() {
         mEncoderParams->intraPeriod = (intraPeriod < 15) ? 15 : intraPeriod;   // Limit intra frame period to ensure video quality for low bitrate application.
     }
 
-    mEncoderParams->rawFormat = RAW_FORMAT_NV12;
+    if (paramPortDefinitionInput->format.video.eColorFormat == OMX_COLOR_FormatAndroidOpaque)
+        mEncoderParams->rawFormat = RAW_FORMAT_OPAQUE;
+    else
+        mEncoderParams->rawFormat = RAW_FORMAT_NV12;
 
     LOGV("frameRate.frameRateDenom = %d\n", mEncoderParams->frameRate.frameRateDenom);
     LOGV("frameRate.frameRateNum = %d\n", mEncoderParams->frameRate.frameRateNum);
@@ -359,40 +361,6 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorInit(void) {
     ret = SetVideoEncoderParam();
     CHECK_STATUS("SetVideoEncoderParam");
 
-#ifdef IMG_GFX
-    if (bAndroidOpaqueFormat) {
-        hw_module_t const* module;
-        int err = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &module);
-        if (err == 0) {
-            mGrallocMod = (IMG_gralloc_module_public_t const*)module;
-            gralloc_open(module, &mAllocDev);
-            for (int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
-                status_t err = mAllocDev->alloc(mAllocDev,
-                        mEncoderParams->resolution.width,
-                        mEncoderParams->resolution.height,
-                        OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar,
-                        GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_TEXTURE,
-                        (buffer_handle_t*)&(mBufferHandleMaps[i].mHandle),
-                        &mBufferHandleMaps[i].mStride);
-                ALOGE_IF(err, "alloc(%u, %u, %d, %08x, ...) failed %d (%s)",
-                        mEncoderParams->resolution.width,
-                        mEncoderParams->resolution.height,
-                        OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar,
-                        GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_TEXTURE, err, strerror(-err));
-                mBufferHandleMaps[i].mHeader = NULL;
-                ALOGI("width %d, height %d, iWidth %d, iHeight %d, iFormat %x",
-                        mEncoderParams->resolution.width,
-                        mEncoderParams->resolution.height,
-                        mBufferHandleMaps[i].mHandle->iWidth,
-                        mBufferHandleMaps[i].mHandle->iHeight, mBufferHandleMaps[i].mHandle->iFormat);
-            }
-        } else {
-            ALOGE("FATAL: can't find the %s module", GRALLOC_HARDWARE_MODULE_ID);
-            return OMX_ErrorUndefined;
-        }
-    }
-#endif
-
     if (mVideoEncoder->start() != ENCODE_SUCCESS) {
         LOGE("Start failed, ret = 0x%08x\n", ret);
         return OMX_ErrorUndefined;
@@ -408,17 +376,6 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorDeinit(void) {
         mVideoEncoder->stop();
     }
 
-#ifdef IMG_GFX
-    if(bAndroidOpaqueFormat) {
-        for (int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
-            status_t err = mAllocDev->free(mAllocDev,
-                    (buffer_handle_t)mBufferHandleMaps[i].mHandle);
-            ALOGW_IF(err, "free(...) failed %d (%s)", err, strerror(-err));
-            mBufferHandleMaps[i].mHandle = NULL;
-        }
-        gralloc_close(mAllocDev);
-    }
-#endif
     return OMX_ErrorNone;
 }
 
@@ -478,10 +435,10 @@ OMX_ERRORTYPE OMXVideoEncoderBase::GetParamVideoPortFormat(OMX_PTR pStructure) {
     port = static_cast<PortVideo *>(this->ports[p->nPortIndex]);
     index = p->nIndex;
     memcpy(p, port->GetPortVideoParam(), sizeof(*p));
-    // FIXME: port only supports OMX_COLOR_FormatYUV420SemiPlanar
+    // port supports OMX_COLOR_FormatYUV420SemiPlanar & OMX_COLOR_FormatAndroidOpaque
     if (index == 1) {
         p->nIndex = 1;
-        p->eColorFormat = (OMX_COLOR_FORMATTYPE)OMX_COLOR_FormatAndroidOpaque;
+        p->eColorFormat = OMX_COLOR_FormatAndroidOpaque;
     }
     return OMX_ErrorNone;
 }
@@ -497,12 +454,12 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetParamVideoPortFormat(OMX_PTR pStructure) {
     // TODO: do we need to check if port is enabled?
     PortVideo *port = NULL;
     port = static_cast<PortVideo *>(this->ports[p->nPortIndex]);
-    // FIXME: port only supports OMX_COLOR_FormatYUV420SemiPlanar
+#if 0
     if (p->eColorFormat ==  OMX_COLOR_FormatAndroidOpaque) {
         p->nIndex = 0;
         p->eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
-        bAndroidOpaqueFormat = OMX_TRUE;
     }
+#endif
     port->SetPortVideoParam(p, false);
     return OMX_ErrorNone;
 }
@@ -967,63 +924,3 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetPrependSPSPPS(OMX_PTR pStructure) {
     LOGD("SetPrependSPSPPS success");
     return OMX_ErrorNone;
 };
-#ifdef IMG_GFX
-// Utility function that blits the original source buffer in RGBA format to a temporary
-// buffer in NV12 format, and use the temporary buffer as the source buffer
-int32_t OMXVideoEncoderBase::rgba2nv12conversion(OMX_BUFFERHEADERTYPE *pBuffer)
-{
-    int i, err;
-
-    // Every input buffer keeps its own state
-    for (i = 0; i < sizeof(mBufferHandleMaps) / sizeof(mBufferHandleMaps[0]); i++) {
-        if (mBufferHandleMaps[i].mHeader == pBuffer)
-            break;
-    }
-    if (i == sizeof(mBufferHandleMaps) / sizeof(mBufferHandleMaps[0])) {
-        for (i = 0; i < sizeof(mBufferHandleMaps) / sizeof(mBufferHandleMaps[0]); i++) {
-            if (mBufferHandleMaps[i].mHeader == NULL) {
-                mBufferHandleMaps[i].mHeader = pBuffer;
-                break;
-            }
-        }
-    }
-
-    if(i >= sizeof(mBufferHandleMaps) / sizeof(mBufferHandleMaps[0]))
-    {
-        LOGE("mBufferHandleMaps array index out of bound\n");
-        return -1;
-    }
-
-    // Backup input buffer content
-    memcpy(mBufferHandleMaps[i].backBuffer, pBuffer->pBuffer,
-            pBuffer->nFilledLen);
-
-    // Get source buffer handle
-    memcpy(&mBufferHandleMaps[i].srcBuffer, pBuffer->pBuffer + 4, 4);
-
-    // Color space conversion
-#ifdef MRFLD_OMX
-    err = mGrallocMod->Blit(mGrallocMod, (native_handle_t*)mBufferHandleMaps[i].srcBuffer,
-            (native_handle_t*)mBufferHandleMaps[i].mHandle,
-            mEncoderParams->resolution.width, mEncoderParams->resolution.height, 0, 0, 1);
-    ALOGE_IF(err, "Blit2(mBufferHandleMaps[%d].srcBuffer)", i);
-#else
-    err = mGrallocMod->Blit2(mGrallocMod, (native_handle_t*)mBufferHandleMaps[i].srcBuffer,
-            (native_handle_t*)mBufferHandleMaps[i].mHandle,
-            mEncoderParams->resolution.width, mEncoderParams->resolution.height, 0, 0);
-    ALOGE_IF(err, "Blit2(mBufferHandleMaps[%d].srcBuffer)", i);
-#endif
-
-    // Wrap destination buffer handle to encoder's input format
-    uint8_t* metadata = NULL;
-    uint32_t len = 0;
-
-    IntelMetadataBuffer imb(MetadataBufferTypeGrallocSource, (int32_t)mBufferHandleMaps[i].mHandle);
-    imb.Serialize(metadata, len);
-    memcpy(pBuffer->pBuffer,metadata, len);
-    pBuffer->nFilledLen = len;
-
-    return i;
-
-}
-#endif
