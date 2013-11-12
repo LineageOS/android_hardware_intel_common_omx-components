@@ -39,6 +39,7 @@ protected:
    virtual OMX_ERRORTYPE PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
 
    virtual OMX_ERRORTYPE BuildHandlerList(void);
+   virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width, int height);
    DECLARE_HANDLER(OMXVideoDecoderAVC, ParamVideoAvc);
    DECLARE_HANDLER(OMXVideoDecoderAVC, ParamIntelAVCDecodeSettings);
    DECLARE_HANDLER(OMXVideoDecoderAVC, ParamVideoAVCProfileLevel);

@@ -49,6 +49,10 @@ ifeq ($(TARGET_VPP_USE_GEN),true)
 LOCAL_CFLAGS += -DDEINTERLACE_EXT
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_GEN_HW
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 
@@ -217,6 +221,10 @@ endif
 
 ifeq ($(TARGET_VPP_USE_GEN),true)
 LOCAL_CFLAGS += -DDEINTERLACE_EXT
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
 
 include $(BUILD_SHARED_LIBRARY)
