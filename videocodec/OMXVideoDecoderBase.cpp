@@ -444,6 +444,8 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
         p->graphicBufferColorFormat = mGraphicBufferParam.graphicBufferColorFormat;
         p->graphicBufferWidth = mGraphicBufferParam.graphicBufferWidth;
         p->graphicBufferHeight = mGraphicBufferParam.graphicBufferHeight;
+        if (p->graphicBufferColorFormat == OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled)
+            p->flag |= USE_TILING_MEMORY;
 
         PortVideo *port = NULL;
         port = static_cast<PortVideo *>(this->ports[INPORT_INDEX]);
