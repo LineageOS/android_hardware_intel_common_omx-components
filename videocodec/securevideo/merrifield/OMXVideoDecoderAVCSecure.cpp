@@ -26,7 +26,7 @@
 extern "C" {
 #include <sepdrm.h>
 #include <fcntl.h>
-#include "psb_drm.h"
+#include <linux/psb_drm.h>
 #include "xf86drm.h"
 #include "xf86drmMode.h"
 }

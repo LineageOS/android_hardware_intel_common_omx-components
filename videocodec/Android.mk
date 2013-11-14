@@ -250,7 +250,6 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libttm \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax \
-    $(TOP)/linux/modules/intel_media/common
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -317,7 +316,7 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
-    $(TARGET_OUT_HEADERS)/libva	\
+    $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax \
 
@@ -355,7 +354,7 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
-    $(TARGET_OUT_HEADERS)/libva	\
+    $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax \
 
@@ -396,7 +395,7 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
-    $(TARGET_OUT_HEADERS)/libva	\
+    $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax \
 
@@ -473,7 +472,7 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
     $(TARGET_OUT_HEADERS)/libmix_videoencoder \
-    $(TARGET_OUT_HEADERS)/libva	\
+    $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax \
 
