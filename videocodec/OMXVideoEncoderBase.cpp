@@ -418,7 +418,6 @@ OMX_ERRORTYPE OMXVideoEncoderBase::BuildHandlerList(void) {
     AddHandler((OMX_INDEXTYPE)OMX_IndexStoreMetaDataInBuffers, GetStoreMetaDataInBuffers, SetStoreMetaDataInBuffers);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtSyncEncoding, GetSyncEncoding, SetSyncEncoding);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtPrependSPSPPS, GetPrependSPSPPS, SetPrependSPSPPS);
-
     return OMX_ErrorNone;
 }
 
@@ -568,7 +567,8 @@ OMX_ERRORTYPE OMXVideoEncoderBase::GetConfigIntelBitrate(OMX_PTR pStructure) {
 OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigIntelBitrate(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     Encode_Status retStatus = ENCODE_SUCCESS;
-    if (mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateMax) {
+    if ((mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateMax)&&
+		(mEncoderParams->profile != VAProfileVP8Version0_3)) {
         LOGE("SetConfigIntelBitrate failed. Feature is disabled.");
         return OMX_ErrorUnsupportedIndex;
     }
@@ -583,8 +583,9 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigIntelBitrate(OMX_PTR pStructure) {
     // TODO: return OMX_ErrorIncorrectStateOperation?
     CHECK_SET_CONFIG_STATE();
 
-    if (mParamIntelBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
-        LOGE("SetConfigIntelBitrate failed. Feature is supported only in VCM.");
+    if ((mParamIntelBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode)&&
+		(mEncoderParams->profile != VAProfileVP8Version0_3)){
+        LOGE("SetConfigIntelBitrate failed. Feature is supported only in VCM for AVC/H264/MPEG4.");
         return OMX_ErrorUnsupportedSetting;
     }
     VideoConfigBitRate configBitRate;
@@ -723,7 +724,8 @@ OMX_ERRORTYPE OMXVideoEncoderBase::GetConfigVideoFramerate(OMX_PTR pStructure) {
 OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigVideoFramerate(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     Encode_Status retStatus = ENCODE_SUCCESS;
-    if (mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateMax) {
+    if ((mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateMax)&&
+		(mEncoderParams->profile != VAProfileVP8Version0_3)){
         LOGE("SetConfigVideoFramerate failed. Feature is disabled.");
         return OMX_ErrorUnsupportedIndex;
     }
@@ -738,8 +740,9 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigVideoFramerate(OMX_PTR pStructure) {
     // TODO, return OMX_ErrorIncorrectStateOperation?
     CHECK_SET_CONFIG_STATE();
 
-    if (mParamIntelBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
-        LOGE("SetConfigIntelAIR failed. Feature is supported only in VCM.");
+    if ((mParamIntelBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode)&&
+		(mEncoderParams->profile != VAProfileVP8Version0_3)){
+        LOGE("SetConfigIntelAIR failed. Feature is supported only in VCM for AVC/H264/MPEG4.");
         return OMX_ErrorUnsupportedSetting;
     }
     VideoConfigFrameRate framerate;

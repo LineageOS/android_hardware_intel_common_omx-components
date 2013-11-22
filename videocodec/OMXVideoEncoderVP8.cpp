@@ -194,6 +194,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::BuildHandlerList(void) {
     OMXVideoEncoderBase::BuildHandlerList();
     AddHandler((OMX_INDEXTYPE)OMX_IndexParamVideoVp8, GetParamVideoVp8, SetParamVideoVp8);
     AddHandler((OMX_INDEXTYPE)OMX_IndexConfigVideoVp8ReferenceFrame, GetConfigVideoVp8ReferenceFrame, SetConfigVideoVp8ReferenceFrame);
+    AddHandler((OMX_INDEXTYPE)OMX_IndexExtVP8ForceKFrame, GetConfigVp8ForceKFrame, SetConfigVp8ForceKFrame);
     return OMX_ErrorNone;
 }
 
@@ -252,5 +253,34 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVideoVp8ReferenceFrame(OMX_PTR pStruc
     }
     return OMX_ErrorNone;
 }
+
+OMX_ERRORTYPE OMXVideoEncoderVP8::GetConfigVp8ForceKFrame(OMX_PTR pStructure) {
+
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVp8ForceKFrame(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    Encode_Status retStatus = ENCODE_SUCCESS;
+    OMX_VIDEO_CONFIG_INTEL_VP8_FORCE_KFRAME *p = (OMX_VIDEO_CONFIG_INTEL_VP8_FORCE_KFRAME*) pStructure;
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+
+    CHECK_SET_CONFIG_STATE();
+
+    VideoConfigVP8 configVP8;
+    configVP8.force_kf = p->bForceKFrame;
+    configVP8.refresh_entropy_probs = 0;
+    configVP8.value = 0;
+    configVP8.sharpness_level = 2;
+
+    retStatus = mVideoEncoder->setConfig(&configVP8);
+    if(retStatus != ENCODE_SUCCESS) {
+        LOGW("Failed to set refresh config");
+    }
+    return OMX_ErrorNone;
+}
+
+
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoEncoder.VP8", "video_encoder.vpx", OMXVideoEncoderVP8);
