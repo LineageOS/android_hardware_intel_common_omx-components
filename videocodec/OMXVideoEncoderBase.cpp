@@ -361,8 +361,9 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorInit(void) {
     ret = SetVideoEncoderParam();
     CHECK_STATUS("SetVideoEncoderParam");
 
-    if (mVideoEncoder->start() != ENCODE_SUCCESS) {
-        LOGE("Start failed, ret = 0x%08x\n", ret);
+    Encode_Status status = mVideoEncoder->start();
+    if (status != ENCODE_SUCCESS) {
+        LOGE("Start failed, status = 0x%08x\n", status);
         return OMX_ErrorUndefined;
     }
 

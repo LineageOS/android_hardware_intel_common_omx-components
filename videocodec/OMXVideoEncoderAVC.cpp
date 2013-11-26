@@ -113,7 +113,6 @@ OMXVideoEncoderAVC::OMXVideoEncoderAVC() {
         }
     }
 
-    mSourceType = IntelMetadataBufferTypeCameraSource;
 }
 
 OMXVideoEncoderAVC::~OMXVideoEncoderAVC() {
@@ -294,24 +293,6 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorPreEmptyBuffer(OMX_BUFFERHEADERTYPE* 
     bool BFrameEnabled = IpPeriod > 1;
     uint32_t GOP = 0;
 
-    //extract SourceType from first frame in MetadataMode
-    if (mStoreMetaDataInBuffers && (mInputPictureCount == 0)) {
-        uint8_t* bytes = buffer->pBuffer + buffer->nOffset;
-        uint32_t size = buffer->nFilledLen;
-
-        IntelMetadataBuffer* buf = NULL;
-        if ((buf = new IntelMetadataBuffer()) == NULL)
-            return OMX_ErrorUndefined;
-
-        if (buf->UnSerialize(bytes, size) == IMB_SUCCESS) {
-            buf->GetType(mSourceType);
-            delete buf;
-        }else{
-            delete buf;
-            return OMX_ErrorUndefined;
-        }
-    }
-
     if (idrPeriod == 0 || IntraPeriod == 0) {
         GOP = 0xFFFFFFFF;
         if (IntraPeriod == 0)
@@ -425,25 +406,18 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
 
     // NaluFormat not set, setting default
     if (NaluFormat == 0) {
-        if (mStoreMetaDataInBuffers) {
-            if(mSourceType == IntelMetadataBufferTypeCameraSource)
-                NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatLengthPrefixedSeparateFirstHeader;
-            else
-                NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader;
-
-        } else {
-            NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader;
-        }
+        NaluFormat = (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader;
         mNalStreamFormat.eNaluFormat = NaluFormat;
     }
 
     VideoEncOutputBuffer outBuf;
-    outBuf.data = buffers[OUTPORT_INDEX]->pBuffer + buffers[OUTPORT_INDEX]->nOffset;
-    outBuf.bufferSize = buffers[OUTPORT_INDEX]->nAllocLen - buffers[OUTPORT_INDEX]->nOffset;
+    outBuf.data = buffers[OUTPORT_INDEX]->pBuffer;
+    outBuf.bufferSize = buffers[OUTPORT_INDEX]->nAllocLen;
     outBuf.dataSize = 0;
     outBuf.remainingSize = 0;
     outBuf.flag = 0;
     outBuf.timeStamp = 0;
+    outBuf.offset = 0;
 
     switch (NaluFormat) {
         case OMX_NaluFormatStartCodes:
@@ -461,7 +435,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
                 outBuf.format = OUTPUT_CODEC_DATA;
             } else {
                 if (NaluFormat == OMX_NaluFormatStartCodesSeparateFirstHeader)
-                    outBuf.format = OUTPUT_EVERYTHING;
+                    outBuf.format = OUTPUT_NALULENGTHS_PREFIXED;
                 else
                     outBuf.format = OUTPUT_LENGTH_PREFIXED;
             }
@@ -485,6 +459,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
 
     LOGV("libMIX getOutput data size= %d, flag=0x%08x", outBuf.dataSize, outBuf.flag);
     OMX_U32 outfilledlen = outBuf.dataSize;
+    OMX_U32 outoffset = outBuf.offset;
     OMX_S64 outtimestamp = outBuf.timeStamp;
     OMX_U32 outflags = 0;
 
@@ -506,7 +481,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
         outflags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
         if ((NaluFormat == OMX_NaluFormatStartCodesSeparateFirstHeader
-             || NaluFormat == OMX_NaluFormatLengthPrefixedSeparateFirstHeader ) && mFirstFrame ) {
+             || NaluFormat == OMX_NaluFormatLengthPrefixedSeparateFirstHeader) && mFirstFrame ) {
             // This input buffer need to be gotten again
             retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
             mFirstFrame = OMX_FALSE;
@@ -529,6 +504,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
 
     if (outfilledlen > 0) {
         retains[OUTPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+        buffers[OUTPORT_INDEX]->nOffset = outoffset;
         buffers[OUTPORT_INDEX]->nFilledLen = outfilledlen;
         buffers[OUTPORT_INDEX]->nTimeStamp = outtimestamp;
         buffers[OUTPORT_INDEX]->nFlags = outflags;

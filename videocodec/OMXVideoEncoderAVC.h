@@ -100,6 +100,7 @@ protected:
     DECLARE_HANDLER(OMXVideoEncoderAVC, ConfigIntelSliceNumbers);
     DECLARE_HANDLER(OMXVideoEncoderAVC, ParamVideoProfileLevelQuerySupported);
 
+
 private:
     enum {
         // OMX_PARAM_PORTDEFINITIONTYPE
@@ -140,7 +141,6 @@ private:
     ProfileLevelTable mPLTable[MAX_H264_PROFILE];
     OMX_U32 mPLTableCount;
 
-    IntelMetadataBufferType mSourceType;
 };
 
 #endif /* OMX_VIDEO_ENCODER_AVC_H_ */
