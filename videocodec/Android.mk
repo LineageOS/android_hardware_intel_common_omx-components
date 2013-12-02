@@ -30,6 +30,10 @@ LOCAL_C_INCLUDES := \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax
 
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
+endif
+
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
     OMXVideoDecoderBase.cpp\
@@ -87,6 +91,10 @@ LOCAL_C_INCLUDES := \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax
 
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
+endif
+
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
     OMXVideoDecoderBase.cpp\
@@ -97,6 +105,10 @@ LOCAL_MODULE := libOMXVideoDecoderVP8
 
 ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 LOCAL_CFLAGS += -DVED_TILING
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
 
 include $(BUILD_SHARED_LIBRARY)
@@ -124,6 +136,10 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
+endif
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -140,6 +156,10 @@ ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_GEN_HW
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -164,6 +184,10 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
+endif
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
@@ -179,6 +203,11 @@ endif
 ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_GEN_HW
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -203,6 +232,10 @@ LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
+endif
 
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\

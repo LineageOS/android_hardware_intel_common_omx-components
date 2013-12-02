@@ -137,6 +137,15 @@ OMX_ERRORTYPE OMXVideoDecoderMPEG4::SetParamVideoMpeg4ProfileLevel(OMX_PTR pStru
     return OMX_ErrorUnsupportedSetting;
 }
 
+OMX_COLOR_FORMATTYPE OMXVideoDecoderMPEG4::GetOutputColorFormat(int width, int height)
+{
+#ifdef USE_GEN_HW
+    return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_NV12_X_TILED_INTEL;
+#else
+    return OMXVideoDecoderBase::GetOutputColorFormat(width, height);
+#endif
+}
+
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.MPEG4", "video_decoder.mpeg4", OMXVideoDecoderMPEG4);
 
 

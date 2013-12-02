@@ -135,5 +135,14 @@ OMX_ERRORTYPE OMXVideoDecoderH263::SetParamVideoH263ProfileLevel(OMX_PTR pStruct
     return OMX_ErrorUnsupportedSetting;
 }
 
+OMX_COLOR_FORMATTYPE OMXVideoDecoderH263::GetOutputColorFormat(int width, int height)
+{
+#ifdef USE_GEN_HW
+    return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_NV12_X_TILED_INTEL;
+#else
+    return OMXVideoDecoderBase::GetOutputColorFormat(width, height);
+#endif
+}
+
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.H263", "video_decoder.h263", OMXVideoDecoderH263);
 

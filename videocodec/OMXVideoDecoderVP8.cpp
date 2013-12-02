@@ -106,6 +106,14 @@ OMX_ERRORTYPE OMXVideoDecoderVP8::SetParamVideoVp8(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
+OMX_COLOR_FORMATTYPE OMXVideoDecoderVP8::GetOutputColorFormat(int width, int height)
+{
+#ifdef USE_GEN_HW
+    return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_NV12_X_TILED_INTEL;
+#else
+    return OMXVideoDecoderBase::GetOutputColorFormat(width, height);
+#endif
+}
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.VP8", "video_decoder.vp8", OMXVideoDecoderVP8);
 

@@ -20,7 +20,6 @@
 #include "OMXVideoDecoderBase.h"
 #include <va/va_android.h>
 
-
 static const char* VA_RAW_MIME_TYPE = "video/x-raw-va";
 static const uint32_t VA_COLOR_FORMAT = 0x7FA00E00;
 
@@ -444,7 +443,11 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
         p->graphicBufferColorFormat = mGraphicBufferParam.graphicBufferColorFormat;
         p->graphicBufferWidth = mGraphicBufferParam.graphicBufferWidth;
         p->graphicBufferHeight = mGraphicBufferParam.graphicBufferHeight;
-        if (p->graphicBufferColorFormat == OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled)
+        if (p->graphicBufferColorFormat == OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled
+#ifdef USE_GEN_HW
+            || p->graphicBufferColorFormat == HAL_PIXEL_FORMAT_NV12_X_TILED_INTEL
+#endif
+        )
             p->flag |= USE_TILING_MEMORY;
 
         PortVideo *port = NULL;
