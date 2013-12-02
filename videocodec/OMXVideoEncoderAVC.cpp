@@ -493,6 +493,11 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
                 retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
             else if (mSyncEncoding)
                 retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+            else if ((buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS)&&(buffers[INPORT_INDEX]->nFilledLen == 0))
+            {
+                retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+                pInfo->EndOfEncode = true;
+            }
             else
                 retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;   //retain current frame
             mFrameOutputCount  ++;
@@ -556,6 +561,13 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
             retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
             return OMX_ErrorNone;
         }
+	else if(inBuf.size == 0 && eInfo.EndOfEncode == true)
+	{
+            LOGE("The Input buf is just a empty EOS buffer, in Sync encode," "nothing to do, return with no error when EndofEncode is set\n");
+            retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+            retains[OUTPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+            return OMX_ErrorNone;
+	}
     } else if(inBuf.size<=0 || inBuf.data == NULL) {
         LOGE("The Input buf size is 0 or buf is NULL, return with error\n");
         return OMX_ErrorBadParameter;
@@ -605,7 +617,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
     /* Check EOE state, if yes, this is final encode frame, need to push this buffer again
          to call getOutput again for final output
     */
-    if (mSyncEncoding == OMX_FALSE && eInfo.EndOfEncode && eInfo.EncodeComplete && eInfo.DataRetrieved) {
+    if (mSyncEncoding == OMX_FALSE && eInfo.EndOfEncode && eInfo.EncodeComplete && eInfo.DataRetrieved && (buffers[INPORT_INDEX]->nFilledLen != 0)) {
         eInfo.DataRetrieved = false;
         eInfo.EndOfEncode = false;
         retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
