@@ -283,4 +283,4 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVp8ForceKFrame(OMX_PTR pStructure) {
 
 
 
-DECLARE_OMX_COMPONENT("OMX.Intel.VideoEncoder.VP8", "video_encoder.vpx", OMXVideoEncoderVP8);
+DECLARE_OMX_COMPONENT("OMX.Intel.VideoEncoder.VP8", "video_encoder.vp8", OMXVideoEncoderVP8);
