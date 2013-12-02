@@ -615,10 +615,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::GetConfigIntelAIR(OMX_PTR pStructure) {
 OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigIntelAIR(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     Encode_Status retStatus = ENCODE_SUCCESS;
-    if (mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateMax) {
-        LOGE("SetConfigIntelAIR failed. Feature is disabled.");
-        return OMX_ErrorUnsupportedIndex;
-    }
+
     OMX_VIDEO_CONFIG_INTEL_AIR *p = (OMX_VIDEO_CONFIG_INTEL_AIR *)pStructure;
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
@@ -629,11 +626,6 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigIntelAIR(OMX_PTR pStructure) {
     // return OMX_ErrorNone if not in Executing state
     // TODO: return OMX_ErrorIncorrectStateOperation?
     CHECK_SET_CONFIG_STATE();
-
-    if (mParamIntelBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
-        LOGE("SetConfigIntelAIR failed. Feature is supported only in VCM.");
-        return OMX_ErrorUnsupportedSetting;
-    }
 
     VideoConfigAIR configAIR;
     VideoConfigIntraRefreshType configIntraRefreshType;
@@ -671,10 +663,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::GetParamVideoIntraRefresh(OMX_PTR pStructure)
 OMX_ERRORTYPE OMXVideoEncoderBase::SetParamVideoIntraRefresh(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     Encode_Status retStatus = ENCODE_SUCCESS;
-    if (mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateMax) {
-        LOGE("SetConfigIntelAIR failed. Feature is disabled.");
-        return OMX_ErrorUnsupportedIndex;
-    }
+
     OMX_VIDEO_PARAM_INTRAREFRESHTYPE *p = (OMX_VIDEO_PARAM_INTRAREFRESHTYPE *)pStructure;
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
@@ -686,10 +675,6 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetParamVideoIntraRefresh(OMX_PTR pStructure)
     // TODO: return OMX_ErrorIncorrectStateOperation?
     CHECK_SET_CONFIG_STATE();
 
-    if (mParamIntelBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
-        LOGE("SetConfigIntelAIR failed. Feature is supported only in VCM.");
-        return OMX_ErrorUnsupportedSetting;
-    }
 
     VideoConfigIntraRefreshType configIntraRefreshType;
     configIntraRefreshType.refreshType = (VideoIntraRefreshType)(mParamVideoRefresh.eRefreshMode + 1);
@@ -856,7 +841,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetStoreMetaDataInBuffers(OMX_PTR pStructure)
     uint32_t maxSize = 0;
 
     CHECK_TYPE_HEADER(p);
-    CHECK_PORT_INDEX(p, INPORT_INDEX);
+    //CHECK_PORT_INDEX(p, INPORT_INDEX);
 
     LOGD("SetStoreMetaDataInBuffers (enabled = %x)", p->bStoreMetaData);
     if(mStoreMetaDataInBuffers == p->bStoreMetaData)
