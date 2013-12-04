@@ -297,9 +297,17 @@ else ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 #Secure AVC decoder for Baytrail (uses PAVP)
 LOCAL_C_INCLUDES += $(TOP)/vendor/intel/hardware/PRIVATE/ufo/inc/libpavp
 
-LOCAL_SHARED_LIBRARIES += libpavp 
+LOCAL_SHARED_LIBRARIES += libpavp
 
 LOCAL_SRC_FILES += securevideo/baytrail/OMXVideoDecoderAVCSecure.cpp
+
+else ifeq ($(TARGET_BOARD_PLATFORM),cherrytrail)
+#Secure AVC decoder for Cherrytrail (uses PAVP)
+LOCAL_C_INCLUDES += $(TOP)/vendor/intel/hardware/PRIVATE/ufo/inc/libpavp
+
+LOCAL_SHARED_LIBRARIES += libpavp
+
+LOCAL_SRC_FILES += securevideo/cherrytrail/OMXVideoDecoderAVCSecure.cpp
 
 endif
 
