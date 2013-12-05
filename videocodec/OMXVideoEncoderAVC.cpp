@@ -113,6 +113,7 @@ OMXVideoEncoderAVC::OMXVideoEncoderAVC() {
         }
     }
 
+    mEmptyEOSBuf = OMX_FALSE;
 }
 
 OMXVideoEncoderAVC::~OMXVideoEncoderAVC() {
@@ -260,7 +261,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetVideoEncoderParam(void) {
 }
 
 OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorInit(void) {
-    mFirstFrame = OMX_TRUE;
+    mCSDOutputted = OMX_FALSE;
     mInputPictureCount = 0;
     mFrameEncodedCount = 0;
     return  OMXVideoEncoderBase::ProcessorInit();
@@ -279,6 +280,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorStop(void) {
         mBFrameList.erase(mBFrameList.begin());
     }
 
+    mEmptyEOSBuf = OMX_FALSE;
     return OMXVideoEncoderBase::ProcessorStop();
 }
 
@@ -335,72 +337,106 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorPreEmptyBuffer(OMX_BUFFERHEADERTYPE* 
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessCacheOperation(
-    OMX_BUFFERHEADERTYPE **buffers,
-    buffer_retain_t *retains,
-    Encode_Info *pInfo) {
+OMX_BOOL OMXVideoEncoderAVC::ProcessCacheOperation(OMX_BUFFERHEADERTYPE **buffers) {
 
-    /* Check and do cache operation
-    */
-    if (pInfo->CacheOperation == CACHE_NONE) {
-        if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS) {
-            OMX_U8* data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
-            OMX_U32 size = buffers[INPORT_INDEX]->nFilledLen;
-            if (data != NULL && size > 0)
-                pInfo->EndOfEncode = true;  //still need to encode
-            else
-                pInfo->EncodeComplete = true; //no need to encode since no data in buffer
-        }
-    } else if (pInfo->CacheOperation == CACHE_PUSH) {
+    OMX_BOOL Cached = OMX_FALSE;
+
+    //get frame encode info
+    Encode_Info eInfo;
+    uint32_t encodeInfo 	= (uint32_t) buffers[INPORT_INDEX]->pPlatformPrivate;
+    eInfo.FrameType 		   = GET_FT(encodeInfo);
+
+    eInfo.CacheOperation	= GET_CO(encodeInfo);
+    eInfo.NotStopFrame		= encodeInfo & ENC_NSTOP;
+    eInfo.FrameCount		 = GET_FC(encodeInfo);
+
+    LOGV("ProcessCacheOperation Frame %d, type:%s, CacheOps:%s, NoSTOP=%d, EOS=%d\n",
+            eInfo.FrameCount, FrameTypeStr[eInfo.FrameType], CacheOperationStr[eInfo.CacheOperation],
+            eInfo.NotStopFrame, buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS);
+
+    OMX_BOOL emptyEOSBuf = OMX_FALSE;
+    if (buffers[INPORT_INDEX]->nFilledLen == 0 && buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS) {
+        //meet an empty EOS buffer
+        emptyEOSBuf = OMX_TRUE;
+        LOGV("ProcessCacheOperation: This frame is Empty EOS buffer\n");
+    }
+
+    if (eInfo.CacheOperation == CACHE_NONE) {
+        //nothing to do
+    } else if (eInfo.CacheOperation == CACHE_PUSH) {
         mBFrameList.push_front(buffers[INPORT_INDEX]);
-        retains[INPORT_INDEX] = BUFFER_RETAIN_CACHE;
-        retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+        Cached = OMX_TRUE;
+        LOGV("ProcessCacheOperation: This B frame is cached\n");
 
-    } else if (pInfo->CacheOperation == CACHE_POP) {
-        pInfo->NotStopFrame = true;  //it is also a nstop frame
+    } else if (eInfo.CacheOperation == CACHE_POP) {
+        eInfo.NotStopFrame = true;  //it is also a nstop frame
 
         OMX_BUFFERHEADERTYPE *omxbuf = NULL;
         uint32_t i = 0;
+        uint32_t bframecount = mBFrameList.size();
 
-        LOGV("BFrameList size = %d\n", mBFrameList.size());
+        LOGV("BFrameList size = %d\n", bframecount);
 
         while(!mBFrameList.empty()) {
-            omxbuf = *mBFrameList.begin();
+            /*TODO: need to handle null data buffer with EOS
+                     !NULL EOS case:   B1 B2 P(EOS)     ->    P B1 B2(EOS)
+                     NULL EOS case: B1 B2 NULL(EOS)    ->    B2 B1 NULL(EOS)
+            */
 
-            if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS && i == 0 )  {
-                //this is final encode frame, make EOE
-                uint32_t tmp = (uint32_t) omxbuf->pPlatformPrivate;
-                tmp |= ENC_EOE;
-                omxbuf->pPlatformPrivate = (OMX_PTR) tmp;
+            if (emptyEOSBuf) {
+                omxbuf = *mBFrameList.begin();
+                ports[INPORT_INDEX]->PushThisBuffer(omxbuf);
+                mBFrameList.erase(mBFrameList.begin()); //clear it from internal queue
+
             } else {
-                //all these frames except final B frame in miniGOP can't be stopped at any time
-                //to avoid not breaking miniGOP integrity
-                if (i > 0) {
-                    uint32_t tmp = (uint32_t) omxbuf->pPlatformPrivate;
-                    tmp |= ENC_NSTOP;
-                    omxbuf->pPlatformPrivate = (OMX_PTR) tmp;
-                }
-            }
-            ports[INPORT_INDEX]->RetainThisBuffer(omxbuf, false); //push bufferq head
+                omxbuf = *mBFrameList.begin();
 
-            mBFrameList.erase(mBFrameList.begin()); //clear it from internal queue
+                if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS && i == 0 )  {
+                    //this is final encode frame, mark it is new EOS and remove original EOS
+                    omxbuf->nFlags |= OMX_BUFFERFLAG_EOS;
+				    buffers[INPORT_INDEX]->nFlags &= ~OMX_BUFFERFLAG_EOS;
+                } else {
+                    //all these frames except final B frame in miniGOP can't be stopped at any time
+                    //to avoid not breaking miniGOP integrity
+                    if (i > 0) {
+                        uint32_t tmp = (uint32_t) omxbuf->pPlatformPrivate;
+                        tmp |= ENC_NSTOP;
+                        omxbuf->pPlatformPrivate = (OMX_PTR) tmp;
+                    }
+                }
+                ports[INPORT_INDEX]->RetainThisBuffer(omxbuf, false); //push bufferq head
+
+                mBFrameList.erase(mBFrameList.begin()); //clear it from internal queue
+            }
+
             i++;
         }
 
-    } else if (pInfo->CacheOperation == CACHE_RESET) {
+        if (emptyEOSBuf)
+            ports[INPORT_INDEX]->PushThisBuffer(buffers[INPORT_INDEX]); //put it at the tail
+
+    } else if (eInfo.CacheOperation == CACHE_RESET) {
 //        mBFrameList.clear();
     }
 
-    pInfo->CacheOperation = CACHE_NONE;
+    eInfo.CacheOperation = CACHE_NONE;
 
-    LOGV("ProcessCacheOperation OK\n");
-    return OMX_ErrorNone;
+    /* restore all states into input OMX buffer
+    */
+    if (eInfo.NotStopFrame)
+        encodeInfo |= ENC_NSTOP;
+    else
+        encodeInfo &= ~ENC_NSTOP;
+
+    SET_CO(encodeInfo, eInfo.CacheOperation);
+    buffers[INPORT_INDEX]->pPlatformPrivate = (OMX_PTR) encodeInfo;
+
+    LOGV("ProcessCacheOperation Completed return %d\n", Cached);
+    return Cached;
 }
 
 OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
-    OMX_BUFFERHEADERTYPE **buffers,
-    buffer_retain_t *retains,
-    Encode_Info *pInfo) {
+    OMX_BUFFERHEADERTYPE **buffers, OMX_BOOL *outBufReturned) {
 
     OMX_NALUFORMATSTYPE NaluFormat = mNalStreamFormat.eNaluFormat;
 
@@ -430,8 +466,8 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
 
         case OMX_NaluFormatStartCodesSeparateFirstHeader:
         case OMX_NaluFormatLengthPrefixedSeparateFirstHeader:
-            if(mFirstFrame) {
-                LOGV("FirstFrame to output codec data\n");
+            if(!mCSDOutputted) {
+                LOGV("Output codec data for first frame\n");
                 outBuf.format = OUTPUT_CODEC_DATA;
             } else {
                 if (NaluFormat == OMX_NaluFormatStartCodesSeparateFirstHeader)
@@ -446,16 +482,32 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
     }
 
     //start getOutput
-    Encode_Status ret = mVideoEncoder->getOutput(&outBuf);
+    Encode_Status ret = mVideoEncoder->getOutput(&outBuf, FUNC_NONBLOCK);
 
     if (ret < ENCODE_SUCCESS) {
-        LOGE("libMIX getOutput Failed. ret = 0x%08x, drop this frame\n", ret);
+        LOGE("libMIX getOutput Failed. ret = 0x%08x\n", ret);
         outBuf.dataSize = 0;
         outBuf.flag |= ENCODE_BUFFERFLAG_ENDOFFRAME;
-//        return OMX_ErrorUndefined;
+        if (ret == ENCODE_NO_REQUEST_DATA) {
+            if (mEmptyEOSBuf) {
+                //make sure no data encoding in HW, then emit one empty out buffer with EOS
+                outBuf.flag |= ENCODE_BUFFERFLAG_ENDOFSTREAM;
+                LOGV("no more data encoding, will signal empty EOS output buf\n");
+            } else {
+                //if not meet Empty EOS buffer, shouldn't get this error
+                LOGE("sever error, should not happend here\n");
+                //return OMX_ErrorUndefined; //not return error here to avoid omxcodec crash
+            }
+        }
 
-    } else if (ret == ENCODE_BUFFER_TOO_SMALL)
-        return OMX_ErrorUndefined; // Return code could not be ENCODE_BUFFER_TOO_SMALL, or we will have dead lock issue
+    } else if (ret == ENCODE_BUFFER_TOO_SMALL) {
+        LOGE("output buffer too small\n");
+        // Return code could not be ENCODE_BUFFER_TOO_SMALL, or we will have dead lock issue
+        return OMX_ErrorUndefined;
+    } else if (ret == ENCODE_DATA_NOT_READY) {
+        LOGV("Call libMIX getOutput againe due to 'data not ready'\n");
+        ret = mVideoEncoder->getOutput(&outBuf);
+    }
 
     LOGV("libMIX getOutput data size= %d, flag=0x%08x", outBuf.dataSize, outBuf.flag);
     OMX_U32 outfilledlen = outBuf.dataSize;
@@ -477,49 +529,45 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
 
     //if full encoded data retrieved
     if(outBuf.flag & ENCODE_BUFFERFLAG_ENDOFFRAME) {
-        LOGV("Output a complete Frame done\n");
+        LOGV("got a complete libmix Frame\n");
         outflags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
         if ((NaluFormat == OMX_NaluFormatStartCodesSeparateFirstHeader
-             || NaluFormat == OMX_NaluFormatLengthPrefixedSeparateFirstHeader) && mFirstFrame ) {
-            // This input buffer need to be gotten again
-            retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
-            mFirstFrame = OMX_FALSE;
+             || NaluFormat == OMX_NaluFormatLengthPrefixedSeparateFirstHeader )
+             && !mCSDOutputted && outfilledlen > 0) {
+            mCSDOutputted = OMX_TRUE;
 
         } else {
-            pInfo->DataRetrieved = true;
-            ports[INPORT_INDEX]->ReturnAllRetainedBuffers();  //return last all retained frames
-            if (outBuf.flag & ENCODE_BUFFERFLAG_ENDOFSTREAM)
-                retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
-            else if (mSyncEncoding)
-                retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
-            else if ((buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS)&&(buffers[INPORT_INDEX]->nFilledLen == 0))
-            {
-                retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
-                pInfo->EndOfEncode = true;
-            }
-            else
-                retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;   //retain current frame
+            ports[INPORT_INDEX]->ReturnOneRetainedBuffer();  //return one retained frame from head
             mFrameOutputCount  ++;
         }
-    } else //not complete output all encoded data, push again to continue output
-        retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+    }
 
-    LOGV("OMX output buffer = %p:%d, flag = %x, ts=%lld", buffers[OUTPORT_INDEX]->pBuffer, outfilledlen, outflags, outtimestamp);
+    if (outfilledlen == 0) {
+        if (mEmptyEOSBuf) {
+            //emit empty EOS out buf since meet empty EOS input buf
+            buffers[OUTPORT_INDEX]->nFilledLen = 0;
+            buffers[OUTPORT_INDEX]->nTimeStamp = 0;
+            buffers[OUTPORT_INDEX]->nFlags = outflags;
+            *outBufReturned = OMX_TRUE;
+            LOGV("emit one empty EOS OMX output buf = %p:%d, flag = 0x%08x, ts=%lld", buffers[OUTPORT_INDEX]->pBuffer, outfilledlen, outflags, outtimestamp);
+        } else
+            //not emit out buf since something wrong
+            *outBufReturned = OMX_FALSE;
 
-    if (outfilledlen > 0) {
-        retains[OUTPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+    } else {
         buffers[OUTPORT_INDEX]->nOffset = outoffset;
         buffers[OUTPORT_INDEX]->nFilledLen = outfilledlen;
         buffers[OUTPORT_INDEX]->nTimeStamp = outtimestamp;
         buffers[OUTPORT_INDEX]->nFlags = outflags;
         if (outBuf.flag & ENCODE_BUFFERFLAG_NSTOPFRAME)
             buffers[OUTPORT_INDEX]->pPlatformPrivate = (OMX_PTR) 0x00000001;  //indicate it is nstop frame
-    }
-    else
-        retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+        *outBufReturned = OMX_TRUE;
+        LOGV("emit one OMX output buf = %p:%d, flag = 0x%08x, ts=%lld", buffers[OUTPORT_INDEX]->pBuffer, outfilledlen, outflags, outtimestamp);
 
-    LOGV("ProcessDataRetrieve OK\n");
+    }
+
+    LOGV("ProcessDataRetrieve OK, mFrameEncodedCount=%d , mFrameOutputCount=%d\n", mFrameEncodedCount, mFrameOutputCount);
     return OMX_ErrorNone;
 }
 
@@ -531,133 +579,86 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
     OMX_ERRORTYPE oret = OMX_ErrorNone;
     Encode_Status ret = ENCODE_SUCCESS;
 
-    VideoEncRawBuffer inBuf;
+    bool FrameEncoded = false;
 
-    inBuf.data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
-    inBuf.size = buffers[INPORT_INDEX]->nFilledLen;
-    inBuf.flag = 0;
-    inBuf.timeStamp = buffers[INPORT_INDEX]->nTimeStamp;
+    if (buffers[INPORT_INDEX]) {
+        LOGV("input buffer has new frame\n");
 
-    //get frame encode info
-    Encode_Info eInfo;
-    uint32_t encodeInfo     = (uint32_t) buffers[INPORT_INDEX]->pPlatformPrivate;
-    eInfo.FrameType            = GET_FT(encodeInfo);
-    eInfo.EncodeComplete    = encodeInfo & ENC_EC;
-    eInfo.DataRetrieved       = encodeInfo & ENC_DR;
-    eInfo.CacheOperation    = GET_CO(encodeInfo);
-    eInfo.EndOfEncode        = encodeInfo & ENC_EOE;
-    eInfo.NotStopFrame      = encodeInfo & ENC_NSTOP;
-    eInfo.FrameCount         = GET_FC(encodeInfo);
+        //get frame encode info
+        Encode_Info eInfo;
+        uint32_t encodeInfo 	= (uint32_t) buffers[INPORT_INDEX]->pPlatformPrivate;
+        eInfo.FrameType 		   = GET_FT(encodeInfo);
+        eInfo.CacheOperation	= GET_CO(encodeInfo);
+        eInfo.NotStopFrame		= encodeInfo & ENC_NSTOP;
+        eInfo.FrameCount		 = GET_FC(encodeInfo);
 
-    LOGV("ProcessorProcess Frame %d, type:%s, EC:%d, DR:%d, CO:%s, EOE=%d\n",
-            eInfo.FrameCount , FrameTypeStr[eInfo.FrameType], eInfo.EncodeComplete,
-            eInfo.DataRetrieved, CacheOperationStr[eInfo.CacheOperation], eInfo.EndOfEncode );
-
-    if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS) {
-        LOGV("%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
-
-        if((inBuf.size<=0 || inBuf.data == NULL) && (mSyncEncoding || (eInfo.FrameCount <= 1))) {
-            LOGV("The Input buf is just a empty EOS buffer, in Sync encode," "nothing to do, return with no error\n");
-            retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+        //handle frame cache operation
+        if (ProcessCacheOperation(buffers)) {
+            //frame is cached, nothing should be done in this case, just store status and return
+            retains[INPORT_INDEX] = BUFFER_RETAIN_CACHE;
+            retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
             return OMX_ErrorNone;
         }
-	else if(inBuf.size == 0 && eInfo.EndOfEncode == true)
-	{
-            LOGE("The Input buf is just a empty EOS buffer, in Sync encode," "nothing to do, return with no error when EndofEncode is set\n");
-            retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
-            retains[OUTPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+
+        //try encode if frame is not cached
+        VideoEncRawBuffer inBuf;
+
+        inBuf.data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
+        inBuf.size = buffers[INPORT_INDEX]->nFilledLen;
+        inBuf.flag = 0;
+        inBuf.timeStamp = buffers[INPORT_INDEX]->nTimeStamp;
+
+        if (inBuf.size == 0 && buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS) {
+            //meet an empty EOS buffer, retain it directly and return from here
+            retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+            retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+            mEmptyEOSBuf = OMX_TRUE;
             return OMX_ErrorNone;
-	}
-    } else if(inBuf.size<=0 || inBuf.data == NULL) {
-        LOGE("The Input buf size is 0 or buf is NULL, return with error\n");
-        return OMX_ErrorBadParameter;
-    }
+        }
 
-    LOGV("Input OMX Buffer = 0x%x, size=%d, ts = %lld", inBuf.data, inBuf.size, buffers[INPORT_INDEX]->nTimeStamp);
-
-    if (eInfo.CacheOperation == CACHE_PUSH) {
-        ProcessCacheOperation(buffers, retains, &eInfo);
-        //nothing should be done in this case, just store status and return
-        goto exit;
-    }else
-        ProcessCacheOperation(buffers, retains, &eInfo);
-
-    /* Check encode state, if not, call libMIX encode()
-    */
-    if(!eInfo.EncodeComplete) {
-
-        // encode and setConfig need to be thread safe
-        if (eInfo.EndOfEncode)
+        if (buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS)
             inBuf.flag |= ENCODE_BUFFERFLAG_ENDOFSTREAM;
         if (eInfo.NotStopFrame)
             inBuf.flag |= ENCODE_BUFFERFLAG_NSTOPFRAME;
         inBuf.type = (FrameType) eInfo.FrameType;
 
+        LOGV("start libmix encoding\n");
+        // encode and setConfig need to be thread safe
         pthread_mutex_lock(&mSerializationLock);
-        ret = mVideoEncoder->encode(&inBuf);
+        ret = mVideoEncoder->encode(&inBuf, FUNC_NONBLOCK);
         pthread_mutex_unlock(&mSerializationLock);
-        CHECK_ENCODE_STATUS("encode");
-        eInfo.EncodeComplete = true;
+        LOGV("end libmix encoding\n");
 
-        mFrameEncodedCount ++;
+		retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+        if (ret == ENCODE_DEVICE_BUSY) {
+			//encoder is busy, put buf back and come again
+            LOGV("encoder is busy, push buffer back to get again\n");
+            retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+        } else {
+            //if error, this buf will be returned
+            CHECK_ENCODE_STATUS("encode");
 
-        if (mSyncEncoding == OMX_FALSE && mFrameEncodedCount == 2) {//not getoutput for second encode frame to keep in async mode
-            eInfo.DataRetrieved = true;
-            ports[INPORT_INDEX]->ReturnAllRetainedBuffers();
+            LOGV("put buffer to encoder and retain this buffer\n");
+            mFrameEncodedCount ++;
+            FrameEncoded = true;
             retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
-            retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
         }
+
+    } else {
+        //no new coming frames, but maybe still have frames not outputted
+        LOGV("input buffer is null\n");
     }
 
-    /* Check encode data retrieve state, if not complete output, continue call libMIX getOutput()
-    */
-    if (!eInfo.DataRetrieved)
-        oret = ProcessDataRetrieve(buffers, retains, &eInfo);
-
-    /* Check EOE state, if yes, this is final encode frame, need to push this buffer again
-         to call getOutput again for final output
-    */
-    if (mSyncEncoding == OMX_FALSE && eInfo.EndOfEncode && eInfo.EncodeComplete && eInfo.DataRetrieved && (buffers[INPORT_INDEX]->nFilledLen != 0)) {
-        eInfo.DataRetrieved = false;
-        eInfo.EndOfEncode = false;
-        retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+    retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN; //set to default value
+    //just call getoutput if no frame encoded in this cycle to avoid retained buffer queue wrong state
+    if (!FrameEncoded) {
+        OMX_BOOL OutBufReturned = OMX_FALSE;
+        oret = ProcessDataRetrieve(buffers, &OutBufReturned);
+        if (OutBufReturned)
+            retains[OUTPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
     }
 
-#if 0
-    if (avcEncParamIntelBitrateType.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
-        if (oret == (OMX_ERRORTYPE) OMX_ErrorIntelExtSliceSizeOverflow) {
-            oret = OMX_ErrorNone;
-        }
-    }
-#endif
-
-exit:
-
-    /* restore all states into input OMX buffer
-    */
-    if (eInfo.EncodeComplete)
-        encodeInfo |= ENC_EC;
-    else
-        encodeInfo &= ~ENC_EC;
-
-    if (eInfo.DataRetrieved)
-        encodeInfo |= ENC_DR;
-    else
-        encodeInfo &= ~ENC_DR;
-
-    if (eInfo.EndOfEncode)
-        encodeInfo |= ENC_EOE;
-    else
-        encodeInfo &= ~ENC_EOE;
-
-    if (eInfo.NotStopFrame)
-        encodeInfo |= ENC_NSTOP;
-    else
-        encodeInfo &= ~ENC_NSTOP;
-
-    SET_CO(encodeInfo, eInfo.CacheOperation);
-    buffers[INPORT_INDEX]->pPlatformPrivate = (OMX_PTR) encodeInfo;
-
+    LOGV("ProcessorProcess ret=%x", oret);
     return oret;
 
 }

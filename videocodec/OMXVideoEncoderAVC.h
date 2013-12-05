@@ -43,28 +43,22 @@ enum {
     CACHE_RESET   = 0x03,    //reset cache, clear all cached frames
 };
 
-#define ENC_EC     0x08000000
-#define ENC_DR     0x04000000
-#define ENC_EOE    0x00800000
-#define ENC_NSTOP    0x00400000
+#define ENC_NSTOP    0x02000000
 
 #define GET_FT(x)  ( (x & 0xF0000000 ) >> 28 )       //get frame type
-#define GET_CO(x)  ( (x & 0x03000000 ) >> 24 )       //get cache operation
-#define GET_FC(x)  ( (x & 0x003FFFFF ) )             //get frame count
+#define GET_CO(x)  ( (x & 0x0C000000 ) >> 26 )       //get cache operation
+#define GET_FC(x)  ( (x & 0x01FFFFFF ) )             //get frame count
 
 #define SET_FT(x, y)  { x = ((x & ~0xF0000000) | (y << 28)); }
-#define SET_CO(x, y)  { x = ((x & ~0x03000000) | (y << 24 )); }
-#define SET_FC(x, y)  { x = ((x & ~0x003FFFFF) | (y & 0x003FFFFF )); }
+#define SET_CO(x, y)  { x = ((x & ~0x0C000000) | (y << 26 )); }
+#define SET_FC(x, y)  { x = ((x & ~0x01FFFFFF) | (y & 0x01FFFFFF )); }
 
 const char* FrameTypeStr[10] = {"UNKNOWN", "I", "P", "B", "SI", "SP", "EI", "EP", "S", "IDR"};
 const char* CacheOperationStr[4]= {"NONE", "PUSH", "POP", "RESET"};
 
 typedef struct {
     uint32_t FrameType;
-    bool EncodeComplete;
-    bool DataRetrieved;
     uint32_t CacheOperation;
-    bool EndOfEncode;
     bool NotStopFrame;
     uint32_t FrameCount;
 }Encode_Info;
@@ -124,14 +118,10 @@ private:
 
     List<OMX_BUFFERHEADERTYPE*> mBFrameList;
 
-    OMX_ERRORTYPE ProcessCacheOperation(
-            OMX_BUFFERHEADERTYPE **buffers,
-            buffer_retain_t *retains,
-            Encode_Info *pInfo);
+    OMX_BOOL ProcessCacheOperation(OMX_BUFFERHEADERTYPE **buffers);
     OMX_ERRORTYPE ProcessDataRetrieve(
             OMX_BUFFERHEADERTYPE **buffers,
-            buffer_retain_t *retains,
-            Encode_Info *pInfo);
+            OMX_BOOL *outBufReturned);
 
     struct ProfileLevelTable {
         OMX_U32 profile;
@@ -141,6 +131,8 @@ private:
     ProfileLevelTable mPLTable[MAX_H264_PROFILE];
     OMX_U32 mPLTableCount;
 
+    OMX_BOOL mEmptyEOSBuf;
+    OMX_BOOL mCSDOutputted;
 };
 
 #endif /* OMX_VIDEO_ENCODER_AVC_H_ */

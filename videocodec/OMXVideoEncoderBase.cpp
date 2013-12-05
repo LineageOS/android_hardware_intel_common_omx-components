@@ -31,7 +31,7 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
     ,mFrameRetrieved(OMX_TRUE)
     ,mFirstFrame(OMX_TRUE)
     ,mStoreMetaDataInBuffers(OMX_FALSE)
-    ,mSyncEncoding(OMX_FALSE){
+    ,mSyncEncoding(OMX_TRUE){
     mEncoderParams = new VideoParamsCommon();
     if (!mEncoderParams) LOGE("OMX_ErrorInsufficientResources");
 
