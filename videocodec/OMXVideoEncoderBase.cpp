@@ -294,8 +294,12 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetVideoEncoderParam() {
     LOGV("intraPeriod = %d\n ", mEncoderParams->intraPeriod);
     mEncoderParams->rcParams.initQP = mConfigIntelBitrate.nInitialQP;
     mEncoderParams->rcParams.minQP = mConfigIntelBitrate.nMinQP;
+    mEncoderParams->rcParams.maxQP = 0;
+    mEncoderParams->rcParams.I_minQP = 0;
+    mEncoderParams->rcParams.I_maxQP = 0;
     mEncoderParams->rcParams.windowSize = mConfigIntelBitrate.nWindowSize;
     mEncoderParams->rcParams.targetPercentage = mConfigIntelBitrate.nTargetPercentage;
+    mEncoderParams->rcParams.enableIntraFrameQPControl = 0;
 
     if(mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateMax) {
 
@@ -593,8 +597,12 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigIntelBitrate(OMX_PTR pStructure) {
     configBitRate.rcParams.bitRate = mConfigIntelBitrate.nMaxEncodeBitrate;
     configBitRate.rcParams.initQP = mConfigIntelBitrate.nInitialQP;
     configBitRate.rcParams.minQP = mConfigIntelBitrate.nMinQP;
+    configBitRate.rcParams.maxQP = 0;
+    configBitRate.rcParams.I_minQP = 0;
+    configBitRate.rcParams.I_maxQP = 0;
     configBitRate.rcParams.windowSize = mConfigIntelBitrate.nWindowSize;
     configBitRate.rcParams.targetPercentage = mConfigIntelBitrate.nTargetPercentage;
+    configBitRate.rcParams.enableIntraFrameQPControl = 0;
     retStatus = mVideoEncoder->setConfig(&configBitRate);
     if(retStatus != ENCODE_SUCCESS) {
         LOGW("failed to set IntelBitrate");
