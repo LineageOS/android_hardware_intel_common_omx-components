@@ -405,11 +405,7 @@ void OMXVideoDecoderAVCSecure::MemFreeSecure(OMX_U8 *pBuffer, OMX_PTR pUserData)
 }
 
 OMX_U8* OMXVideoDecoderAVCSecure::MemAllocSecure(OMX_U32 nSizeBytes) {
-    if (nSizeBytes > INPORT_BUFFER_SIZE) {
-        LOGE("Invalid size (%lu) of memory to allocate.", nSizeBytes);
-        return NULL;
-    }
-    LOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE, "WARNING: MemAllocSEC asked to allocate buffer of size %lu (expected %d)", nSizeBytes, INPORT_BUFFER_SIZE);
+    // Ignore passed nSizeBytes, use INPORT_BUFFER_SIZE instead
 
     uint32_t index = 0;
     do {

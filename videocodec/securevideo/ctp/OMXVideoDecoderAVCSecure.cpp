@@ -372,11 +372,8 @@ void OMXVideoDecoderAVCSecure::MemFreeIMR(OMX_U8 *pBuffer, OMX_PTR pUserData) {
 }
 
 OMX_U8* OMXVideoDecoderAVCSecure::MemAllocIMR(OMX_U32 nSizeBytes) {
-    if (nSizeBytes > INPORT_BUFFER_SIZE) {
-        LOGE("Invalid size (%lu) of memory to allocate.", nSizeBytes);
-        return NULL;
-    }
-    LOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE, "Size of memory to allocate is %lu", nSizeBytes);
+    // Ignore passed nSizeBytes, use INPORT_BUFFER_SIZE instead
+
     for (int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
         if (mIMRSlot[i].owner == NULL) {
             IMRDataBuffer *pBuffer = new IMRDataBuffer;
