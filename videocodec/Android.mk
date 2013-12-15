@@ -49,6 +49,10 @@ ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 ifeq ($(TARGET_VPP_USE_GEN),true)
 LOCAL_CFLAGS += -DDEINTERLACE_EXT
 endif
@@ -107,6 +111,10 @@ ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
@@ -153,6 +161,10 @@ LOCAL_CFLAGS += -DVED_TILING
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
@@ -204,6 +216,10 @@ ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
@@ -249,6 +265,10 @@ LOCAL_CFLAGS += -DVED_TILING
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
@@ -316,13 +336,13 @@ LOCAL_SRC_FILES += securevideo/merrifield/OMXVideoDecoderAVCSecure.cpp
 
 LOCAL_CFLAGS += -DVED_TILING
 
-else ifeq ($(TARGET_BOARD_PLATFORM),merrplus)
-#Secure AVC decoder for Merrifield Plus (uses IED)
+else ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
+#Secure AVC decoder for Moorefield V0 (uses IED)
 LOCAL_SHARED_LIBRARIES += \
     libsepdrm_cc54 \
     libdx_cc7
 
-LOCAL_SRC_FILES += securevideo/merrplus/OMXVideoDecoderAVCSecure.cpp
+LOCAL_SRC_FILES += securevideo/moorefield/OMXVideoDecoderAVCSecure.cpp
 
 LOCAL_CFLAGS += -DVED_TILING
 
@@ -502,6 +522,10 @@ LOCAL_CFLAGS += -DVED_TILING
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
