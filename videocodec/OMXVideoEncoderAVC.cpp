@@ -471,9 +471,9 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
                 outBuf.format = OUTPUT_CODEC_DATA;
             } else {
                 if (NaluFormat == OMX_NaluFormatStartCodesSeparateFirstHeader)
-                    outBuf.format = OUTPUT_NALULENGTHS_PREFIXED;
+                    outBuf.format = OUTPUT_EVERYTHING;
                 else
-                    outBuf.format = OUTPUT_LENGTH_PREFIXED;
+                    outBuf.format = OUTPUT_NALULENGTHS_PREFIXED;
             }
             break;
 
