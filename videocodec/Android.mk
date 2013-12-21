@@ -66,6 +66,7 @@ include $(BUILD_SHARED_LIBRARY)
 
 PLATFORM_SUPPORT_VP8 := \
     merrifield \
+    morganfield \
     moorefield \
     baytrail
 
