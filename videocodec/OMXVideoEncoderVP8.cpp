@@ -4,7 +4,7 @@
 #include <utils/Log.h>
 #include "OMXVideoEncoderVP8.h"
 
-static const char *VP8_MIME_TYPE = "video/x-webm";
+static const char *VP8_MIME_TYPE = "video/x-vnd.on2.vp8";
 
 OMXVideoEncoderVP8::OMXVideoEncoderVP8() {
     LOGV("OMXVideoEncoderVP8 is constructed.");
