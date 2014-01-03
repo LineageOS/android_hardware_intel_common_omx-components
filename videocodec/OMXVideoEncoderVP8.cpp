@@ -195,6 +195,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::BuildHandlerList(void) {
     AddHandler((OMX_INDEXTYPE)OMX_IndexParamVideoVp8, GetParamVideoVp8, SetParamVideoVp8);
     AddHandler((OMX_INDEXTYPE)OMX_IndexConfigVideoVp8ReferenceFrame, GetConfigVideoVp8ReferenceFrame, SetConfigVideoVp8ReferenceFrame);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtVP8ForceKFrame, GetConfigVp8ForceKFrame, SetConfigVp8ForceKFrame);
+    AddHandler((OMX_INDEXTYPE)OMX_IndexExtVP8MaxFrameSize, GetConfigVp8MaxFrameSize, SetConfigVp8MaxFrameSize);
     return OMX_ErrorNone;
 }
 
@@ -249,7 +250,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVideoVp8ReferenceFrame(OMX_PTR pStruc
 
     retStatus = mVideoEncoder->setConfig(&configVP8ReferenceFrame);
     if(retStatus != ENCODE_SUCCESS) {
-        LOGW("Failed to set refresh config");
+        LOGW("Failed to set reference frame");
     }
     return OMX_ErrorNone;
 }
@@ -276,11 +277,34 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVp8ForceKFrame(OMX_PTR pStructure) {
 
     retStatus = mVideoEncoder->setConfig(&configVP8);
     if(retStatus != ENCODE_SUCCESS) {
-        LOGW("Failed to set refresh config");
+        LOGW("Failed to set vp8 force frame");
     }
     return OMX_ErrorNone;
 }
 
+OMX_ERRORTYPE OMXVideoEncoderVP8::GetConfigVp8MaxFrameSize(OMX_PTR pStructure) {
 
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVp8MaxFrameSize(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    Encode_Status retStatus = ENCODE_SUCCESS;
+    OMX_VIDEO_CONFIG_INTEL_VP8_MAX_FRAME_SIZE *p = (OMX_VIDEO_CONFIG_INTEL_VP8_MAX_FRAME_SIZE*)pStructure;
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+
+    CHECK_SET_CONFIG_STATE();
+
+    VideoConfigVP8MaxFrameSize configVP8MaxFrameSize;
+    configVP8MaxFrameSize.max_frame_size = p->nMaxFrameSize;
+
+    retStatus = mVideoEncoder->setConfig(&configVP8MaxFrameSize);
+    if(retStatus != ENCODE_SUCCESS) {
+        LOGW("Failed to set vp8 max frame size");
+    }
+
+    return OMX_ErrorNone;
+}
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoEncoder.VP8", "video_encoder.vp8", OMXVideoEncoderVP8);

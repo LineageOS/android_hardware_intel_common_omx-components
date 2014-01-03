@@ -17,7 +17,8 @@ class OMXVideoEncoderVP8 : public OMXVideoEncoderBase {
         virtual OMX_ERRORTYPE SetVideoEncoderParam();
         DECLARE_HANDLER(OMXVideoEncoderVP8, ParamVideoVp8);
         DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigVideoVp8ReferenceFrame);
-	DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigVp8ForceKFrame);
+        DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigVp8ForceKFrame);
+        DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigVp8MaxFrameSize);
     private:
         enum {
             OUTPORT_MIN_BUFFER_COUNT = 1,
@@ -27,7 +28,8 @@ class OMXVideoEncoderVP8 : public OMXVideoEncoderBase {
 
         OMX_VIDEO_PARAM_VP8TYPE mParamVp8;
         OMX_VIDEO_VP8REFERENCEFRAMETYPE mConfigVideoVp8ReferenceFrame;
-	OMX_VIDEO_CONFIG_INTEL_VP8_FORCE_KFRAME mVideoConfigVP8ForceKFrame;
+        OMX_VIDEO_CONFIG_INTEL_VP8_FORCE_KFRAME mVideoConfigVP8ForceKFrame;
+        OMX_VIDEO_CONFIG_INTEL_VP8_MAX_FRAME_SIZE mVideoConfigVP8MaxFrameSize;
 };
 
 #endif /* OMX_VIDEO_ENCODER_VP8_H */
