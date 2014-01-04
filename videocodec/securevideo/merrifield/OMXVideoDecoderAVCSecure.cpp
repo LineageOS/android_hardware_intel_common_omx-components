@@ -294,7 +294,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         nalu_headers.parse_size = buffer->nFilledLen;
 
         uint32_t res = drm_wv_return_naluheaders(WV_SESSION_ID, &nalu_headers);
-        if (res == DRM_FAIL_FW_SESSION || !nalu_headers.hdrs_buf_len) {
+        if (res == DRM_FAIL_FW_SESSION) {
             LOGW("Drm_WV_ReturnNALUHeaders failed. Session is disabled.");
             mSessionPaused = true;
             ret =  OMX_ErrorNotReady;
@@ -304,13 +304,21 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
             ret = OMX_ErrorHardware;
         } else {
             mSessionPaused = false;
-            // NALU headers are appended to encrypted video bitstream
-            // |...encrypted video bitstream (16 bytes aligned)...| 4 bytes of header size |...NALU headers..|
-            uint32_t *ptr = (uint32_t*)(imrBuffer->data + nalu_headers.frame_size);
-            *ptr = nalu_headers.hdrs_buf_len;
-            p->data = imrBuffer->data;
-            p->size = nalu_headers.frame_size;
-            p->flag |= IS_SECURE_DATA;
+
+            // If chaabi returns 0 NALU headers fill the frame size to zero.
+            if (!nalu_headers.hdrs_buf_len) {
+                p->size = 0;
+                return ret;
+            }
+            else{
+                // NALU headers are appended to encrypted video bitstream
+                // |...encrypted video bitstream (16 bytes aligned)...| 4 bytes of header size |...NALU headers..|
+                uint32_t *ptr = (uint32_t*)(imrBuffer->data + nalu_headers.frame_size);
+                *ptr = nalu_headers.hdrs_buf_len;
+                p->data = imrBuffer->data;
+                p->size = nalu_headers.frame_size;
+                p->flag |= IS_SECURE_DATA;
+            }
         }
     }
 
