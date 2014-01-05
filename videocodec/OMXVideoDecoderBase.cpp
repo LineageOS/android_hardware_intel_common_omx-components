@@ -314,10 +314,14 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
 
     OMX_ERRORTYPE ret;
     Decode_Status status;
+    OMX_BOOL isResolutionChange = OMX_FALSE;
     // fill render buffer without draining decoder output queue
-    ret = FillRenderBuffer(pBuffers[OUTPORT_INDEX], &retains[OUTPORT_INDEX], 0);
+    ret = FillRenderBuffer(pBuffers[OUTPORT_INDEX], &retains[OUTPORT_INDEX], 0, &isResolutionChange);
     if (ret == OMX_ErrorNone) {
         retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+        if (isResolutionChange) {
+            HandleFormatChange();
+        }
         // TODO: continue decoding
         return ret;
     } else if (ret != OMX_ErrorNotReady) {
@@ -383,7 +387,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
         }
     }
     // drain the decoder output queue when in EOS state and fill the render buffer
-    ret = FillRenderBuffer(pBuffers[OUTPORT_INDEX], &retains[OUTPORT_INDEX], ((*pBuffers[INPORT_INDEX]))->nFlags);
+    ret = FillRenderBuffer(pBuffers[OUTPORT_INDEX], &retains[OUTPORT_INDEX],
+            ((*pBuffers[INPORT_INDEX]))->nFlags,&isResolutionChange);
+
+    if (isResolutionChange) {
+        HandleFormatChange();
+    }
 
     bool inputEoS = ((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS);
     bool outputEoS = ((*pBuffers[OUTPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS);
@@ -519,7 +528,8 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buf
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer, buffer_retain_t *retain, OMX_U32 inportBufferFlags) {
+OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer, buffer_retain_t *retain,
+    OMX_U32 inportBufferFlags, OMX_BOOL *isResolutionChange) {
 
     OMX_BUFFERHEADERTYPE *buffer = *pBuffer;
     OMX_BUFFERHEADERTYPE *buffer_orign = buffer;
@@ -566,6 +576,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
     if (renderBuffer->flag & IS_EOS) {
         buffer->nFlags |= OMX_BUFFERFLAG_EOS;
     }
+    *isResolutionChange = (renderBuffer->flag & IS_RESOLUTION_CHANGE)? OMX_TRUE: OMX_FALSE;
 
     if (mWorkingMode == GRAPHICBUFFER_MODE) {
         if (buffer_orign != buffer) {

@@ -59,7 +59,8 @@ protected:
     virtual OMX_ERRORTYPE ProcessorPreFreeBuffer(OMX_U32 nPortIndex,OMX_BUFFERHEADERTYPE * pBuffer);
     virtual OMX_ERRORTYPE PrepareConfigBuffer(VideoConfigBuffer *p);
     virtual OMX_ERRORTYPE PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
-    virtual OMX_ERRORTYPE FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer,  buffer_retain_t *retain, OMX_U32 inportBufferFlags);
+    virtual OMX_ERRORTYPE FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer,  buffer_retain_t *retain,
+                              OMX_U32 inportBufferFlags,  OMX_BOOL *isResolutionChange);
     virtual OMX_ERRORTYPE HandleFormatChange(void);
     virtual OMX_ERRORTYPE TranslateDecodeStatus(Decode_Status status);
     virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width, int height);
