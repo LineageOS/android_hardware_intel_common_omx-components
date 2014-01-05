@@ -15,9 +15,7 @@
 */
 
 
-//#define LOG_NDEBUG 0
 #define LOG_TAG "OMXVideoEncoderH263"
-#include <utils/Log.h>
 #include "OMXVideoEncoderH263.h"
 
 static const char *H263_MIME_TYPE = "video/h263";

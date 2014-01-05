@@ -386,6 +386,7 @@ LOCAL_SHARED_LIBRARIES := \
         libva-android \
         libva-tpi \
         libutils \
+        libcutils \
         libhardware \
         libintelmetadatabuffer
 
@@ -424,6 +425,7 @@ LOCAL_SHARED_LIBRARIES := \
         libva-android \
         libva-tpi \
         libutils \
+        libcutils \
         libhardware \
         libintelmetadatabuffer
 
@@ -465,6 +467,7 @@ LOCAL_SHARED_LIBRARIES := \
         libva-android \
         libva-tpi \
         libutils \
+        libcutils \
         libhardware \
         libintelmetadatabuffer
 
@@ -546,6 +549,7 @@ LOCAL_SHARED_LIBRARIES := \
         libva-android \
         libva-tpi \
         libutils \
+        libcutils \
         libhardware \
         libintelmetadatabuffer
 

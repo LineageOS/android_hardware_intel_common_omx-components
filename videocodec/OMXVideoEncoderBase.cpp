@@ -15,11 +15,11 @@
 */
 
 
-// #define LOG_NDEBUG 0
 #define LOG_TAG "OMXVideoEncoderBase"
-#include <utils/Log.h>
 #include "OMXVideoEncoderBase.h"
 #include "IntelMetadataBuffer.h"
+#include <cutils/properties.h>
+#include <cutils/log.h>
 
 static const char *RAW_MIME_TYPE = "video/raw";
 
@@ -30,10 +30,17 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
     ,mFrameOutputCount(0)
     ,mFrameRetrieved(OMX_TRUE)
     ,mFirstFrame(OMX_TRUE)
+    ,mOmxLogLevel(0)
     ,mStoreMetaDataInBuffers(OMX_FALSE)
     ,mSyncEncoding(OMX_TRUE){
     mEncoderParams = new VideoParamsCommon();
     if (!mEncoderParams) LOGE("OMX_ErrorInsufficientResources");
+
+    char logLevelProp[128];
+    if (property_get("omxenc.debug", logLevelProp, NULL)) {
+        mOmxLogLevel = atoi(logLevelProp);
+        LOGD("Debug level is %d", mOmxLogLevel);
+    } 
 
     LOGV("OMXVideoEncoderBase::OMXVideoEncoderBase end");
 }

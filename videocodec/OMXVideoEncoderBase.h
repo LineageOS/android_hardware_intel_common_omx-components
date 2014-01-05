@@ -24,6 +24,11 @@
 #include <va/va_android.h>
 #include <VideoEncoderHost.h>
 
+#define LOGV(...) LOGI_IF(mOmxLogLevel, __VA_ARGS__)
+#define LOGI(...) LOGI_IF(mOmxLogLevel, __VA_ARGS__)
+#define LOGW(...) LOGI_IF(mOmxLogLevel, __VA_ARGS__)
+#define LOGD(...) LOGI_IF(mOmxLogLevel, __VA_ARGS__)
+
 using android::sp;
 
 class OMXVideoEncoderBase : public OMXComponentCodecBase {
@@ -87,6 +92,7 @@ protected:
     OMX_BOOL mFrameRetrieved;
     OMX_BOOL mStoreMetaDataInBuffers;
     OMX_BOOL mSyncEncoding;
+    int32_t mOmxLogLevel;
 
 private:
 

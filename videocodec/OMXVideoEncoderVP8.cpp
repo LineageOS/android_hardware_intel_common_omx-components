@@ -1,7 +1,5 @@
 
-//#define LOG_NDEBUG 0
 #define LOG_TAG "OMXVideoEncoderVP8"
-#include <utils/Log.h>
 #include "OMXVideoEncoderVP8.h"
 
 static const char *VP8_MIME_TYPE = "video/x-vnd.on2.vp8";

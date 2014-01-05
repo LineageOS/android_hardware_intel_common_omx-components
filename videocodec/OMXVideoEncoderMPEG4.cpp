@@ -15,9 +15,7 @@
 */
 
 
-//#define LOG_NDEBUG 0
 #define LOG_TAG "OMXVideoEncoderMPEG4"
-#include <utils/Log.h>
 #include "OMXVideoEncoderMPEG4.h"
 
 static const char *MPEG4_MIME_TYPE = "video/mpeg4";
