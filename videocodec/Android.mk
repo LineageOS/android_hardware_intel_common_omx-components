@@ -30,7 +30,11 @@ LOCAL_C_INCLUDES := \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax
 
-ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+PLATFORM_USE_GEN_HW := \
+    baytrail \
+    cherrytrail
+
+ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_USE_GEN_HW)),)
 LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
 endif
 
@@ -68,7 +72,8 @@ PLATFORM_SUPPORT_VP8 := \
     merrifield \
     morganfield \
     moorefield \
-    baytrail
+    baytrail \
+    cherrytrail
 
 ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_SUPPORT_VP8)),)
 include $(CLEAR_VARS)
@@ -96,10 +101,6 @@ LOCAL_C_INCLUDES := \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax
 
-ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
-LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
-endif
-
 LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
     OMXVideoDecoderBase.cpp\
@@ -116,8 +117,20 @@ ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
 
-ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+PLATFORM_USE_GEN_HW := \
+    baytrail \
+    cherrytrail
+
+ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_USE_GEN_HW)),)
+LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
+endif
+
+ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_USE_GEN_HW)),)
 LOCAL_CFLAGS += -DUSE_GEN_HW
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_X_TILE
 endif
 
 include $(BUILD_SHARED_LIBRARY)
@@ -146,7 +159,11 @@ LOCAL_C_INCLUDES := \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax
 
-ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+PLATFORM_USE_GEN_HW := \
+    baytrail \
+    cherrytrail
+
+ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_USE_GEN_HW)),)
 LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
 endif
 
@@ -198,7 +215,11 @@ LOCAL_C_INCLUDES := \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax
 
-ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+PLATFORM_USE_GEN_HW := \
+    baytrail \
+    cherrytrail
+
+ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_USE_GEN_HW)),)
 LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
 endif
 
@@ -250,7 +271,11 @@ LOCAL_C_INCLUDES := \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax
 
-ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+PLATFORM_USE_GEN_HW := \
+    baytrail \
+    cherrytrail
+
+ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_USE_GEN_HW)),)
 LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
 endif
 

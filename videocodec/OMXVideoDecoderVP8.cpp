@@ -109,7 +109,11 @@ OMX_ERRORTYPE OMXVideoDecoderVP8::SetParamVideoVp8(OMX_PTR pStructure) {
 OMX_COLOR_FORMATTYPE OMXVideoDecoderVP8::GetOutputColorFormat(int width, int height)
 {
 #ifdef USE_GEN_HW
+#ifdef USE_X_TILE
     return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_NV12_X_TILED_INTEL;
+#else
+    return (OMX_COLOR_FORMATTYPE)OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
+#endif
 #else
     return OMXVideoDecoderBase::GetOutputColorFormat(width, height);
 #endif
