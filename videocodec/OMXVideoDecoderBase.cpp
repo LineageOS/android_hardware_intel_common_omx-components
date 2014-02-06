@@ -580,6 +580,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
 
     if (mWorkingMode == GRAPHICBUFFER_MODE) {
         if (buffer_orign != buffer) {
+            VideoErrorBuffer *ErrBufOutPtr = NULL;
+            ErrBufOutPtr = (VideoErrorBuffer *)buffer->pOutputPortPrivate;
+            if (ErrBufPtr && ErrBufOutPtr) {
+                memcpy(ErrBufOutPtr, ErrBufPtr, sizeof(VideoErrorBuffer));
+                memset(ErrBufPtr, 0, sizeof(VideoErrorBuffer));
+            }
             *retain = BUFFER_RETAIN_OVERRIDDEN;
         }
          buffer->nFilledLen = sizeof(OMX_U8*);
