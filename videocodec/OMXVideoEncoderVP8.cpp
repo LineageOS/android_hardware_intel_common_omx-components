@@ -39,6 +39,12 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     paramPortDefinitionOutput->format.video.cMIMEType = (OMX_STRING)VP8_MIME_TYPE;
     paramPortDefinitionOutput->format.video.eCompressionFormat = OMX_VIDEO_CodingVP8;
 
+    // OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER
+    memset(&mNumberOfTemporalLayer, 0, sizeof(mNumberOfTemporalLayer));
+    SetTypeHeader(&mNumberOfTemporalLayer, sizeof(mNumberOfTemporalLayer));
+    mNumberOfTemporalLayer.nPortIndex = OUTPORT_INDEX;
+    mNumberOfTemporalLayer.nNumberOfTemporalLayer = 1;//default value is 1
+
     mParamProfileLevel.eProfile = OMX_VIDEO_VP8ProfileMain;
     mParamProfileLevel.eLevel = OMX_VIDEO_VP8Level_Version3;
     return OMX_ErrorNone;
@@ -194,6 +200,9 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::BuildHandlerList(void) {
     AddHandler((OMX_INDEXTYPE)OMX_IndexConfigVideoVp8ReferenceFrame, GetConfigVideoVp8ReferenceFrame, SetConfigVideoVp8ReferenceFrame);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtVP8ForceKFrame, GetConfigVp8ForceKFrame, SetConfigVp8ForceKFrame);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtVP8MaxFrameSizeRatio, GetConfigVp8MaxFrameSizeRatio, SetConfigVp8MaxFrameSizeRatio);
+    AddHandler((OMX_INDEXTYPE)OMX_IndexExtVP8NumberOfTemporalLayer, GetTemporalLayerNumber,SetTemporalLayerNumber);
+    AddHandler((OMX_INDEXTYPE)OMX_IndexExtVP8TemporalLayerBitRateFrameRate, GetConfigTemporalLayerBitrateFramerate,SetConfigTemporalLayerBitrateFramerate);
+
     return OMX_ErrorNone;
 }
 
@@ -304,5 +313,64 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVp8MaxFrameSizeRatio(OMX_PTR pStructu
 
     return OMX_ErrorNone;
 }
+
+OMX_ERRORTYPE OMXVideoEncoderVP8::GetTemporalLayerNumber(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_PARAM_INTEL_VP8_NUMBER_OF_TEMPORAL_LAYER* p = static_cast<OMX_VIDEO_PARAM_INTEL_VP8_NUMBER_OF_TEMPORAL_LAYER*>(pStructure);
+
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+    memcpy(p, &mNumberOfTemporalLayer, sizeof(*p));
+    return OMX_ErrorNone;
+}
+
+
+OMX_ERRORTYPE OMXVideoEncoderVP8::SetTemporalLayerNumber(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_PARAM_INTEL_VP8_NUMBER_OF_TEMPORAL_LAYER *p = (OMX_VIDEO_PARAM_INTEL_VP8_NUMBER_OF_TEMPORAL_LAYER *)pStructure;
+    VideoParamsTemporalLayerNumber TemporalLayerNumber;
+
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+
+    LOGE("SetTemporalLayerNumber (enabled = %d)", p->nNumberOfTemporalLayer);
+
+    TemporalLayerNumber.numberOfLayer = p->nNumberOfTemporalLayer;
+    if (mVideoEncoder->setParameters(&TemporalLayerNumber) != ENCODE_SUCCESS)
+        return OMX_ErrorNotReady;
+
+    LOGE("SetTemporalLayerNumber success");
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoEncoderVP8::GetConfigTemporalLayerBitrateFramerate(OMX_PTR pStructure) {
+
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigTemporalLayerBitrateFramerate(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_CONFIG_INTEL_VP8_TEMPORAL_LAYER_BITRATE_FRAMERATE *p = (OMX_VIDEO_CONFIG_INTEL_VP8_TEMPORAL_LAYER_BITRATE_FRAMERATE *)pStructure;
+    VideoConfigVP8TemporalBitRateFrameRate TemporalLayerBitRateFrameRate;
+
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+
+    LOGD("SetConfigTemporalLayerBitrateFramerate (layerID = %d)", p->nLayerID);
+    LOGD("SetConfigTemporalLayerBitrateFramerate (nBitrate = %d)", p->nBitrate);
+    LOGD("SetConfigTemporalLayerBitrateFramerate (nFramerate = %d)", p->nFramerate);
+
+    TemporalLayerBitRateFrameRate.layerID = p->nLayerID;
+    TemporalLayerBitRateFrameRate.bitRate = p->nBitrate;
+    TemporalLayerBitRateFrameRate.frameRate = p->nFramerate;
+    if (mVideoEncoder->setConfig(&TemporalLayerBitRateFrameRate) != ENCODE_SUCCESS)
+        return OMX_ErrorNotReady;
+
+    LOGD("SetConfigTemporalLayerBitrateFramerate success");
+    return OMX_ErrorNone;
+}
+
+
+
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoEncoder.VP8", "video_encoder.vp8", OMXVideoEncoderVP8);

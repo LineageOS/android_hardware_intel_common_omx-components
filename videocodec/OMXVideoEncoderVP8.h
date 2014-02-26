@@ -19,6 +19,8 @@ class OMXVideoEncoderVP8 : public OMXVideoEncoderBase {
         DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigVideoVp8ReferenceFrame);
         DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigVp8ForceKFrame);
         DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigVp8MaxFrameSizeRatio);
+        DECLARE_HANDLER(OMXVideoEncoderVP8, TemporalLayerNumber);
+        DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigTemporalLayerBitrateFramerate);
     private:
         enum {
             OUTPORT_MIN_BUFFER_COUNT = 1,
@@ -28,6 +30,8 @@ class OMXVideoEncoderVP8 : public OMXVideoEncoderBase {
 
         OMX_VIDEO_PARAM_VP8TYPE mParamVp8;
         OMX_VIDEO_VP8REFERENCEFRAMETYPE mConfigVideoVp8ReferenceFrame;
+        OMX_VIDEO_PARAM_INTEL_VP8_NUMBER_OF_TEMPORAL_LAYER mNumberOfTemporalLayer;
+        OMX_VIDEO_CONFIG_INTEL_VP8_TEMPORAL_LAYER_BITRATE_FRAMERATE mTemporalLayerBitrateFramerate;
 };
 
 #endif /* OMX_VIDEO_ENCODER_VP8_H */
