@@ -459,6 +459,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
         )
             p->flag |= USE_TILING_MEMORY;
 
+        if (mEnableAdaptivePlayback)
+            p->flag |= WANT_ADAPTIVE_PLAYBACK;
+
         PortVideo *port = NULL;
         port = static_cast<PortVideo *>(this->ports[INPORT_INDEX]);
         OMX_PARAM_PORTDEFINITIONTYPE port_def;
