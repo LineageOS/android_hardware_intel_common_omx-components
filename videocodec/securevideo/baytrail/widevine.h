@@ -327,8 +327,17 @@ typedef struct {
     uint8_t device_id[WV_DEVICE_ID_SIZE];
 } wv_heci_get_keybox_data_out;
 
+//orig
+#if 0
 /*wv_set_xcript_key*/
 typedef PAVP_CMD_NODATA wv_set_xcript_key_in;
+#endif
+
+//for app-ID
+typedef struct {
+    PAVP_CMD_HEADER  Header;
+    uint32_t StreamId;
+} wv_set_xcript_key_in;
 
 typedef struct {
     PAVP_CMD_HEADER  Header;

@@ -33,6 +33,7 @@ static const char* AVC_SECURE_MIME_TYPE = "video/avc-secure";
 
 OMXVideoDecoderAVCSecure::OMXVideoDecoderAVCSecure()
     : mpLibInstance(NULL),
+      mPAVPAppID(0xFF),
       mDropUntilIDR(false) {
     LOGV("OMXVideoDecoderAVCSecure is constructed.");
     mVideoDecoder = createVideoDecoder(AVC_SECURE_MIME_TYPE);
@@ -122,6 +123,291 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareConfigBuffer(VideoConfigBuffer *p
     return ret;
 }
 
+// Temp placeholder for NALU merge
+static uint8_t config_nalu[1024];
+static uint32_t config_nalu_len;
+// Merge NALU for config (SPS & PPS) with Slice data for MDRM.
+static void update_config_nalu(uint8_t* nalu_data, uint32_t* nalu_size)
+{
+    //move NALU for encrypted portion behind config info
+    uint8_t temp[1024];
+    memset(temp, 0, 1024);
+
+    uint32_t* enc_dword_ptr = NULL;
+    uint32_t enc_num_nalus = 0;
+    uint32_t* clr_dword_ptr = NULL;
+    uint32_t clr_num_nalus = 0;
+
+    if (*nalu_size > 4) {
+        memcpy(temp, nalu_data+4, ((*nalu_size)-4));
+    } else {
+        LOGI("%s: NALU size < 4!");
+        return;
+    }
+
+    enc_dword_ptr = (uint32_t*)nalu_data;
+    enc_num_nalus = bswap_32(*enc_dword_ptr);
+    clr_dword_ptr = (uint32_t*)config_nalu;
+    clr_num_nalus = bswap_32(*clr_dword_ptr);
+
+    enc_dword_ptr = (uint32_t*)(config_nalu + (config_nalu_len-16));
+    (*enc_dword_ptr) = bswap_32(0);
+    //copy config nalu
+    memcpy(nalu_data, config_nalu, config_nalu_len);
+    // ignore first 4 len bytes
+    memcpy((nalu_data + config_nalu_len), temp, ((*nalu_size)-4));
+
+    enc_dword_ptr = (uint32_t*)nalu_data;
+    (*enc_dword_ptr) = bswap_32(enc_num_nalus + clr_num_nalus);
+    enc_num_nalus = (*enc_dword_ptr);
+    *nalu_size = ((*nalu_size) + config_nalu_len - 4);
+
+    enc_dword_ptr = (uint32_t*)nalu_data;
+    enc_dword_ptr++;
+    (*enc_dword_ptr) = bswap_32(0);
+
+}
+// Create PAVP Session & retrieve associated PAVP AppID.
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::CreatePavpSession(void) {
+    if(!mpLibInstance) {
+        LOGE("mpLibInstance is NULL!");
+        return OMX_ErrorNotReady;
+    }
+    pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
+
+    LOGI("PAVP Heavy session creation...");
+
+    rc = mpLibInstance->pavp_create_session(true);
+    if (rc != pavp_lib_session::status_ok) {
+        LOGE("PAVP Heavy: pavp_create_session failed with error 0x%x", rc);
+        return OMX_ErrorNotReady;
+    }
+
+    LOGI("Get AppId of the PAVP Heavy session...");
+
+    rc = mpLibInstance->pavp_get_app_id(reinterpret_cast<UINT&>(mPAVPAppID));
+    if (rc != pavp_lib_session::status_ok) {
+        LOGE("PAVP Heavy: pavp_get_app_id failed with error 0x%x", rc);
+        return OMX_ErrorNotReady;
+    } else {
+        LOGE("pavp_get_app_id succesful, uiAppId = 0x%x", mPAVPAppID);
+    }
+    return OMX_ErrorNone;
+}
+//PAVP SecPassThrough to communicate with SEC.
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::SecPassThrough(uint8_t* pInput, uint32_t  inSize, uint8_t* pOutput, uint32_t outSize) {
+
+    pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
+
+    if(!mpLibInstance) {
+        LOGE("mpLibInstance is NULL!");
+        return OMX_ErrorNotReady;
+    }
+
+    rc = mpLibInstance->sec_pass_through(
+                        reinterpret_cast<BYTE*>(pInput),
+                        inSize,
+                        reinterpret_cast<BYTE*>(pOutput),
+                        outSize);
+
+    if (rc != pavp_lib_session::status_ok) {
+        LOGE("PAVP Failed: 0x%x", rc);
+        return OMX_ErrorNotReady;
+    }
+    PAVP_CMD_HEADER *pHeader = (PAVP_CMD_HEADER*)pOutput;
+    if (pHeader->Status) {
+        LOGE("SEC failed: wv_set_xcript_key() FAILED 0x%x", pHeader->Status);
+        return OMX_ErrorNotReady;
+    }
+    return OMX_ErrorNone;
+}
+
+// MDRM - Key injection
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::MdrmInjectKey(uint8_t in_session_id, uint8_t* in_key_id) {
+    LOGV("%s", __FUNCTION__);
+    if(!mpLibInstance) {
+        LOGE("mpLibInstance is NULL!");
+        return OMX_ErrorNotReady;
+    }
+    wv2_inject_key_in input;
+    wv2_inject_key_out output;
+    transcript_conf conf;
+
+    conf.drm_type_1_0 = 2;//PR 1 //SS
+    conf.dest_encrypt_mode_25_24 = 1;//PR 0
+
+    input.conf = conf;
+    input.Header.ApiVersion = 0x00010005;
+    input.Header.CommandId =  wv2_inject_key;
+    input.Header.Status = 0;
+    input.Header.BufferLength = sizeof(input)-sizeof(PAVP_CMD_HEADER);
+    input.session_id = in_session_id;
+    input.StreamId = mPAVPAppID;
+    memcpy(input.key_id, in_key_id, 16);
+
+    return SecPassThrough((uint8_t*)&input, sizeof(input), (uint8_t*)&output, sizeof(output));
+}
+
+// Classic - Key injection
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::WvSetTranscriptKey(void) {
+    LOGV("%s", __FUNCTION__);
+    if(!mpLibInstance) {
+        LOGE("mpLibInstance is NULL!");
+        return OMX_ErrorNotReady;
+    }
+    wv_set_xcript_key_in input;
+    wv_set_xcript_key_out output;
+
+    input.Header.ApiVersion = WV_API_VERSION;
+    input.Header.CommandId =  wv_set_xcript_key;
+    input.Header.Status = 0;
+    input.StreamId = mPAVPAppID;
+    input.Header.BufferLength = sizeof(input)-sizeof(PAVP_CMD_HEADER);
+
+    return SecPassThrough((uint8_t*)&input, sizeof(input), (uint8_t*)&output, sizeof(output));
+}
+
+//Classic ProcessVideoFrame
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ClassicProcessVideoFrame(SECVideoBuffer *secBuffer, uint32_t *parsed_data_size) {
+    OMX_ERRORTYPE ret = OMX_ErrorNone;
+
+    LOGV("%s", __FUNCTION__);
+
+    if(!mpLibInstance) {
+        LOGE("mpLibInstance is NULL!");
+        return OMX_ErrorNotReady;
+    }
+
+    wv_heci_process_video_frame_in input;
+    wv_heci_process_video_frame_out output;
+
+    pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
+    input.Header.ApiVersion = WV_API_VERSION;
+    input.Header.CommandId = wv_process_video_frame;
+    input.Header.Status = 0;
+    input.Header.BufferLength = sizeof(input) - sizeof(PAVP_CMD_HEADER);
+    input.num_of_packets = secBuffer->pes_packet_count;
+    input.is_frame_not_encrypted = secBuffer->clear;
+    input.src_offset = secBuffer->base_offset + secBuffer->partitions.src.offset;
+    input.dest_offset = secBuffer->base_offset + secBuffer->partitions.dest.offset;
+    input.metadata_offset = secBuffer->base_offset + secBuffer->partitions.metadata.offset;
+    input.header_offset = secBuffer->base_offset + secBuffer->partitions.headers.offset;
+
+    memset(&output, 0, sizeof(wv_heci_process_video_frame_out));
+
+    ret = SecPassThrough((uint8_t*)&input, sizeof(input), (uint8_t*)&output, sizeof(output));
+    *parsed_data_size = output.parsed_data_size;
+    memcpy(secBuffer->iv, output.iv, 16);
+    secBuffer->mdrm_info.config_len = 0;
+
+    return ret;
+}
+
+//MDRM ProcessVideoFrame
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ModularProcessVideoFrame(SECVideoBuffer *secBuffer, uint32_t *parsed_data_size) {
+    OMX_ERRORTYPE ret = OMX_ErrorNone;
+    LOGV("%s", __FUNCTION__);
+    if(!mpLibInstance) {
+        LOGE("mpLibInstance is NULL!");
+        return OMX_ErrorNotReady;
+    }
+
+    wv2_process_video_frame_in input;
+    wv2_process_video_frame_out output;
+    transcript_conf conf;
+    memset(&conf, 0, sizeof(conf));
+    memset(&input, 0, sizeof(input));
+    memset(&output, 0, sizeof(wv2_process_video_frame_out));
+
+    input.Header.ApiVersion = 0x00010005;
+    input.Header.CommandId = wv2_process_video_frame;
+    input.Header.Status = 0;
+    input.Header.BufferLength = sizeof(input) - sizeof(PAVP_CMD_HEADER);
+
+    memcpy(input.key_id, secBuffer->mdrm_info.key_id, 16);
+    input.key_id_len = secBuffer->mdrm_info.key_id_len;
+    input.session_id = secBuffer->mdrm_info.session_id; //mSessionID?
+    input.header_offset = secBuffer->base_offset + secBuffer->partitions.headers.offset;
+    input.dest_offset = secBuffer->base_offset + secBuffer->partitions.dest.offset;
+
+    conf.drm_type_1_0 = 2;//PR 1 //SS
+    conf.dest_encrypt_mode_25_24 = 1;//PR 0
+    if ( secBuffer->mdrm_info.config_len) {
+	memset(config_nalu, 0, sizeof(config_nalu));
+	pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
+	conf.num_headers_or_packets_15_8 =  2;  //SPS/PPS
+	conf.src_encrypt_mode_17_16 = 0;//clear=0;//PR 1
+	input.conf = conf;
+	input.frame_offset = secBuffer->base_offset + secBuffer->partitions.src.offset;
+	input.metadata_offset = secBuffer->base_offset + secBuffer->partitions.metadata.offset;
+
+        ret = SecPassThrough((uint8_t*)&input, sizeof(input), (uint8_t*)&output, sizeof(output));
+
+	if(ret == OMX_ErrorNone) {
+	    // Assemble parsed frame information
+	    // NALU data
+	    uint8_t *nalu_data = secBuffer->base + secBuffer->partitions.headers.offset;
+	    uint32_t nalu_data_size = output.parsed_data_size;
+	    memcpy(config_nalu, nalu_data, nalu_data_size);
+	    config_nalu_len = nalu_data_size;
+	}
+    }
+
+    if ( ret == OMX_ErrorNone) {
+	conf.num_headers_or_packets_15_8 =  secBuffer->pes_packet_count;  //SS
+	conf.src_encrypt_mode_17_16 = secBuffer->clear?0:1;//clear=0;//PR 1
+	input.conf = conf;
+
+	if (secBuffer->mdrm_info.config_len) {
+	    input.metadata_offset =SEC_DMA_ALIGN( secBuffer->base_offset + secBuffer->partitions.metadata.offset + 24);
+	    input.frame_offset = secBuffer->mdrm_info.config_frame_offset;
+	} else {
+	    input.frame_offset = secBuffer->base_offset + secBuffer->partitions.src.offset;
+	    input.metadata_offset = secBuffer->base_offset + secBuffer->partitions.metadata.offset;
+	}
+        ret = SecPassThrough((uint8_t*)&input, sizeof(input), (uint8_t*)&output, sizeof(output));
+        *parsed_data_size = output.parsed_data_size;
+   }
+   secBuffer->pes_packet_count = 0;
+   return ret;
+}
+
+// Manage PAVP Session - destroy & re-create for Auto-tear-down
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ManagePAVPSession(bool force_recreate) {
+    LOGV("%s", __FUNCTION__);
+
+    // PAVP auto teardown: check if PAVP session is alive
+    bool balive = false;
+    pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
+    rc = mpLibInstance->pavp_is_session_alive(&balive);
+    if (rc != pavp_lib_session::status_ok) {
+        LOGE("pavp_is_session_alive failed with error 0x%x", rc);
+        return  OMX_ErrorNotReady;
+    }
+
+    if (!balive || force_recreate) {
+
+        LOGI("PAVP session is %s", balive?"active":"in-active");
+        //Destroy & re-create
+        LOGI("Destroying the PAVP session...");
+        rc = mpLibInstance->pavp_destroy_session();
+        if (rc != pavp_lib_session::status_ok) {
+            LOGE("pavp_destroy_session failed with error 0x%x", rc);
+            return  OMX_ErrorNotReady;
+        }
+
+        // Frames in the video decoder DPB are encrypted with the
+        // PAVP heavy mode key (IED key) for the destroyed session.
+        // Flush video decoder to remove them.
+        mVideoDecoder->flush();
+
+        mpLibInstance = NULL;
+        mDropUntilIDR = true;
+    }
+    return OMX_ErrorNone;
+
+}
+
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p) {
     OMX_ERRORTYPE ret;
     ret = OMXVideoDecoderBase::PrepareDecodeBuffer(buffer, retain, p);
@@ -129,12 +415,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
 
     if (buffer->nFilledLen == 0) {
         return OMX_ErrorNone;
-    }
-    // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
-    // if flag is set, buffer will only contain codec data.
-    if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
-        LOGV("Received AVC codec data.");
-        return ret;
     }
     p->flag |= HAS_COMPLETE_FRAME;
 
@@ -153,161 +433,88 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         return OMX_ErrorBadParameter;
     }
 
-    pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
+    // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
+    // if flag is set, buffer will only contain codec data.
+    if ( (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) &&
+             (secBuffer->drm_type == DRM_TYPE_CLASSIC_WV)) {
+        LOGV("Received AVC codec data.");
+        return ret;
+    }
 
-    if(!mpLibInstance && secBuffer->pLibInstance) {
-        LOGE("PAVP Heavy session creation...");
-        rc = secBuffer->pLibInstance->pavp_create_session(true);
-        if (rc != pavp_lib_session::status_ok) {
-            LOGE("PAVP Heavy: pavp_create_session failed with error 0x%x", rc);
-            ret = OMX_ErrorNotReady;
-        } else {
-            LOGE("PAVP Heavy session created succesfully");
+    uint32_t parsed_data_size = 0;
+
+    if(secBuffer->drm_type == DRM_TYPE_CLASSIC_WV) {
+
+	if(!mpLibInstance && secBuffer->pLibInstance) {
             mpLibInstance = secBuffer->pLibInstance;
-        }
-        if ( ret == OMX_ErrorNone) {
-            pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
-            wv_set_xcript_key_in input;
-            wv_set_xcript_key_out output;
-
-            input.Header.ApiVersion = WV_API_VERSION;
-            input.Header.CommandId =  wv_set_xcript_key;
-            input.Header.Status = 0;
-            input.Header.BufferLength = sizeof(input)-sizeof(PAVP_CMD_HEADER);
-
-
-            if (secBuffer->pLibInstance) {
-                LOGV("calling wv_set_xcript_key");
-                rc = secBuffer->pLibInstance->sec_pass_through(
-                    reinterpret_cast<BYTE*>(&input),
-                    sizeof(input),
-                    reinterpret_cast<BYTE*>(&output),
-                    sizeof(output));
-                LOGV("wv_set_xcript_key returned %d", rc);
+            if( CreatePavpSession() == OMX_ErrorNone) {
+                ret = WvSetTranscriptKey();
             }
+	}
+        ret = ManagePAVPSession(ret == OMX_ErrorNotReady);
 
-            if (rc != pavp_lib_session::status_ok)
-                LOGE("sec_pass_through:wv_set_xcript_key() failed with error 0x%x", rc);
-
-            if (output.Header.Status) {
-                LOGE("SEC failed: wv_set_xcript_key() FAILED 0x%x", output.Header.Status);
-                ret = OMX_ErrorNotReady;
-            }
+	if ( ret == OMX_ErrorNone) {
+            ret = ClassicProcessVideoFrame(secBuffer, &parsed_data_size);
         }
     }
+    else if(secBuffer->drm_type == DRM_TYPE_MDRM) {
 
-    if(mpLibInstance) {
-        // PAVP auto teardown: check if PAVP session is alive
-        bool balive = false;
-        pavp_lib_session::pavp_lib_code rc = pavp_lib_session::status_ok;
-        rc = mpLibInstance->pavp_is_session_alive(&balive);
-        if (rc != pavp_lib_session::status_ok) {
-            LOGE("pavp_is_session_alive failed with error 0x%x", rc);
-        }
-
-        if (balive == false || (ret == OMX_ErrorNotReady)) {
-
-            LOGE("PAVP session is %s", balive?"active":"in-active");
-            ret = OMX_ErrorNotReady;
-            //Destroy & re-create
-            LOGI("Destroying the PAVP session...");
-            rc = mpLibInstance->pavp_destroy_session();
-            if (rc != pavp_lib_session::status_ok)
-                LOGE("pavp_destroy_session failed with error 0x%x", rc);
-
-            // Frames in the video decoder DPB are encrypted with the
-            // PAVP heavy mode key (IED key) for the destroyed session.
-            // Flush video decoder to remove them.
-            mVideoDecoder->flush();
-
-            mpLibInstance = NULL;
-            mDropUntilIDR = true;
-        }
-    }
-
-    wv_heci_process_video_frame_in input;
-    wv_heci_process_video_frame_out output;
-    if ( ret == OMX_ErrorNone) {
-
-        input.Header.ApiVersion = WV_API_VERSION;
-        input.Header.CommandId = wv_process_video_frame;
-        input.Header.Status = 0;
-        input.Header.BufferLength = sizeof(input) - sizeof(PAVP_CMD_HEADER);
-
-        input.num_of_packets = secBuffer->pes_packet_count;
-        input.is_frame_not_encrypted = secBuffer->clear;
-        input.src_offset = secBuffer->base_offset + secBuffer->partitions.src.offset;
-        input.dest_offset = secBuffer->base_offset + secBuffer->partitions.dest.offset;
-        input.metadata_offset = secBuffer->base_offset + secBuffer->partitions.metadata.offset;
-        input.header_offset = secBuffer->base_offset + secBuffer->partitions.headers.offset;
-
-        memset(&output, 0, sizeof(wv_heci_process_video_frame_out));
-
-        if (secBuffer->pLibInstance) {
-            LOGV("calling wv_process_video_frame");
-            rc = secBuffer->pLibInstance->sec_pass_through(
-                      reinterpret_cast<BYTE*>(&input),
-                      sizeof(input),
-                      reinterpret_cast<BYTE*>(&output),
-                      sizeof(output));
-            LOGV("wv_process_video_frame returned %d", rc);
-
-            if (rc != pavp_lib_session::status_ok) {
-                LOGE("%s PAVP Failed: 0x%x", __FUNCTION__, rc);
-                ret = OMX_ErrorNotReady;
-            }
-
-            if (output.Header.Status != 0x0) {
-                LOGE("%s SEC Failed: wv_process_video_frame: 0x%x", __FUNCTION__, output.Header.Status);
-                ret = OMX_ErrorNotReady;
+	if(!mpLibInstance && secBuffer->pLibInstance) {
+            mpLibInstance = secBuffer->pLibInstance;
+            if( CreatePavpSession() == OMX_ErrorNone) {
+                ret = MdrmInjectKey(secBuffer->mdrm_info.session_id, secBuffer->mdrm_info.key_id);
             }
         }
+        ret = ManagePAVPSession(ret == OMX_ErrorNotReady);
+	if( ret == OMX_ErrorNone) {
+            ret = ModularProcessVideoFrame(secBuffer, &parsed_data_size);
+        }
+    } else  {
+        LOGE("Invalid DRM_TYPE: 0x%x passed!", secBuffer->drm_type);
+        ret = OMX_ErrorNotReady;
     }
 
     SECParsedFrame* parsedFrame = &(mParsedFrames[secureBuffer->index]);
     if(ret == OMX_ErrorNone) {
-        // Assemble parsed frame information
+	// Assemble parsed frame information
+	// NALU data
+	parsedFrame->nalu_data = secBuffer->base + secBuffer->partitions.headers.offset;
+	parsedFrame->nalu_data_size = parsed_data_size;
+	if (secBuffer->mdrm_info.config_len) {
+	    update_config_nalu(parsedFrame->nalu_data, &(parsedFrame->nalu_data_size));
+	}
+	memcpy(parsedFrame->pavp_info.iv, secBuffer->iv, 16);
 
-        // NALU data
-        parsedFrame->nalu_data = secBuffer->base + secBuffer->partitions.headers.offset;
-        parsedFrame->nalu_data_size = output.parsed_data_size;
+	ret = ConstructFrameInfo(secBuffer->base + secBuffer->partitions.dest.offset, buffer->nFilledLen,
+	    &(parsedFrame->pavp_info), parsedFrame->nalu_data, parsedFrame->nalu_data_size,
+	    &(parsedFrame->frame_info));
 
-        // Set up PAVP info
-        memcpy(parsedFrame->pavp_info.iv, output.iv, WV_AES_IV_SIZE);
-
-        // construct frame_info
-        ret = ConstructFrameInfo(secBuffer->base + secBuffer->partitions.dest.offset, secBuffer->frame_size,
-            &(parsedFrame->pavp_info), parsedFrame->nalu_data, parsedFrame->nalu_data_size,
-            &(parsedFrame->frame_info));
-
-        if (parsedFrame->frame_info.num_nalus == 0 ) {
-            LOGE("NALU parsing failed - num_nalus = 0!");
-            ret = OMX_ErrorNotReady;
-        }
-
-        if(mDropUntilIDR) {
-            bool idr = false;
-            for(uint32_t n = 0; n < parsedFrame->frame_info.num_nalus; n++) {
-                if((parsedFrame->frame_info.nalus[n].type & 0x1F) == h264_NAL_UNIT_TYPE_IDR) {
-                    idr = true;
-                    break;
-                }
-            }
-            if(idr) {
-                LOGD("IDR frame found; restoring playback.");
-                mDropUntilIDR = false;
-            } else {
-                LOGD("Dropping non-IDR frame.");
-                ret = OMX_ErrorNotReady;
-            }
-        }
+	if(parsedFrame->frame_info.num_nalus == 0 ) {
+	    LOGE("NALU parsing failed - num_nalus = 0!");
+	    ret = OMX_ErrorNotReady;
+	}
+	if(mDropUntilIDR) {
+	    bool idr = false;
+	    for(uint32_t n = 0; n < parsedFrame->frame_info.num_nalus; n++) {
+		if((parsedFrame->frame_info.nalus[n].type & 0x1F) == h264_NAL_UNIT_TYPE_IDR) {
+		    idr = true;
+		    break;
+		}
+	    }
+	    if(idr) {
+		LOGD("IDR frame found; restoring playback.");
+		mDropUntilIDR = false;
+	    } else {
+		LOGD("Dropping non-IDR frame.");
+		ret = OMX_ErrorNotReady;
+	    }
+	}
     }
-
     if(ret == OMX_ErrorNone) {
-        // Pass frame info to VideoDecoderAVCSecure in VideoDecodeBuffer
-        p->data = (uint8_t *)&(parsedFrame->frame_info);
-        p->size = sizeof(frame_info_t);
-        p->flag = p->flag | IS_SECURE_DATA;
+	// Pass frame info to VideoDecoderAVCSecure in VideoDecodeBuffer
+	p->data = (uint8_t *)&(parsedFrame->frame_info);
+	p->size = sizeof(frame_info_t);
+	p->flag |= IS_SECURE_DATA;
     }
 
     return ret;

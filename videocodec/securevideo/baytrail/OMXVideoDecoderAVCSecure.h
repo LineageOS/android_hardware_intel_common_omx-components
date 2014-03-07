@@ -23,6 +23,10 @@
 #include "widevine.h"
 #include "secvideoparser.h"
 
+#define SEC_DMA_ALIGN(x)            (((x)+0x1F)&(~0x1F))
+#define DRM_TYPE_CLASSIC_WV 0x0
+#define DRM_TYPE_MDRM 0x1 
+
 //  Must match the same structs defined in WVCrypto.h
 #pragma pack(push, 1)
 typedef struct {
@@ -36,6 +40,14 @@ typedef struct {
     sec_partition_t headers;
 } video_partition_t;
 typedef struct {
+    uint8_t config[64];
+    uint8_t config_len;
+    uint32_t config_frame_offset;
+    uint8_t key_id[16];
+    uint32_t key_id_len;
+    uint8_t session_id;
+} mdrm_meta;
+typedef struct {
     pavp_lib_session* pLibInstance;
     uint8_t* base;
     uint32_t size;
@@ -45,6 +57,9 @@ typedef struct {
     uint32_t src_fill;
     uint8_t pes_packet_count;
     uint8_t clear;
+    mdrm_meta mdrm_info;
+    uint8_t drm_type; //0 -> Classic, 1 -> MDRM
+    uint8_t iv[16];
 } SECVideoBuffer;
 typedef struct {
     uint32_t index;
@@ -52,6 +67,97 @@ typedef struct {
 } OMXSecureBuffer;
 #pragma pack(pop)
 
+//Function Codes
+typedef enum {
+      wv2_begin = 0x000C0001,
+    wv2_open_session = wv2_begin,
+      wv2_generate_nonce,
+      wv2_generate_derived_keys,
+      wv2_generate_hmac_signature,
+      wv2_load_keys,
+      wv2_refresh_keys,
+      wv2_select_key,
+      wv2_inject_key,
+      wv2_rewrap_device_RSA_key,
+      wv2_load_device_RSA_key,
+      wv2_generate_RSA_signature,
+      wv2_derived_sessionkeys,
+      wv2_process_video_frame,
+      wv2_decrypt_ctr,
+      wv2_generic_encrypt,
+      wv2_generic_decrypt,
+      wv2_generic_sign,
+      wv2_generic_verify_signature,
+      wv2_close_session,
+      wv2_dbg_get_keys,
+      wv2_delete_nonce,
+} wv2_heci_command_id;
+
+
+typedef struct {
+	uint32_t	dest_encrypt_mode_25_24 : 2;
+	uint32_t	reserved_31_26 : 6;
+	uint32_t	src_encrypt_mode_17_16 : 2;
+	uint32_t	reserved_23_18 : 6;
+	uint32_t	num_headers_or_packets_15_8 : 8;
+	uint32_t	drm_type_1_0 : 2;
+	uint32_t	reserved_7_2 : 6;
+} transcript_conf;
+/*processvidoe frame*/
+typedef struct {
+	PAVP_CMD_HEADER			Header;
+	transcript_conf			conf;
+	uint32_t				key_index;
+	uint32_t				frame_offset;
+	uint32_t				metadata_offset;
+	uint32_t				header_offset;
+	uint32_t				dest_offset;
+        uint8_t             key_id[16];
+} process_video_frame_in;
+typedef struct {
+	PAVP_CMD_HEADER			Header;
+	uint32_t				parsed_data_size;
+        uint8_t             key_id[16];
+        uint8_t             key[16];
+       // uint32_t             frame_size;
+	uint8_t					iv[16];
+} process_video_frame_out;
+
+/*wv2_inject_key*/
+typedef struct {
+      PAVP_CMD_HEADER               Header;
+    uint32_t                        session_id;
+      uint32_t                      StreamId;
+      transcript_conf               conf;
+      uint32_t                      key_id_len;
+      uint8_t                             key_id[16];
+} wv2_inject_key_in;
+
+typedef struct {
+      PAVP_CMD_HEADER               Header;
+//    uint8_t                         enc_content_key[16];
+} wv2_inject_key_out;
+
+
+/*wv2_process_video_frame*/
+typedef struct {
+    PAVP_CMD_HEADER  Header;
+    transcript_conf  conf;
+    uint32_t         session_id;
+    uint32_t         frame_offset;
+    uint32_t         metadata_offset;
+    uint32_t         header_offset;
+    uint32_t         dest_offset;
+    uint32_t         key_id_len;
+    uint8_t          key_id[16];
+} wv2_process_video_frame_in;
+
+//typedef PAVP_CMD_NODATA wv2_process_video_frame_out
+typedef struct {
+    PAVP_CMD_HEADER  Header;
+    uint32_t         parsed_data_size;;
+    //uint8_t          iv[16];    ////////this is temporary
+} wv2_process_video_frame_out;
 
 class OMXVideoDecoderAVCSecure : public OMXVideoDecoderBase {
 public:
@@ -117,6 +223,14 @@ private:
 
     pavp_lib_session *mpLibInstance;
     bool mDropUntilIDR;
+    uint32_t mPAVPAppID;
+    OMX_ERRORTYPE CreatePavpSession(void);
+    OMX_ERRORTYPE SecPassThrough(uint8_t*, uint32_t, uint8_t*, uint32_t);
+    OMX_ERRORTYPE MdrmInjectKey(uint8_t, uint8_t*);
+    OMX_ERRORTYPE WvSetTranscriptKey(void);
+    OMX_ERRORTYPE ManagePAVPSession(bool);
+    OMX_ERRORTYPE ClassicProcessVideoFrame(SECVideoBuffer *secBuffer, uint32_t*);
+    OMX_ERRORTYPE ModularProcessVideoFrame(SECVideoBuffer *secBuffer, uint32_t*);
 };
 
 #endif /* OMX_VIDEO_DECODER_AVC_SECURE_H_ */
