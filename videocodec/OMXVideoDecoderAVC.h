@@ -64,7 +64,7 @@ private:
         EXTRA_REFERENCE_FRAME = 6,
 
         // a typical value for 1080p clips
-        OUTPORT_NATIVE_BUFFER_COUNT = 17,
+        OUTPORT_NATIVE_BUFFER_COUNT = 11,
     };
 
     OMX_VIDEO_PARAM_AVCTYPE mParamAvc;
