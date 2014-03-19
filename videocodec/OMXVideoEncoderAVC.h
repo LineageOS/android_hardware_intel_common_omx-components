@@ -108,7 +108,6 @@ private:
     OMX_NALSTREAMFORMATTYPE mNalStreamFormat;
     OMX_VIDEO_CONFIG_AVCINTRAPERIOD mConfigAvcIntraPeriod;
     OMX_VIDEO_CONFIG_NALSIZE mConfigNalSize;
-    OMX_VIDEO_PARAM_INTEL_BITRATETYPE avcEncParamIntelBitrateType;
     OMX_VIDEO_PARAM_INTEL_AVCVUI mParamIntelAvcVui;
     OMX_VIDEO_CONFIG_INTEL_SLICE_NUMBERS mConfigIntelSliceNumbers;
     VideoParamsAVC *mAVCParams;

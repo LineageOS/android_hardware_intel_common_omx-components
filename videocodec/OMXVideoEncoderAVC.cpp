@@ -929,7 +929,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::GetConfigVideoNalSize(OMX_PTR pStructure) {
 OMX_ERRORTYPE OMXVideoEncoderAVC::SetConfigVideoNalSize(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     Encode_Status retStatus = ENCODE_SUCCESS;
-    if (mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateMax) {
+    if (mParamBitrate.eControlRate == OMX_Video_ControlRateMax) {
         LOGE("SetConfigVideoNalSize failed. Feature is disabled.");
         return OMX_ErrorUnsupportedIndex;
     }
@@ -944,7 +944,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetConfigVideoNalSize(OMX_PTR pStructure) {
     // TODO: return OMX_ErrorIncorrectStateOperation?
     CHECK_SET_CONFIG_STATE();
 
-    if (mParamIntelBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
+    if (mParamBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
         LOGE("SetConfigVideoNalSize failed. Feature is supported only in VCM.");
         return OMX_ErrorUnsupportedSetting;
     }
@@ -970,7 +970,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::GetConfigIntelSliceNumbers(OMX_PTR pStructure)
 OMX_ERRORTYPE OMXVideoEncoderAVC::SetConfigIntelSliceNumbers(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     Encode_Status retStatus = ENCODE_SUCCESS;
-    if (mParamIntelBitrate.eControlRate == OMX_Video_Intel_ControlRateMax) {
+    if (mParamBitrate.eControlRate == OMX_Video_ControlRateMax) {
         LOGE("SetConfigIntelSliceNumbers failed. Feature is disabled.");
         return OMX_ErrorUnsupportedIndex;
     }
@@ -985,7 +985,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetConfigIntelSliceNumbers(OMX_PTR pStructure)
     // TODO: return OMX_ErrorIncorrectStateOperation?
     CHECK_SET_CONFIG_STATE();
 
-    if (mParamIntelBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
+    if (mParamBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
         LOGE("SetConfigIntelSliceNumbers failed. Feature is supported only in VCM.");
         return OMX_ErrorUnsupportedSetting;
     }

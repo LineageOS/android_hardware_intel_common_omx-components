@@ -59,7 +59,6 @@ protected:
     DECLARE_HANDLER(OMXVideoEncoderBase, ParamVideoPortFormat);
     DECLARE_HANDLER(OMXVideoEncoderBase, ParamVideoBitrate);
     DECLARE_HANDLER(OMXVideoEncoderBase, IntelPrivateInfo);
-    DECLARE_HANDLER(OMXVideoEncoderBase, ParamIntelBitrate);
     DECLARE_HANDLER(OMXVideoEncoderBase, ConfigIntelBitrate);
     DECLARE_HANDLER(OMXVideoEncoderBase, ConfigIntelAIR);
     DECLARE_HANDLER(OMXVideoEncoderBase, ParamVideoIntraRefresh);
@@ -78,7 +77,6 @@ protected:
 protected:
     OMX_VIDEO_PARAM_BITRATETYPE mParamBitrate;
     OMX_VIDEO_CONFIG_PRI_INFOTYPE mConfigPriInfo;
-    OMX_VIDEO_PARAM_INTEL_BITRATETYPE mParamIntelBitrate;
     OMX_VIDEO_CONFIG_INTEL_BITRATETYPE mConfigIntelBitrate;
     OMX_VIDEO_CONFIG_INTEL_AIR mConfigIntelAir;
     OMX_VIDEO_PARAM_INTRAREFRESHTYPE mParamVideoRefresh;
