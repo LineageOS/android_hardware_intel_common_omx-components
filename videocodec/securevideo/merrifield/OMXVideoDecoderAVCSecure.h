@@ -47,13 +47,15 @@ protected:
    DECLARE_HANDLER(OMXVideoDecoderAVCSecure, ParamVideoAVCProfileLevel);
 
 private:
-    static OMX_U8* MemAllocIMR(OMX_U32 nSizeBytes, OMX_PTR pUserData);
-    static void MemFreeIMR(OMX_U8 *pBuffer, OMX_PTR pUserData);
-    OMX_U8* MemAllocIMR(OMX_U32 nSizeBytes);
-    void  MemFreeIMR(OMX_U8 *pBuffer);
+    static OMX_U8* MemAllocDataBuffer(OMX_U32 nSizeBytes, OMX_PTR pUserData);
+    static void MemFreeDataBuffer(OMX_U8 *pBuffer, OMX_PTR pUserData);
+    OMX_U8* MemAllocDataBuffer(OMX_U32 nSizeBytes);
+    void  MemFreeDataBuffer(OMX_U8 *pBuffer);
     static void KeepAliveTimerCallback(sigval v);
     void KeepAliveTimerCallback();
-    bool EnableIEDSession(bool enable);
+    //bool EnableIEDSession(bool enable);
+    OMX_ERRORTYPE PrepareClassicWVDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
+    OMX_ERRORTYPE PrepareModularWVDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
 
 private:
     enum {
@@ -75,12 +77,11 @@ private:
     struct IMRSlot {
         uint32_t offset;
         uint8_t *owner;  // pointer to OMX buffer that owns this slot
-    } mIMRSlot[INPORT_ACTUAL_BUFFER_COUNT];
+    } mDataBufferSlot[INPORT_ACTUAL_BUFFER_COUNT];
 
     timer_t mKeepAliveTimer;
 
     bool mSessionPaused;
-    int mDrmDevFd;
 };
 
 #endif /* OMX_VIDEO_DECODER_AVC_SECURE_H_ */
