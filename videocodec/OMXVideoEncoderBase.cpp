@@ -170,6 +170,9 @@ OMX_ERRORTYPE OMXVideoEncoderBase::InitOutputPort(void) {
     mConfigIntelBitrate.nWindowSize = 0; // Window size in milliseconds allowed for bitrate to reach target
     mConfigIntelBitrate.nInitialQP = 0;  // Initial QP for I frames
     mConfigIntelBitrate.nMinQP = 0;
+    mConfigIntelBitrate.nMaxQP = 0;
+    mConfigIntelBitrate.nFrameRate = 0;
+    mConfigIntelBitrate.nTemporalID = 0;
 
     // OMX_VIDEO_CONFIG_INTEL_AIR
     memset(&mConfigIntelAir, 0, sizeof(mConfigIntelAir));
@@ -430,6 +433,8 @@ OMX_ERRORTYPE OMXVideoEncoderBase::BuildHandlerList(void) {
     AddHandler((OMX_INDEXTYPE)OMX_IndexStoreMetaDataInBuffers, GetStoreMetaDataInBuffers, SetStoreMetaDataInBuffers);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtSyncEncoding, GetSyncEncoding, SetSyncEncoding);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtPrependSPSPPS, GetPrependSPSPPS, SetPrependSPSPPS);
+    AddHandler((OMX_INDEXTYPE)OMX_IndexExtNumberOfTemporalLayer, GetTemporalLayerNumber,SetTemporalLayerNumber);
+
     return OMX_ErrorNone;
 }
 
@@ -604,12 +609,14 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigIntelBitrate(OMX_PTR pStructure) {
     configBitRate.rcParams.bitRate = mConfigIntelBitrate.nMaxEncodeBitrate;
     configBitRate.rcParams.initQP = mConfigIntelBitrate.nInitialQP;
     configBitRate.rcParams.minQP = mConfigIntelBitrate.nMinQP;
-    configBitRate.rcParams.maxQP = 0;
+    configBitRate.rcParams.maxQP = mConfigIntelBitrate.nMaxQP;
     configBitRate.rcParams.I_minQP = 0;
     configBitRate.rcParams.I_maxQP = 0;
     configBitRate.rcParams.windowSize = mConfigIntelBitrate.nWindowSize;
     configBitRate.rcParams.targetPercentage = mConfigIntelBitrate.nTargetPercentage;
     configBitRate.rcParams.enableIntraFrameQPControl = 0;
+    configBitRate.rcParams.temporalFrameRate = mConfigIntelBitrate.nFrameRate;
+    configBitRate.rcParams.temporalID = mConfigIntelBitrate.nTemporalID;
     retStatus = mVideoEncoder->setConfig(&configBitRate);
     if(retStatus != ENCODE_SUCCESS) {
         LOGW("failed to set IntelBitrate");
@@ -926,3 +933,31 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetPrependSPSPPS(OMX_PTR pStructure) {
     LOGD("SetPrependSPSPPS success");
     return OMX_ErrorNone;
 };
+
+OMX_ERRORTYPE OMXVideoEncoderBase::GetTemporalLayerNumber(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER* p = static_cast<OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER*>(pStructure);
+
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+    memcpy(p, &mNumberOfTemporalLayer, sizeof(*p));
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoEncoderBase::SetTemporalLayerNumber(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER *p = (OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER *)pStructure;
+    VideoParamsTemporalLayerNumber TemporalLayerNumber;
+
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+
+    LOGE("SetTemporalLayerNumber (enabled = %d)", p->nNumberOfTemporalLayer);
+
+    TemporalLayerNumber.numberOfLayer = p->nNumberOfTemporalLayer;
+    if (mVideoEncoder->setParameters(&TemporalLayerNumber) != ENCODE_SUCCESS)
+        return OMX_ErrorNotReady;
+
+    LOGE("SetTemporalLayerNumber success");
+    return OMX_ErrorNone;
+}
