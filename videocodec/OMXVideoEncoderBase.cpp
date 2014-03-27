@@ -32,7 +32,8 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
     ,mFirstFrame(OMX_TRUE)
     ,mOmxLogLevel(0)
     ,mStoreMetaDataInBuffers(OMX_FALSE)
-    ,mSyncEncoding(OMX_TRUE){
+    ,mSyncEncoding(OMX_TRUE)
+    ,mBlackFramePointer(NULL) {
     mEncoderParams = new VideoParamsCommon();
     if (!mEncoderParams) LOGE("OMX_ErrorInsufficientResources");
 
@@ -60,6 +61,10 @@ OMXVideoEncoderBase::~OMXVideoEncoderBase() {
         }
     }
 
+    if (mBlackFramePointer) {
+        free(mBlackFramePointer);
+        mBlackFramePointer = NULL;
+    }
     // Release video encoder object
     if(mVideoEncoder) {
         releaseVideoEncoder(mVideoEncoder);
@@ -434,7 +439,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::BuildHandlerList(void) {
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtSyncEncoding, GetSyncEncoding, SetSyncEncoding);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtPrependSPSPPS, GetPrependSPSPPS, SetPrependSPSPPS);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtNumberOfTemporalLayer, GetTemporalLayerNumber,SetTemporalLayerNumber);
-
+    AddHandler((OMX_INDEXTYPE)OMX_IndexExtRequestBlackFramePointer, GetBlackFramePointer, GetBlackFramePointer);
     return OMX_ErrorNone;
 }
 
@@ -960,4 +965,37 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetTemporalLayerNumber(OMX_PTR pStructure) {
 
     LOGE("SetTemporalLayerNumber success");
     return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoEncoderBase::GetBlackFramePointer(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_VIDEO_INTEL_REQUEST_BALCK_FRAME_POINTER *p = (OMX_VIDEO_INTEL_REQUEST_BALCK_FRAME_POINTER *)pStructure;
+
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, INPORT_INDEX);
+
+    PortVideo *port_in = static_cast<PortVideo *>(ports[INPORT_INDEX]);
+    const OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionInput = port_in->GetPortDefinition();
+    OMX_U32 width = paramPortDefinitionInput->format.video.nFrameWidth;
+    OMX_U32 height = paramPortDefinitionInput->format.video.nFrameHeight;
+    OMX_U32 lumaSize = width * height;
+    OMX_U32 bufferSize = width * height * 3 / 2;
+
+    if(mBlackFramePointer) {
+        free(mBlackFramePointer);
+        mBlackFramePointer = NULL;
+    } else {
+        mBlackFramePointer = (OMX_PTR)memalign(4096, bufferSize); // align to page size
+        if(!mBlackFramePointer) {
+            return OMX_ErrorInsufficientResources;
+        }
+        memset(mBlackFramePointer, 0x0, lumaSize);
+        memset(mBlackFramePointer + lumaSize, 0x80, lumaSize / 2);
+        p->nFramePointer = (OMX_U32)mBlackFramePointer;
+    }
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoEncoderBase::SetBlackFramePointer(OMX_PTR pStructure) {
+    return OMX_ErrorUnsupportedSetting;
 }

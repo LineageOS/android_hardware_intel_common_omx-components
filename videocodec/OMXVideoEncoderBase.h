@@ -71,6 +71,7 @@ protected:
     DECLARE_HANDLER(OMXVideoEncoderBase, SyncEncoding);
     DECLARE_HANDLER(OMXVideoEncoderBase, PrependSPSPPS);
     DECLARE_HANDLER(OMXVideoEncoderBase, TemporalLayerNumber);
+    DECLARE_HANDLER(OMXVideoEncoderBase, BlackFramePointer);
 
 protected:
     virtual OMX_ERRORTYPE SetVideoEncoderParam();
@@ -95,6 +96,7 @@ protected:
     OMX_BOOL mStoreMetaDataInBuffers;
     OMX_BOOL mSyncEncoding;
     int32_t mOmxLogLevel;
+    OMX_PTR mBlackFramePointer;
 
 private:
 
