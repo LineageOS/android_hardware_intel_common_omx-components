@@ -226,15 +226,10 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareConfigBuffer(VideoConfigBuffer *p
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareClassicWVDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
-    OMX_ERRORTYPE ret;
 
-    // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
-    // if flag is set, buffer will only contain codec data.
+   OMX_ERRORTYPE ret = OMX_ErrorNone;
 
-   if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
-       LOGV("Received AVC codec data.");
-       return ret;
-   }
+
    p->flag |= HAS_COMPLETE_FRAME;
 
    if (buffer->nOffset != 0) {
@@ -333,8 +328,16 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
     }
 
     DataBuffer *dataBuffer = (DataBuffer *)buffer->pBuffer;
-    if(dataBuffer->drmScheme == DRM_SCHEME_WV_CLASSIC)
+    if(dataBuffer->drmScheme == DRM_SCHEME_WV_CLASSIC){
+
+        // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
+        // if flag is set, buffer will only contain codec data.
+        if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
+               LOGV("Received AVC codec data.");
+               return ret;
+        }
         return PrepareClassicWVDecodeBuffer(buffer, retain, p);
+    }
     else if(dataBuffer->drmScheme == DRM_SCHEME_WV_MODULAR)
         return PrepareModularWVDecodeBuffer(buffer, retain, p);
     return ret;
