@@ -960,7 +960,7 @@ OMX_COLOR_FORMATTYPE OMXVideoDecoderBase::GetOutputColorFormat(int width, int he
 #ifndef VED_TILING
     return OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
 #else
-    if (width > 1280) {
+    if (width > 1280 && width <= 2048) {
         LOGI("HD Video and use tiled format");
         return OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
     } else {
