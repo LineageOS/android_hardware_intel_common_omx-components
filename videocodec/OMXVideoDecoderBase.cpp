@@ -701,6 +701,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
     this->ports[INPORT_INDEX]->SetPortDefinition(&paramPortDefinitionInput, true);
     this->ports[OUTPORT_INDEX]->SetPortDefinition(&paramPortDefinitionOutput, true);
 
+    if (mWorkingMode == GRAPHICBUFFER_MODE) {
+        // Make sure va_destroySurface is called before graphicbuffer is freed in case of port setting changed
+        mVideoDecoder->freeSurfaceBuffers();
+    }
     this->ports[OUTPORT_INDEX]->ReportPortSettingsChanged();
     return OMX_ErrorNone;
 }
