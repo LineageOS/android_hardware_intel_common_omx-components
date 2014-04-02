@@ -50,6 +50,7 @@ private:
         INPORT_MIN_BUFFER_COUNT = 1,
         INPORT_ACTUAL_BUFFER_COUNT = 5,
         INPORT_BUFFER_SIZE = 1382400,
+
         OUTPORT_NATIVE_BUFFER_COUNT = 15,
     };
 

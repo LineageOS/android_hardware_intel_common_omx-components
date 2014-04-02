@@ -29,6 +29,7 @@ OMXVideoDecoderWMV::OMXVideoDecoderWMV() {
     if (!mVideoDecoder) {
         LOGE("createVideoDecoder failed for \"%s\"", WMV_MIME_TYPE);
     }
+    mNativeBufferCount = OUTPORT_NATIVE_BUFFER_COUNT;
     BuildHandlerList();
 }
 

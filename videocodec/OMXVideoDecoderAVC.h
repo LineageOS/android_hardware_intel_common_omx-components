@@ -39,6 +39,7 @@ protected:
    virtual OMX_ERRORTYPE PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
 
    virtual OMX_ERRORTYPE BuildHandlerList(void);
+   virtual OMX_ERRORTYPE SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p);
    virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width, int height);
    DECLARE_HANDLER(OMXVideoDecoderAVC, ParamVideoAvc);
    DECLARE_HANDLER(OMXVideoDecoderAVC, ParamIntelAVCDecodeSettings);
@@ -65,6 +66,8 @@ private:
 
         // a typical value for 1080p clips
         OUTPORT_NATIVE_BUFFER_COUNT = 11,
+
+        MAX_OUTPORT_BUFFER_COUNT = 23,
     };
 
     OMX_VIDEO_PARAM_AVCTYPE mParamAvc;

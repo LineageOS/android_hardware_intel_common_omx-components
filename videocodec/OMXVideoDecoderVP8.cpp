@@ -29,6 +29,8 @@ OMXVideoDecoderVP8::OMXVideoDecoderVP8() {
     if (!mVideoDecoder) {
         LOGE("createVideoDecoder failed for \"%s\"", VP8_MIME_TYPE);
     }
+    // Override default native buffer count defined in the base class
+    mNativeBufferCount = OUTPORT_NATIVE_BUFFER_COUNT;
     BuildHandlerList();
 }
 

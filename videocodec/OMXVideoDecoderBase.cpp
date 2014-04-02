@@ -867,7 +867,11 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
     OMX_PARAM_PORTDEFINITIONTYPE port_def;
     memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
     port_def.nBufferCountMin = 1;
-    port_def.nBufferCountActual = mNativeBufferCount;
+    if (mEnableAdaptivePlayback) {
+        SetMaxOutputBufferCount(&port_def);
+    } else {
+        port_def.nBufferCountActual = mNativeBufferCount;
+    }
     port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
     port_def.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
     port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;
@@ -967,4 +971,8 @@ OMX_COLOR_FORMATTYPE OMXVideoDecoderBase::GetOutputColorFormat(int width, int he
         return OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
     }
 #endif
+}
+
+OMX_ERRORTYPE OMXVideoDecoderBase::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p) {
+    return OMX_ErrorNone;
 }

@@ -55,6 +55,7 @@ protected:
             OMX_U32 numberBuffers);
     virtual OMX_ERRORTYPE ProcessorReset(void);
     virtual bool IsAllBufferAvailable(void);
+    virtual OMX_ERRORTYPE SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p);
     virtual OMX_ERRORTYPE ProcessorPreFillBuffer(OMX_BUFFERHEADERTYPE* buffer);
     virtual OMX_ERRORTYPE ProcessorPreFreeBuffer(OMX_U32 nPortIndex,OMX_BUFFERHEADERTYPE * pBuffer);
     virtual OMX_ERRORTYPE PrepareConfigBuffer(VideoConfigBuffer *p);

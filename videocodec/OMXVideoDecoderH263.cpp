@@ -29,6 +29,7 @@ OMXVideoDecoderH263::OMXVideoDecoderH263() {
     if (!mVideoDecoder) {
         LOGE("createVideoDecoder failed for \"%s\"", H263_MIME_TYPE);
     }
+    mNativeBufferCount = OUTPORT_NATIVE_BUFFER_COUNT;
     BuildHandlerList();
 }
 
