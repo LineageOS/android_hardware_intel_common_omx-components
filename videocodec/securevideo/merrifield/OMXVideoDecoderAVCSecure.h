@@ -73,6 +73,7 @@ private:
     };
 
     OMX_VIDEO_PARAM_AVCTYPE mParamAvc;
+    uint32_t mDrmScheme;
 
     struct IMRSlot {
         uint32_t offset;
