@@ -872,7 +872,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetPrependSPSPPS(OMX_PTR pStructure) {
 
 OMX_ERRORTYPE OMXVideoEncoderBase::GetTemporalLayerNumber(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
-    OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER* p = static_cast<OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER*>(pStructure);
+    OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER* p = static_cast<OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER*>(pStructure);
 
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
@@ -882,7 +882,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::GetTemporalLayerNumber(OMX_PTR pStructure) {
 
 OMX_ERRORTYPE OMXVideoEncoderBase::SetTemporalLayerNumber(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
-    OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER *p = (OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER *)pStructure;
+    OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER *p = (OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER *)pStructure;
     VideoParamsTemporalLayerNumber TemporalLayerNumber;
 
     CHECK_TYPE_HEADER(p);

@@ -83,7 +83,7 @@ protected:
     OMX_CONFIG_FRAMERATETYPE  mConfigFramerate;
     OMX_VIDEO_PARAM_INTEL_ADAPTIVE_SLICE_CONTROL mParamIntelAdaptiveSliceControl;
     OMX_VIDEO_PARAM_PROFILELEVELTYPE mParamProfileLevel;
-    OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER mNumberOfTemporalLayer;
+    OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER mNumberOfTemporalLayer;
 
     IVideoEncoder *mVideoEncoder;
     VideoParamsCommon *mEncoderParams;
