@@ -764,6 +764,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamVideoAvc(OMX_PTR pStructure) {
     memcpy(&mParamAvc, p, sizeof(mParamAvc));
     mVideoEncoder->getParameters(mAVCParams);
     mAVCParams->bEntropyCodingCABAC = mParamAvc.bEntropyCodingCABAC;
+    mAVCParams->bDirect8x8Inference = mParamAvc.bDirect8x8Inference;
     mVideoEncoder->setParameters(mAVCParams);
 
 
