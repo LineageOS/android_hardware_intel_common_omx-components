@@ -146,6 +146,15 @@ OMX_COLOR_FORMATTYPE OMXVideoDecoderMPEG4::GetOutputColorFormat(int width, int h
 #endif
 }
 
+OMX_ERRORTYPE OMXVideoDecoderMPEG4::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p) {
+    OMX_ERRORTYPE ret;
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+
+    p->nBufferCountActual = OUTPORT_NATIVE_BUFFER_COUNT;
+    return OMXVideoDecoderBase::SetMaxOutputBufferCount(p);
+}
+
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.MPEG4", "video_decoder.mpeg4", OMXVideoDecoderMPEG4);
 
 

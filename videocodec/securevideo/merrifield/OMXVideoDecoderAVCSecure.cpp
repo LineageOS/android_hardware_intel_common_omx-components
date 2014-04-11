@@ -487,4 +487,13 @@ void OMXVideoDecoderAVCSecure::KeepAliveTimerCallback() {
     }
 }
 
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p) {
+    OMX_ERRORTYPE ret;
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+
+    p->nBufferCountActual = OUTPORT_NATIVE_BUFFER_COUNT;
+    return OMXVideoDecoderBase::SetMaxOutputBufferCount(p);
+}
+
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.AVC.secure", "video_decoder.avc", OMXVideoDecoderAVCSecure);

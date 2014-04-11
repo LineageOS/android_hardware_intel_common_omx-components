@@ -121,6 +121,14 @@ OMX_COLOR_FORMATTYPE OMXVideoDecoderVP8::GetOutputColorFormat(int width, int hei
 #endif
 }
 
+OMX_ERRORTYPE OMXVideoDecoderVP8::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p) {
+    OMX_ERRORTYPE ret;
+    CHECK_TYPE_HEADER(p);
+    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
+
+    p->nBufferCountActual = OUTPORT_NATIVE_BUFFER_COUNT;
+    return OMXVideoDecoderBase::SetMaxOutputBufferCount(p);
+}
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.VP8", "video_decoder.vp8", OMXVideoDecoderVP8);
 
 

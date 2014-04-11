@@ -177,6 +177,7 @@ protected:
    virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width, int height);
 
    virtual OMX_ERRORTYPE BuildHandlerList(void);
+   virtual OMX_ERRORTYPE SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p);
    DECLARE_HANDLER(OMXVideoDecoderAVCSecure, ParamVideoAvc);
    DECLARE_HANDLER(OMXVideoDecoderAVCSecure, ParamVideoAVCProfileLevel);
    DECLARE_HANDLER(OMXVideoDecoderAVCSecure, NativeBufferMode);
