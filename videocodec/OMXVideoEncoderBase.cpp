@@ -884,6 +884,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetTemporalLayerNumber(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER *p = (OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER *)pStructure;
     VideoParamsTemporalLayerNumber TemporalLayerNumber;
+    OMX_U32 i;
 
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
@@ -891,6 +892,10 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetTemporalLayerNumber(OMX_PTR pStructure) {
     LOGE("SetTemporalLayerNumber (enabled = %d)", p->nNumberOfTemporalLayer);
 
     TemporalLayerNumber.numberOfLayer = p->nNumberOfTemporalLayer;
+    TemporalLayerNumber.nPeriodicity = p->nPeriodicity;
+    for(i=0;i<p->nPeriodicity;i++)
+        TemporalLayerNumber.nLayerID[i] = p->nLayerID[i];
+
     if (mVideoEncoder->setParameters(&TemporalLayerNumber) != ENCODE_SUCCESS)
         return OMX_ErrorNotReady;
 
