@@ -702,6 +702,11 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::GetParamVideoAvc(OMX_PTR pStructure) {
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
 
     mVideoEncoder->getParameters(mAVCParams);
+    if(mParamAvc.eProfile == OMX_VIDEO_AVCProfileHigh)
+    {
+        mAVCParams->bEntropyCodingCABAC = 1;
+        mAVCParams->bDirect8x8Inference = 1;
+    }
     mParamAvc.bEntropyCodingCABAC = (OMX_BOOL)mAVCParams->bEntropyCodingCABAC;
     mParamAvc.bWeightedPPrediction = (OMX_BOOL)mAVCParams->bWeightedPPrediction;
     mParamAvc.nRefIdx10ActiveMinus1 = mAVCParams->refIdx10ActiveMinus1;
@@ -765,6 +770,10 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamVideoAvc(OMX_PTR pStructure) {
     mVideoEncoder->getParameters(mAVCParams);
     mAVCParams->bEntropyCodingCABAC = mParamAvc.bEntropyCodingCABAC;
     mAVCParams->bDirect8x8Inference = mParamAvc.bDirect8x8Inference;
+    if(mParamAvc.eProfile == OMX_VIDEO_AVCProfileBaseline){
+        mAVCParams->bEntropyCodingCABAC = 0;
+        mAVCParams->bDirect8x8Inference = 0;
+    }
     mVideoEncoder->setParameters(mAVCParams);
 
 
