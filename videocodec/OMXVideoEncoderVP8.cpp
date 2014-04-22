@@ -115,8 +115,18 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::ProcessorProcess(OMX_BUFFERHEADERTYPE **buffer
 
     {
         outBuf.format = OUTPUT_EVERYTHING;
-        mVideoEncoder->getOutput(&outBuf);
-        CHECK_ENCODE_STATUS("getOutput");
+        ret = mVideoEncoder->getOutput(&outBuf);
+        //CHECK_ENCODE_STATUS("getOutput");
+        if(ret == ENCODE_NO_REQUEST_DATA) {
+            mFrameRetrieved = OMX_TRUE;
+            retains[OUTPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+            if (mSyncEncoding)
+                retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+            else
+                retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+
+            goto out;
+        }
 
         LOGV("VP8 encode output data size = %d", outBuf.dataSize);
 
