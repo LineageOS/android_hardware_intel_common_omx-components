@@ -26,6 +26,7 @@
 
 extern "C" {
 #include <sepdrm.h>
+#include <pr_drm_api.h>
 #include <fcntl.h>
 #include <linux/psb_drm.h>
 #include "xf86drm.h"
@@ -50,6 +51,7 @@ static const char* AVC_SECURE_MIME_TYPE = "video/avc-secure";
 #define DRM_SCHEME_NONE                 0
 #define DRM_SCHEME_WV_CLASSIC           1
 #define DRM_SCHEME_WV_MODULAR           2
+#define DRM_SCHEME_PLAYREADY            3
 
 //#pragma pack(push, 1)
 struct DataBuffer {
@@ -57,6 +59,8 @@ struct DataBuffer {
     uint8_t  *data;
     uint8_t  clear;
     uint32_t drmScheme;
+    uint32_t session_id;    //used by PlayReady only
+    uint32_t flags;         //used by PlayReady only
 };
 //#pragma pack(pop)
 
@@ -325,6 +329,80 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareModularWVDecodeBuffer(OMX_BUFFERH
 }
 
 
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePlayReadyDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
+    OMX_ERRORTYPE ret = OMX_ErrorNone;
+
+    // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
+    // if flag is set, buffer will only contain codec data.
+    if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
+        LOGV("PR: Received codec data.");
+        return ret;
+    }
+    p->flag |= HAS_COMPLETE_FRAME;
+
+    if (buffer->nOffset != 0) {
+        LOGW("PR:buffer offset %lu is not zero!!!", buffer->nOffset);
+    }
+
+    DataBuffer *dataBuffer = (DataBuffer *)buffer->pBuffer;
+    if (dataBuffer->clear) {
+        p->data = dataBuffer->data + buffer->nOffset;
+        p->size = buffer->nFilledLen;
+    } else {
+        dataBuffer->size = NALU_BUFFER_SIZE;
+        struct drm_nalu_headers nalu_headers;
+        nalu_headers.p_enc_ciphertext = dataBuffer->data;
+
+        // TODO: NALU Buffer is supposed to be 4k but using 1k, fix it once chaabi fix is there
+        nalu_headers.hdrs_buf_len = NALU_HEADER_LENGTH;
+        nalu_headers.frame_size = buffer->nFilledLen;
+        // Make sure that NALU header frame size is 16 bytes aligned
+        nalu_headers.frame_size = (nalu_headers.frame_size + 0xF) & (~0xF);
+        // Use same video buffer to fill NALU headers returned by chaabi,
+        // Adding 4 because the first 4 bytes after databuffer will be used to store length of NALU headers
+        if((nalu_headers.frame_size + NALU_HEADER_LENGTH) > INPORT_BUFFER_SIZE){
+            LOGE("Not enough buffer for NALU headers");
+            return OMX_ErrorOverflow;
+        }
+
+        nalu_headers.p_hdrs_buf = (uint8_t *)(dataBuffer->data + nalu_headers.frame_size + 4);
+        nalu_headers.parse_size = buffer->nFilledLen;
+
+        uint32_t res = drm_pr_return_naluheaders(dataBuffer->session_id, &nalu_headers);
+
+        if (res == DRM_FAIL_FW_SESSION || !nalu_headers.hdrs_buf_len) {
+            LOGW("drm_ReturnNALUHeaders failed. Session is disabled.");
+            mSessionPaused = true;
+            ret =  OMX_ErrorNotReady;
+        } else if (res != 0) {
+            mSessionPaused = false;
+            LOGE("drm_pr_return_naluheaders failed. Error = %#x, frame_size: %d, len = %lu", res, nalu_headers.frame_size, buffer->nFilledLen);
+            ret = OMX_ErrorHardware;
+        } else {
+           mSessionPaused = false;
+
+           // If chaabi returns 0 NALU headers fill the frame size to zero.
+           if (!nalu_headers.hdrs_buf_len) {
+               p->size = 0;
+               return ret;
+           }
+           else{
+               // NALU headers are appended to encrypted video bitstream
+               // |...encrypted video bitstream (16 bytes aligned)...| 4 bytes of header size |...NALU headers..|
+               uint32_t *ptr = (uint32_t*)(dataBuffer->data + nalu_headers.frame_size);
+               *ptr = nalu_headers.hdrs_buf_len;
+               p->data = dataBuffer->data;
+               p->size = nalu_headers.frame_size;
+               p->flag |= IS_SECURE_DATA;
+           }
+       }
+    }
+
+    // reset Data size
+    dataBuffer->size = NALU_BUFFER_SIZE;
+    return ret;
+}
+
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p) {
     OMX_ERRORTYPE ret;
 
@@ -350,6 +428,11 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
     else if(dataBuffer->drmScheme == DRM_SCHEME_WV_MODULAR) {
         mDrmScheme = DRM_SCHEME_WV_MODULAR;
         return PrepareModularWVDecodeBuffer(buffer, retain, p);
+    }
+    else if(dataBuffer->drmScheme == DRM_SCHEME_PLAYREADY)
+    {
+        mDrmScheme = DRM_SCHEME_PLAYREADY;
+        return  PreparePlayReadyDecodeBuffer(buffer, retain, p);
     }
     return ret;
 }

@@ -368,6 +368,9 @@ LOCAL_SHARED_LIBRARIES += \
     libsepdrm_cc54 \
     libdx_cc7
 
+LOCAL_C_INCLUDES += $(TOP)/vendor/intel/hardware/cc54/libsepdrm/libdrm/common/inc \
+                    $(TOP)/vendor/intel/hardware/cc54/libsepdrm/libdrm/inc \
+
 LOCAL_SRC_FILES += securevideo/moorefield/OMXVideoDecoderAVCSecure.cpp
 
 LOCAL_CFLAGS += -DVED_TILING
