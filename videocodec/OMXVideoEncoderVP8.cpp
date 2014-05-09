@@ -40,10 +40,10 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     paramPortDefinitionOutput->format.video.eCompressionFormat = OMX_VIDEO_CodingVP8;
 
     // OMX_VIDEO_PARAM_INTEL_NUMBER_OF_TEMPORAL_LAYER
-    memset(&mNumberOfTemporalLayer, 0, sizeof(mNumberOfTemporalLayer));
-    SetTypeHeader(&mNumberOfTemporalLayer, sizeof(mNumberOfTemporalLayer));
-    mNumberOfTemporalLayer.nPortIndex = OUTPORT_INDEX;
-    mNumberOfTemporalLayer.nNumberOfTemporalLayer = 1;//default value is 1
+    memset(&mTemporalLayer, 0, sizeof(mTemporalLayer));
+    SetTypeHeader(&mTemporalLayer, sizeof(mTemporalLayer));
+    mTemporalLayer.nPortIndex = OUTPORT_INDEX;
+    mTemporalLayer.nNumberOfTemporalLayer = 1;//default value is 1
 
     mParamProfileLevel.eProfile = OMX_VIDEO_VP8ProfileMain;
     mParamProfileLevel.eLevel = OMX_VIDEO_VP8Level_Version3;
@@ -208,7 +208,6 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::BuildHandlerList(void) {
     OMXVideoEncoderBase::BuildHandlerList();
     AddHandler((OMX_INDEXTYPE)OMX_IndexParamVideoVp8, GetParamVideoVp8, SetParamVideoVp8);
     AddHandler((OMX_INDEXTYPE)OMX_IndexConfigVideoVp8ReferenceFrame, GetConfigVideoVp8ReferenceFrame, SetConfigVideoVp8ReferenceFrame);
-    AddHandler((OMX_INDEXTYPE)OMX_IndexExtVP8ForceKFrame, GetConfigVp8ForceKFrame, SetConfigVp8ForceKFrame);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtVP8MaxFrameSizeRatio, GetConfigVp8MaxFrameSizeRatio, SetConfigVp8MaxFrameSizeRatio);
 
     return OMX_ErrorNone;
@@ -266,33 +265,6 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVideoVp8ReferenceFrame(OMX_PTR pStruc
     retStatus = mVideoEncoder->setConfig(&configVP8ReferenceFrame);
     if(retStatus != ENCODE_SUCCESS) {
         LOGW("Failed to set reference frame");
-    }
-    return OMX_ErrorNone;
-}
-
-OMX_ERRORTYPE OMXVideoEncoderVP8::GetConfigVp8ForceKFrame(OMX_PTR pStructure) {
-
-    return OMX_ErrorNone;
-}
-
-OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVp8ForceKFrame(OMX_PTR pStructure) {
-    OMX_ERRORTYPE ret;
-    Encode_Status retStatus = ENCODE_SUCCESS;
-    OMX_VIDEO_CONFIG_INTEL_VP8_FORCE_KFRAME *p = (OMX_VIDEO_CONFIG_INTEL_VP8_FORCE_KFRAME*) pStructure;
-    CHECK_TYPE_HEADER(p);
-    CHECK_PORT_INDEX(p, OUTPORT_INDEX);
-
-    CHECK_SET_CONFIG_STATE();
-
-    VideoConfigVP8 configVP8;
-    configVP8.force_kf = p->bForceKFrame;
-    configVP8.refresh_entropy_probs = 0;
-    configVP8.value = 0;
-    configVP8.sharpness_level = 2;
-
-    retStatus = mVideoEncoder->setConfig(&configVP8);
-    if(retStatus != ENCODE_SUCCESS) {
-        LOGW("Failed to set vp8 force frame");
     }
     return OMX_ErrorNone;
 }

@@ -17,7 +17,6 @@ class OMXVideoEncoderVP8 : public OMXVideoEncoderBase {
         virtual OMX_ERRORTYPE SetVideoEncoderParam();
         DECLARE_HANDLER(OMXVideoEncoderVP8, ParamVideoVp8);
         DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigVideoVp8ReferenceFrame);
-        DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigVp8ForceKFrame);
         DECLARE_HANDLER(OMXVideoEncoderVP8, ConfigVp8MaxFrameSizeRatio);
     private:
         enum {

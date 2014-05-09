@@ -163,7 +163,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::InitOutputPort(void) {
     memset(&mConfigIntelBitrate, 0, sizeof(mConfigIntelBitrate));
     SetTypeHeader(&mConfigIntelBitrate, sizeof(mConfigIntelBitrate));
     mConfigIntelBitrate.nPortIndex = OUTPORT_INDEX;
-    mConfigIntelBitrate.nMaxEncodeBitrate = 4000 * 1024; // Maximum bitrate
+    mConfigIntelBitrate.nMaxEncodeBitrate = 0; // Maximum bitrate
     mConfigIntelBitrate.nTargetPercentage = 95; // Target bitrate as percentage of maximum bitrate; e.g. 95 is 95%
     mConfigIntelBitrate.nWindowSize = 0; // Window size in milliseconds allowed for bitrate to reach target
     mConfigIntelBitrate.nInitialQP = 0;  // Initial QP for I frames
@@ -403,7 +403,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::BuildHandlerList(void) {
     AddHandler((OMX_INDEXTYPE)OMX_IndexStoreMetaDataInBuffers, GetStoreMetaDataInBuffers, SetStoreMetaDataInBuffers);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtSyncEncoding, GetSyncEncoding, SetSyncEncoding);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtPrependSPSPPS, GetPrependSPSPPS, SetPrependSPSPPS);
-    AddHandler((OMX_INDEXTYPE)OMX_IndexExtNumberOfTemporalLayer, GetTemporalLayerNumber,SetTemporalLayerNumber);
+    AddHandler((OMX_INDEXTYPE)OMX_IndexExtTemporalLayer, GetTemporalLayer,SetTemporalLayer);
     AddHandler((OMX_INDEXTYPE)OMX_IndexExtRequestBlackFramePointer, GetBlackFramePointer, GetBlackFramePointer);
     return OMX_ErrorNone;
 }
@@ -870,36 +870,36 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetPrependSPSPPS(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 };
 
-OMX_ERRORTYPE OMXVideoEncoderBase::GetTemporalLayerNumber(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderBase::GetTemporalLayer(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER* p = static_cast<OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER*>(pStructure);
 
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
-    memcpy(p, &mNumberOfTemporalLayer, sizeof(*p));
+    memcpy(p, &mTemporalLayer, sizeof(*p));
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderBase::SetTemporalLayerNumber(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderBase::SetTemporalLayer(OMX_PTR pStructure) {
     OMX_ERRORTYPE ret;
     OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER *p = (OMX_VIDEO_PARAM_INTEL_TEMPORAL_LAYER *)pStructure;
-    VideoParamsTemporalLayerNumber TemporalLayerNumber;
+    VideoParamsTemporalLayer TemporalLayer;
     OMX_U32 i;
 
     CHECK_TYPE_HEADER(p);
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
 
-    LOGE("SetTemporalLayerNumber (enabled = %d)", p->nNumberOfTemporalLayer);
+    LOGE("SetTemporalLayer (enabled = %d)", p->nNumberOfTemporalLayer);
 
-    TemporalLayerNumber.numberOfLayer = p->nNumberOfTemporalLayer;
-    TemporalLayerNumber.nPeriodicity = p->nPeriodicity;
+    TemporalLayer.numberOfLayer = p->nNumberOfTemporalLayer;
+    TemporalLayer.nPeriodicity = p->nPeriodicity;
     for(i=0;i<p->nPeriodicity;i++)
-        TemporalLayerNumber.nLayerID[i] = p->nLayerID[i];
+        TemporalLayer.nLayerID[i] = p->nLayerID[i];
 
-    if (mVideoEncoder->setParameters(&TemporalLayerNumber) != ENCODE_SUCCESS)
+    if (mVideoEncoder->setParameters(&TemporalLayer) != ENCODE_SUCCESS)
         return OMX_ErrorNotReady;
 
-    LOGE("SetTemporalLayerNumber success");
+    LOGE("SetTemporalLayer success");
     return OMX_ErrorNone;
 }
 
