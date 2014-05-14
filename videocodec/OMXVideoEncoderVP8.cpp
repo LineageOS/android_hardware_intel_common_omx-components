@@ -83,8 +83,10 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::ProcessorProcess(OMX_BUFFERHEADERTYPE **buffer
     OMX_U32 outflags = 0;
     OMX_ERRORTYPE oret = OMX_ErrorNone;
 
-    LOGV_IF(buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS,
-            "%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
+    if(buffers[INPORT_INDEX]->nFlags & OMX_BUFFERFLAG_EOS) {
+        LOGV("%s(),%d: got OMX_BUFFERFLAG_EOS\n", __func__, __LINE__);
+        outflags |= OMX_BUFFERFLAG_EOS;
+    }
 
     if (!buffers[INPORT_INDEX]->nFilledLen) {
         LOGV("%s(),%d: input buffer's nFilledLen is zero\n",  __func__, __LINE__);
@@ -93,6 +95,8 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::ProcessorProcess(OMX_BUFFERHEADERTYPE **buffer
 
     inBuf.data = buffers[INPORT_INDEX]->pBuffer + buffers[INPORT_INDEX]->nOffset;
     inBuf.size = buffers[INPORT_INDEX]->nFilledLen;
+    inBuf.type = FTYPE_UNKNOWN;
+    inBuf.timeStamp = buffers[INPORT_INDEX]->nTimeStamp;
 
     outBuf.data =
         buffers[OUTPORT_INDEX]->pBuffer + buffers[OUTPORT_INDEX]->nOffset;
@@ -123,7 +127,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::ProcessorProcess(OMX_BUFFERHEADERTYPE **buffer
             if (mSyncEncoding)
                 retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
             else
-                retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+                retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
 
             goto out;
         }
@@ -145,7 +149,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::ProcessorProcess(OMX_BUFFERHEADERTYPE **buffer
             if (mSyncEncoding)
                 retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
             else
-                retains[INPORT_INDEX] = BUFFER_RETAIN_ACCUMULATE;
+                retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
 
         } else {
             retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;  //get again
