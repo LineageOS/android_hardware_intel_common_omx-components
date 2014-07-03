@@ -55,9 +55,9 @@ private:
     static void KeepAliveTimerCallback(sigval v);
     void KeepAliveTimerCallback();
     //bool EnableIEDSession(bool enable);
-    OMX_ERRORTYPE PrepareClassicWVDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
-    OMX_ERRORTYPE PrepareModularWVDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
-    OMX_ERRORTYPE PreparePlayReadyDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
+    OMX_ERRORTYPE PrepareWVCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
+    OMX_ERRORTYPE PrepareCENCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
+    OMX_ERRORTYPE PreparePRASFDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
 private:
     enum {
         // OMX_PARAM_PORTDEFINITIONTYPE

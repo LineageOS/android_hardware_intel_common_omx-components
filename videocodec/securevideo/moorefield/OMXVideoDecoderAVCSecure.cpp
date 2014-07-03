@@ -48,10 +48,10 @@ static const char* AVC_SECURE_MIME_TYPE = "video/avc-secure";
 #define NALU_HEADER_LENGTH              1024 // THis should be changed to 4K
 #define FLUSH_WAIT_INTERVAL             (30 * 1000) //30 ms
 
-#define DRM_SCHEME_NONE                 0
-#define DRM_SCHEME_WV_CLASSIC           1
-#define DRM_SCHEME_WV_MODULAR           2
-#define DRM_SCHEME_PLAYREADY            3
+#define DRM_SCHEME_NONE     0
+#define DRM_SCHEME_WVC      1
+#define DRM_SCHEME_CENC     2
+#define DRM_SCHEME_PRASF    3
 
 //#pragma pack(push, 1)
 struct DataBuffer {
@@ -59,8 +59,8 @@ struct DataBuffer {
     uint8_t  *data;
     uint8_t  clear;
     uint32_t drmScheme;
-    uint32_t session_id;    //used by PlayReady only
-    uint32_t flags;         //used by PlayReady only
+    uint32_t session_id;    //used by PR only
+    uint32_t flags;         //used by PR only
 };
 //#pragma pack(pop)
 
@@ -118,13 +118,13 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
     // Session should be torn down in ProcessorStop, delayed to ProcessorDeinit
     // to allow remaining frames completely rendered.
     LOGI("Calling Drm_DestroySession.");
-    if (mDrmScheme == DRM_SCHEME_WV_CLASSIC) {
+    if (mDrmScheme == DRM_SCHEME_WVC) {
         uint32_t sepres = drm_destroy_session(WV_SESSION_ID);
         if (sepres != 0) {
             LOGW("Drm_DestroySession returns %#x", sepres);
         }
     }
-    else if(mDrmScheme == DRM_SCHEME_WV_MODULAR) {
+    else if(mDrmScheme == DRM_SCHEME_CENC) {
         uint32_t ret = drm_wv_mod_stop_playback(WV_SESSION_ID);
         if (ret != DRM_WV_MOD_SUCCESS) {
             LOGW("Modular WV - drm_wv_mod_stop_playback returns %#x", ret);
@@ -165,7 +165,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorProcess(
     OMX_BUFFERHEADERTYPE *pInput = *pBuffers[INPORT_INDEX];
     DataBuffer *dataBuffer = (DataBuffer *)pInput->pBuffer;
 
-    if((dataBuffer->drmScheme == DRM_SCHEME_WV_CLASSIC) && (!mKeepAliveTimer)){
+    if((dataBuffer->drmScheme == DRM_SCHEME_WVC) && (!mKeepAliveTimer)){
         struct sigevent sev;
         memset(&sev, 0, sizeof(sev));
         sev.sigev_notify = SIGEV_THREAD;
@@ -237,7 +237,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareConfigBuffer(VideoConfigBuffer *p
     return ret;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareClassicWVDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareWVCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
 
    OMX_ERRORTYPE ret = OMX_ErrorNone;
 
@@ -306,7 +306,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareClassicWVDecodeBuffer(OMX_BUFFERH
    dataBuffer->size = NALU_BUFFER_SIZE;
    return ret;
 }
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareModularWVDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareCENCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
     OMX_ERRORTYPE ret = OMX_ErrorNone;
 
     // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
@@ -329,7 +329,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareModularWVDecodeBuffer(OMX_BUFFERH
 }
 
 
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePlayReadyDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePRASFDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
     OMX_ERRORTYPE ret = OMX_ErrorNone;
 
     // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
@@ -414,25 +414,25 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
     }
 
     DataBuffer *dataBuffer = (DataBuffer *)buffer->pBuffer;
-    if(dataBuffer->drmScheme == DRM_SCHEME_WV_CLASSIC){
+    if(dataBuffer->drmScheme == DRM_SCHEME_WVC){
 
         // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
         // if flag is set, buffer will only contain codec data.
-        mDrmScheme = DRM_SCHEME_WV_CLASSIC;
+        mDrmScheme = DRM_SCHEME_WVC;
         if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
                LOGV("Received AVC codec data.");
                return ret;
         }
-        return PrepareClassicWVDecodeBuffer(buffer, retain, p);
+        return PrepareWVCDecodeBuffer(buffer, retain, p);
     }
-    else if(dataBuffer->drmScheme == DRM_SCHEME_WV_MODULAR) {
-        mDrmScheme = DRM_SCHEME_WV_MODULAR;
-        return PrepareModularWVDecodeBuffer(buffer, retain, p);
+    else if(dataBuffer->drmScheme == DRM_SCHEME_CENC) {
+        mDrmScheme = DRM_SCHEME_CENC;
+        return PrepareCENCDecodeBuffer(buffer, retain, p);
     }
-    else if(dataBuffer->drmScheme == DRM_SCHEME_PLAYREADY)
+    else if(dataBuffer->drmScheme == DRM_SCHEME_PRASF)
     {
-        mDrmScheme = DRM_SCHEME_PLAYREADY;
-        return  PreparePlayReadyDecodeBuffer(buffer, retain, p);
+        mDrmScheme = DRM_SCHEME_PRASF;
+        return  PreparePRASFDecodeBuffer(buffer, retain, p);
     }
     return ret;
 }
