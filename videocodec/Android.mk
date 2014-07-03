@@ -342,55 +342,15 @@ LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
     OMXVideoDecoderBase.cpp
 
-ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
-# Secure AVC decoder for Clovertrail (uses IMR)
-LOCAL_SHARED_LIBRARIES += libsepdrm
-
-LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/libsepdrm
-
-LOCAL_SRC_FILES += securevideo/ctp/OMXVideoDecoderAVCSecure.cpp
-
-LOCAL_CFLAGS += -DVED_TILING
-
-else ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
-#Secure AVC decoder for Merrifield (uses IED)
-LOCAL_SHARED_LIBRARIES += \
-    libsepdrm_cc54 \
-    libdx_cc7
-
-LOCAL_SRC_FILES += securevideo/merrifield/OMXVideoDecoderAVCSecure.cpp
-
-LOCAL_CFLAGS += -DVED_TILING
-
-else ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
+ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 #Secure AVC decoder for Moorefield V0 (uses IED)
 LOCAL_SHARED_LIBRARIES += \
     libsepdrm_cc54 \
     libdx_cc7
 
-LOCAL_C_INCLUDES += $(TOP)/vendor/intel/hardware/cc54/libsepdrm/libdrm/common/inc \
-                    $(TOP)/vendor/intel/hardware/cc54/libsepdrm/libdrm/inc \
-
 LOCAL_SRC_FILES += securevideo/moorefield/OMXVideoDecoderAVCSecure.cpp
 
 LOCAL_CFLAGS += -DVED_TILING
-
-else ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
-#Secure AVC decoder for Baytrail (uses PAVP)
-LOCAL_C_INCLUDES += $(TOP)/vendor/intel/hardware/PRIVATE/ufo/inc/libpavp
-
-LOCAL_SHARED_LIBRARIES += libpavp
-
-LOCAL_SRC_FILES += securevideo/baytrail/OMXVideoDecoderAVCSecure.cpp
-
-else ifeq ($(TARGET_BOARD_PLATFORM),cherrytrail)
-#Secure AVC decoder for Cherrytrail (uses PAVP)
-LOCAL_C_INCLUDES += $(TOP)/vendor/intel/hardware/PRIVATE/ufo/inc/libpavp
-
-LOCAL_SHARED_LIBRARIES += libpavp
-
-LOCAL_SRC_FILES += securevideo/cherrytrail/OMXVideoDecoderAVCSecure.cpp
-
 endif
 
 LOCAL_MODULE_TAGS := optional
