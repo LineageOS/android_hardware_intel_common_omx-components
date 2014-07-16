@@ -16,7 +16,7 @@
 
 #define LOG_NDEBUG 1
 #define LOG_TAG "OMXComponentCodecBase"
-#include <utils/Log.h>
+#include <wrs_omxil_core/log.h>
 #include "OMXComponentCodecBase.h"
 
 

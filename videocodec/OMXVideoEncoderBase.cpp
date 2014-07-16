@@ -19,7 +19,7 @@
 #include "OMXVideoEncoderBase.h"
 #include "IntelMetadataBuffer.h"
 #include <cutils/properties.h>
-#include <cutils/log.h>
+#include <wrs_omxil_core/log.h>
 
 static const char *RAW_MIME_TYPE = "video/raw";
 
