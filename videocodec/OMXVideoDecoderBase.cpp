@@ -859,7 +859,6 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
     CHECK_TYPE_HEADER(param);
     CHECK_PORT_INDEX_RANGE(param);
     CHECK_SET_PARAM_STATE();
-
     if (!param->enable) {
         mWorkingMode = RAWDATA_MODE;
         return OMX_ErrorNone;
@@ -870,7 +869,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
 
     OMX_PARAM_PORTDEFINITIONTYPE port_def;
     memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
-    port_def.nBufferCountMin = 1;
+    port_def.nBufferCountMin = mNativeBufferCount;
     if (mEnableAdaptivePlayback) {
         SetMaxOutputBufferCount(&port_def);
     } else {
