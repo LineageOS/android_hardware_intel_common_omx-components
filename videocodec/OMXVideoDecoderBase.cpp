@@ -644,6 +644,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
                  paramPortDefinitionOutput.nBufferCountActual,
                  formatInfo->actualBufferNeeded);
             paramPortDefinitionOutput.nBufferCountActual = mNativeBufferCount = formatInfo->actualBufferNeeded;
+            paramPortDefinitionOutput.nBufferCountMin = mNativeBufferCount;
             force_realloc = 1;
         }
     }
