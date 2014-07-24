@@ -72,7 +72,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::ProcessorDeinit(void) {
 
 OMX_ERRORTYPE OMXVideoEncoderVP8::ProcessorProcess(OMX_BUFFERHEADERTYPE **buffers,
         buffer_retain_t *retains,
-        OMX_U32 numberBuffers) {
+        OMX_U32) {
 
     VideoEncOutputBuffer outBuf;
     VideoEncRawBuffer inBuf;
@@ -273,7 +273,7 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVideoVp8ReferenceFrame(OMX_PTR pStruc
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderVP8::GetConfigVp8MaxFrameSizeRatio(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderVP8::GetConfigVp8MaxFrameSizeRatio(OMX_PTR) {
 
     return OMX_ErrorNone;
 }

@@ -24,10 +24,10 @@ static const char* VA_RAW_MIME_TYPE = "video/x-raw-va";
 static const uint32_t VA_COLOR_FORMAT = 0x7FA00E00;
 
 OMXVideoDecoderBase::OMXVideoDecoderBase()
-    : mVideoDecoder(NULL),
-      mNativeBufferCount(OUTPORT_NATIVE_BUFFER_COUNT),
-      mOMXBufferHeaderTypePtrNum(0),
+     : mOMXBufferHeaderTypePtrNum(0),
       mRotationDegrees(0),
+      mVideoDecoder(NULL),
+      mNativeBufferCount(OUTPORT_NATIVE_BUFFER_COUNT),
 #ifdef TARGET_HAS_VPP
       mVppBufferNum(0),
 #endif
@@ -167,7 +167,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::InitOutputPort(void) {
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderBase::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionOutput) {
+OMX_ERRORTYPE OMXVideoDecoderBase::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *) {
     // no format specific to initialize output port
     return OMX_ErrorNone;
 }
@@ -256,7 +256,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorResume(void) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorFlush(OMX_U32 portIndex) {
-    LOGI("Flushing port# %lu.", portIndex);
+    LOGI("Flushing port# %u.", portIndex);
     if (mVideoDecoder == NULL) {
         LOGE("ProcessorFlush: Video decoder is not created.");
         return OMX_ErrorDynamicResourcesUnavailable;
@@ -310,7 +310,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorPreFreeBuffer(OMX_U32 nPortIndex, OM
 OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
     OMX_BUFFERHEADERTYPE ***pBuffers,
     buffer_retain_t *retains,
-    OMX_U32 numberBuffers) {
+    OMX_U32) {
 
     OMX_ERRORTYPE ret;
     Decode_Status status;
@@ -442,7 +442,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
 
     if (mWorkingMode == GRAPHICBUFFER_MODE) {
         p->surfaceNumber = mOMXBufferHeaderTypePtrNum;
-        for (int i = 0; i < mOMXBufferHeaderTypePtrNum; i++){
+        for (uint32_t i = 0; i < mOMXBufferHeaderTypePtrNum; i++){
             OMX_BUFFERHEADERTYPE *buffer_hdr = mOMXBufferHeaderTypePtrArray[i];
             p->graphicBufferHandler[i] = buffer_hdr->pBuffer;
             LOGV("PrepareConfigBuffer bufferid = %p, handle = %p", buffer_hdr, buffer_hdr->pBuffer);
@@ -622,15 +622,15 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
         this->ports[OUTPORT_INDEX]->GetPortDefinition(),
         sizeof(paramPortDefinitionOutput));
 
-    int width = formatInfo->width;
-    int height = formatInfo->height;
-    int stride = formatInfo->width;
-    int sliceHeight = formatInfo->height;
+    uint32_t width = formatInfo->width;
+    uint32_t height = formatInfo->height;
+    uint32_t stride = formatInfo->width;
+    uint32_t sliceHeight = formatInfo->height;
 
-    int widthCropped = formatInfo->width - formatInfo->cropLeft - formatInfo->cropRight;
-    int heightCropped = formatInfo->height - formatInfo->cropTop - formatInfo->cropBottom;
-    int strideCropped = widthCropped;
-    int sliceHeightCropped = heightCropped;
+    uint32_t widthCropped = formatInfo->width - formatInfo->cropLeft - formatInfo->cropRight;
+    uint32_t heightCropped = formatInfo->height - formatInfo->cropTop - formatInfo->cropBottom;
+    uint32_t strideCropped = widthCropped;
+    uint32_t sliceHeightCropped = heightCropped;
     int force_realloc = 0;
 
 #ifdef TARGET_HAS_VPP
@@ -649,7 +649,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
         }
     }
 
-    LOGV("Original size = %lu x %lu, new size = %d x %d, cropped size = %d x %d",
+    LOGV("Original size = %u x %u, new size = %d x %d, cropped size = %d x %d",
         paramPortDefinitionInput.format.video.nFrameWidth,
         paramPortDefinitionInput.format.video.nFrameHeight,
         width, height, widthCropped, heightCropped);
@@ -688,8 +688,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
             paramPortDefinitionOutput.format.video.nFrameWidth = width;
             paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
             paramPortDefinitionOutput.format.video.eColorFormat = GetOutputColorFormat(
-                    paramPortDefinitionOutput.format.video.nFrameWidth,
-                    paramPortDefinitionOutput.format.video.nFrameHeight);
+                    paramPortDefinitionOutput.format.video.nFrameWidth);
             paramPortDefinitionOutput.format.video.nStride = stride;
             paramPortDefinitionOutput.format.video.nSliceHeight = sliceHeight;
        }
@@ -808,12 +807,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBufferUsage(OMX_PTR pStructure) {
      param->nUsage |= GRALLOC_USAGE_HW_TEXTURE;
      return OMX_ErrorNone;
 }
-OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferUsage(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferUsage(OMX_PTR) {
     CHECK_SET_PARAM_STATE();
     return OMX_ErrorBadParameter;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBuffer(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBuffer(OMX_PTR) {
     return OMX_ErrorBadParameter;
 }
 
@@ -848,7 +847,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBuffer(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBufferMode(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBufferMode(OMX_PTR) {
     LOGE("GetNativeBufferMode is not implemented");
     return OMX_ErrorNotImplemented;
 }
@@ -880,14 +879,13 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferMode(OMX_PTR pStructure) {
     port_def.format.video.eColorFormat = OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
     port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;
     port_def.format.video.eColorFormat = GetOutputColorFormat(
-                        port_def.format.video.nFrameWidth,
-                        port_def.format.video.nFrameHeight);
+                        port_def.format.video.nFrameWidth);
     port->SetPortDefinition(&port_def,true);
 
      return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderRotation(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderRotation(OMX_PTR) {
     return OMX_ErrorBadParameter;
 }
 OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderRotation(OMX_PTR pStructure) {
@@ -941,11 +939,11 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderOutputCrop(OMX_PTR pStructure) {
     }
 }
 
-OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderOutputCrop(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderOutputCrop(OMX_PTR) {
     return OMX_ErrorUnsupportedSetting;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderBase::GetErrorReportMode(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderBase::GetErrorReportMode(OMX_PTR) {
     LOGE("GetErrorReportMode is not implemented");
     return OMX_ErrorNotImplemented;
 }
@@ -964,7 +962,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetErrorReportMode(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
-OMX_COLOR_FORMATTYPE OMXVideoDecoderBase::GetOutputColorFormat(int width, int height) {
+OMX_COLOR_FORMATTYPE OMXVideoDecoderBase::GetOutputColorFormat(int width) {
 #ifndef VED_TILING
     return OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
 #else
@@ -977,6 +975,6 @@ OMX_COLOR_FORMATTYPE OMXVideoDecoderBase::GetOutputColorFormat(int width, int he
 #endif
 }
 
-OMX_ERRORTYPE OMXVideoDecoderBase::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p) {
+OMX_ERRORTYPE OMXVideoDecoderBase::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *) {
     return OMX_ErrorNone;
 }

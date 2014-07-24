@@ -2,6 +2,7 @@
 #ifndef OMX_VIDEO_ENCODER_VP8_H
 #define OMX_VIDEO_ENCODER_VP8_H
 
+#include <OMX_VideoExt.h>
 #include "OMXVideoEncoderBase.h"
 
 class OMXVideoEncoderVP8 : public OMXVideoEncoderBase {

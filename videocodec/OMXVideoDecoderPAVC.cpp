@@ -161,7 +161,7 @@ OMX_ERRORTYPE OMXVideoDecoderPAVC::GetVideoProfileLevelQuerySupported(OMX_PTR pS
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderPAVC::SetVideoProfileLevelQuerySupported(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderPAVC::SetVideoProfileLevelQuerySupported(OMX_PTR) {
     LOGE("SetVideoProfileLevelQuerySupported is not supported.");
     return OMX_ErrorUnsupportedSetting;
 }

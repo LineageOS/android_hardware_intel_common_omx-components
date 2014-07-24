@@ -19,7 +19,6 @@
 #define LOG_TAG "OMXVideoDecoder"
 #include <wrs_omxil_core/log.h>
 #include "OMXVideoDecoderVP8.h"
-
 // Be sure to have an equal string in VideoDecoderHost.cpp (libmix)
 static const char* VP8_MIME_TYPE = "video/x-vnd.on2.vp8";
 
@@ -108,7 +107,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP8::SetParamVideoVp8(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
-OMX_COLOR_FORMATTYPE OMXVideoDecoderVP8::GetOutputColorFormat(int width, int height)
+OMX_COLOR_FORMATTYPE OMXVideoDecoderVP8::GetOutputColorFormat(int width)
 {
 #ifdef USE_GEN_HW
 #ifdef USE_X_TILE
@@ -117,7 +116,7 @@ OMX_COLOR_FORMATTYPE OMXVideoDecoderVP8::GetOutputColorFormat(int width, int hei
     return (OMX_COLOR_FORMATTYPE)OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
 #endif
 #else
-    return OMXVideoDecoderBase::GetOutputColorFormat(width, height);
+    return OMXVideoDecoderBase::GetOutputColorFormat(width);
 #endif
 }
 

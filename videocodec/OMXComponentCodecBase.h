@@ -22,7 +22,6 @@
 #include <OMX_Core.h>
 #include <OMX_Component.h>
 #include <OMX_IndexExt.h>
-#include <OMX_VideoExt.h>
 #include <OMX_IntelErrorTypes.h>
 
 #include <portbase.h>

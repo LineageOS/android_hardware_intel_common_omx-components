@@ -21,6 +21,7 @@
 
 
 #include "OMXVideoDecoderBase.h"
+#include <OMX_VideoExt.h>
 
 class OMXVideoDecoderVP8 : public OMXVideoDecoderBase {
 public:
@@ -41,7 +42,7 @@ protected:
 
    virtual OMX_ERRORTYPE BuildHandlerList(void);
    virtual OMX_ERRORTYPE SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p);
-   virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width, int height);
+   virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width);
    DECLARE_HANDLER(OMXVideoDecoderVP8, ParamVideoVp8);
 
 private:

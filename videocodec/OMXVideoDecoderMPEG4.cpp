@@ -132,17 +132,17 @@ OMX_ERRORTYPE OMXVideoDecoderMPEG4::GetParamVideoMpeg4ProfileLevel(OMX_PTR pStru
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderMPEG4::SetParamVideoMpeg4ProfileLevel(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderMPEG4::SetParamVideoMpeg4ProfileLevel(OMX_PTR) {
     LOGW("SetParamVideoMpeg4ProfileLevel is not supported.");
     return OMX_ErrorUnsupportedSetting;
 }
 
-OMX_COLOR_FORMATTYPE OMXVideoDecoderMPEG4::GetOutputColorFormat(int width, int height)
+OMX_COLOR_FORMATTYPE OMXVideoDecoderMPEG4::GetOutputColorFormat(int width)
 {
 #ifdef USE_GEN_HW
     return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_NV12_X_TILED_INTEL;
 #else
-    return OMXVideoDecoderBase::GetOutputColorFormat(width, height);
+    return OMXVideoDecoderBase::GetOutputColorFormat(width);
 #endif
 }
 

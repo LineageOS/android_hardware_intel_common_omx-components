@@ -258,7 +258,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::SetParamVideoAvc(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderAVC::GetParamIntelAVCDecodeSettings(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderAVC::GetParamIntelAVCDecodeSettings(OMX_PTR) {
     return OMX_ErrorNotImplemented;
 }
 
@@ -276,7 +276,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::SetParamIntelAVCDecodeSettings(OMX_PTR pStruct
         // TODO: check if we just return in this case.
         p->nMaxNumberOfReferenceFrame = NUM_REFERENCE_FRAME;
     }
-    LOGI("Maximum width = %lu, height = %lu, dpb = %lu", p->nMaxWidth, p->nMaxHeight, p->nMaxNumberOfReferenceFrame);
+    LOGI("Maximum width = %u, height = %u, dpb = %u", p->nMaxWidth, p->nMaxHeight, p->nMaxNumberOfReferenceFrame);
     mDecodeSettings = *p;
 
     return OMX_ErrorNone;
@@ -306,17 +306,17 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::GetParamVideoAVCProfileLevel(OMX_PTR pStructur
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderAVC::SetParamVideoAVCProfileLevel(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoDecoderAVC::SetParamVideoAVCProfileLevel(OMX_PTR) {
     LOGW("SetParamVideoAVCProfileLevel is not supported.");
     return OMX_ErrorUnsupportedSetting;
 }
 
-OMX_COLOR_FORMATTYPE OMXVideoDecoderAVC::GetOutputColorFormat(int width, int height)
+OMX_COLOR_FORMATTYPE OMXVideoDecoderAVC::GetOutputColorFormat(int width)
 {
 #ifdef USE_GEN_HW
     return OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
 #else
-    return OMXVideoDecoderBase::GetOutputColorFormat(width, height);
+    return OMXVideoDecoderBase::GetOutputColorFormat(width);
 #endif
 }
 

@@ -80,7 +80,7 @@ OMX_ERRORTYPE OMXVideoEncoderMPEG4::ProcessorDeinit(void) {
 OMX_ERRORTYPE OMXVideoEncoderMPEG4::ProcessorProcess(
     OMX_BUFFERHEADERTYPE **buffers,
     buffer_retain_t *retains,
-    OMX_U32 numberBuffers) {
+    OMX_U32) {
 
     VideoEncOutputBuffer outBuf;
     VideoEncRawBuffer inBuf;
@@ -266,7 +266,7 @@ OMX_ERRORTYPE OMXVideoEncoderMPEG4::GetParamVideoProfileLevelQuerySupported(OMX_
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderMPEG4::SetParamVideoProfileLevelQuerySupported(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderMPEG4::SetParamVideoProfileLevelQuerySupported(OMX_PTR) {
     LOGW("SetParamVideoMpeg4ProfileLevel is not supported.");
     return OMX_ErrorUnsupportedSetting;
 }

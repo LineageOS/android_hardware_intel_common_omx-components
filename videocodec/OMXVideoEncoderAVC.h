@@ -22,7 +22,7 @@
 #include "OMXVideoEncoderBase.h"
 #include <utils/List.h>
 #include <IntelMetadataBuffer.h>
-
+#include <OMX_VideoExt.h>
 enum {
     F_UNKNOWN = 0x00,    // Unknown
     F_I       = 0x01,    // General I-frame type

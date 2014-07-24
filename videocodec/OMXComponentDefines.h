@@ -38,7 +38,7 @@
 
 #define CHECK_PORT_INDEX(P, INDEX)\
     if ((P)->nPortIndex != INDEX) {\
-        LOGE("Bad port index %lu, expected: %d", (P)->nPortIndex, INDEX);\
+        LOGE("Bad port index %u, expected: %d", (P)->nPortIndex, INDEX);\
         return OMX_ErrorBadPortIndex;\
     }
 
@@ -50,7 +50,7 @@
 
 #define CHECK_PORT_INDEX_RANGE(P)\
     if ((P)->nPortIndex != 0 && (P)->nPortIndex != 1) {\
-        LOGE("Port out of range %lu", (P)->nPortIndex);\
+        LOGE("Port out of range %u", (P)->nPortIndex);\
         return OMX_ErrorBadPortIndex;\
     }
 

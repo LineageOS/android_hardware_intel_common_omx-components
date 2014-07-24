@@ -462,21 +462,22 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
             outBuf.format = OUTPUT_ONE_NAL;
             break;
 
-        case OMX_NaluFormatStartCodesSeparateFirstHeader:
-        case OMX_NaluFormatLengthPrefixedSeparateFirstHeader:
-            if(!mCSDOutputted) {
-                LOGV("Output codec data for first frame\n");
-                outBuf.format = OUTPUT_CODEC_DATA;
-            } else {
-                if (NaluFormat == OMX_NaluFormatStartCodesSeparateFirstHeader)
-                    outBuf.format = OUTPUT_EVERYTHING;
-                else
-                    outBuf.format = OUTPUT_NALULENGTHS_PREFIXED;
-            }
-            break;
-
         default:
-            return OMX_ErrorUndefined;
+            if (NaluFormat == (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader||
+                NaluFormat == (OMX_NALUFORMATSTYPE)OMX_NaluFormatLengthPrefixedSeparateFirstHeader){
+                if(!mCSDOutputted) {
+                    LOGV("Output codec data for first frame\n");
+                    outBuf.format = OUTPUT_CODEC_DATA;
+                } else {
+                    if (NaluFormat == (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader)
+                        outBuf.format = OUTPUT_EVERYTHING;
+                    else
+                        outBuf.format = OUTPUT_NALULENGTHS_PREFIXED;
+                }
+                break;
+            } else {
+                return OMX_ErrorUndefined;
+            }
     }
 
     //start getOutput
@@ -530,8 +531,8 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
         LOGV("got a complete libmix Frame\n");
         outflags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
-        if ((NaluFormat == OMX_NaluFormatStartCodesSeparateFirstHeader
-             || NaluFormat == OMX_NaluFormatLengthPrefixedSeparateFirstHeader )
+        if ((NaluFormat == (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader
+             || NaluFormat == (OMX_NALUFORMATSTYPE)OMX_NaluFormatLengthPrefixedSeparateFirstHeader )
              && !mCSDOutputted && outfilledlen > 0) {
             mCSDOutputted = OMX_TRUE;
 
@@ -572,7 +573,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessDataRetrieve(
 OMX_ERRORTYPE OMXVideoEncoderAVC::ProcessorProcess(
     OMX_BUFFERHEADERTYPE **buffers,
     buffer_retain_t *retains,
-    OMX_U32 numberBuffers) {
+    OMX_U32) {
 
     OMX_ERRORTYPE oret = OMX_ErrorNone;
     Encode_Status ret = ENCODE_SUCCESS;
@@ -690,7 +691,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::GetParamVideoProfileLevelQuerySupported(OMX_PT
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamVideoProfileLevelQuerySupported(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamVideoProfileLevelQuerySupported(OMX_PTR) {
     LOGW("SetParamVideoAVCProfileLevel is not supported.");
     return OMX_ErrorUnsupportedSetting;
 }
@@ -799,9 +800,9 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamNalStreamFormat(OMX_PTR pStructure) {
     CHECK_PORT_INDEX(p, OUTPORT_INDEX);
     LOGV("p->eNaluFormat =%d\n",p->eNaluFormat);
     if(p->eNaluFormat != OMX_NaluFormatStartCodes &&
-            p->eNaluFormat != OMX_NaluFormatStartCodesSeparateFirstHeader &&
+            p->eNaluFormat != (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader &&
             p->eNaluFormat != OMX_NaluFormatOneNaluPerBuffer &&
-            p->eNaluFormat != OMX_NaluFormatLengthPrefixedSeparateFirstHeader) {
+            p->eNaluFormat != (OMX_NALUFORMATSTYPE)OMX_NaluFormatLengthPrefixedSeparateFirstHeader) {
         LOGE("Format not support\n");
         return OMX_ErrorUnsupportedSetting;
     }
@@ -827,12 +828,12 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::GetParamNalStreamFormatSupported(OMX_PTR pStru
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamNalStreamFormatSupported(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamNalStreamFormatSupported(OMX_PTR) {
     LOGW("SetParamNalStreamFormatSupported is not supported.");
     return OMX_ErrorUnsupportedSetting;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderAVC::GetParamNalStreamFormatSelect(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderAVC::GetParamNalStreamFormatSelect(OMX_PTR) {
     LOGW("GetParamNalStreamFormatSelect is not supported.");
     return OMX_ErrorUnsupportedSetting;
 }
@@ -847,9 +848,9 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamNalStreamFormatSelect(OMX_PTR pStructu
     CHECK_SET_PARAM_STATE();
 
     if (p->eNaluFormat != OMX_NaluFormatStartCodes &&
-            p->eNaluFormat != OMX_NaluFormatStartCodesSeparateFirstHeader &&
+            p->eNaluFormat != (OMX_NALUFORMATSTYPE)OMX_NaluFormatStartCodesSeparateFirstHeader &&
             p->eNaluFormat != OMX_NaluFormatOneNaluPerBuffer&&
-            p->eNaluFormat != OMX_NaluFormatLengthPrefixedSeparateFirstHeader) {
+            p->eNaluFormat != (OMX_NALUFORMATSTYPE)OMX_NaluFormatLengthPrefixedSeparateFirstHeader) {
         //p->eNaluFormat != OMX_NaluFormatFourByteInterleaveLength &&
         //p->eNaluFormat != OMX_NaluFormatZeroByteInterleaveLength) {
         // TODO: check if this is desried
@@ -954,7 +955,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetConfigVideoNalSize(OMX_PTR pStructure) {
     // TODO: return OMX_ErrorIncorrectStateOperation?
     CHECK_SET_CONFIG_STATE();
 
-    if (mParamBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
+    if (mParamBitrate.eControlRate != (OMX_VIDEO_CONTROLRATETYPE)OMX_Video_Intel_ControlRateVideoConferencingMode) {
         LOGE("SetConfigVideoNalSize failed. Feature is supported only in VCM.");
         return OMX_ErrorUnsupportedSetting;
     }
@@ -995,7 +996,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetConfigIntelSliceNumbers(OMX_PTR pStructure)
     // TODO: return OMX_ErrorIncorrectStateOperation?
     CHECK_SET_CONFIG_STATE();
 
-    if (mParamBitrate.eControlRate != OMX_Video_Intel_ControlRateVideoConferencingMode) {
+    if (mParamBitrate.eControlRate != (OMX_VIDEO_CONTROLRATETYPE)OMX_Video_Intel_ControlRateVideoConferencingMode) {
         LOGE("SetConfigIntelSliceNumbers failed. Feature is supported only in VCM.");
         return OMX_ErrorUnsupportedSetting;
     }
@@ -1035,7 +1036,7 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamIntelAVCVUI(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderAVC::GetParamVideoBytestream(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderAVC::GetParamVideoBytestream(OMX_PTR) {
     return OMX_ErrorUnsupportedSetting;
 }
 

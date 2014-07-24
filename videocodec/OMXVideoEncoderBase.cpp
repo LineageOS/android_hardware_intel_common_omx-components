@@ -28,11 +28,11 @@ OMXVideoEncoderBase::OMXVideoEncoderBase()
     ,mEncoderParams(NULL)
     ,mFrameInputCount(0)
     ,mFrameOutputCount(0)
-    ,mFrameRetrieved(OMX_TRUE)
     ,mFirstFrame(OMX_TRUE)
-    ,mOmxLogLevel(0)
+    ,mFrameRetrieved(OMX_TRUE)
     ,mStoreMetaDataInBuffers(OMX_FALSE)
     ,mSyncEncoding(OMX_TRUE)
+    ,mOmxLogLevel(0)
     ,mBlackFramePointer(NULL) {
     mEncoderParams = new VideoParamsCommon();
     if (!mEncoderParams) LOGE("OMX_ErrorInsufficientResources");
@@ -258,7 +258,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::InitOutputPort(void) {
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderBase::InitInputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionInput) {
+OMX_ERRORTYPE OMXVideoEncoderBase::InitInputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *) {
     // no format specific to initialize input
     return OMX_ErrorNone;
 }
@@ -318,7 +318,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetVideoEncoderParam() {
             (mParamBitrate.eControlRate == OMX_Video_ControlRateVariableSkipFrames)) {
         LOGV("%s(), eControlRate == OMX_Video_Intel_ControlRateVariable", __func__);
         mEncoderParams->rcMode = RATE_CONTROL_VBR;
-    } else if (mParamBitrate.eControlRate == OMX_Video_Intel_ControlRateVideoConferencingMode) {
+    } else if (mParamBitrate.eControlRate == (OMX_VIDEO_CONTROLRATETYPE)OMX_Video_Intel_ControlRateVideoConferencingMode) {
         LOGV("%s(), eControlRate == OMX_Video_Intel_ControlRateVideoConferencingMode ", __func__);
         mEncoderParams->rcMode = RATE_CONTROL_VCM;
         if(mConfigIntelBitrate.nMaxEncodeBitrate >0)
@@ -371,9 +371,9 @@ OMX_ERRORTYPE OMXVideoEncoderBase::ProcessorStop(void) {
     return OMX_ErrorNone;
 }
 OMX_ERRORTYPE OMXVideoEncoderBase:: ProcessorProcess(
-    OMX_BUFFERHEADERTYPE **buffers,
-    buffer_retain_t *retains,
-    OMX_U32 numberBuffers) {
+    OMX_BUFFERHEADERTYPE **,
+    buffer_retain_t *,
+    OMX_U32) {
 
     LOGV("OMXVideoEncoderBase:: ProcessorProcess \n");
     return OMX_ErrorNone;
@@ -710,7 +710,7 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigVideoFramerate(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderBase::GetConfigVideoIntraVOPRefresh(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderBase::GetConfigVideoIntraVOPRefresh(OMX_PTR) {
     LOGW("GetConfigVideoIntraVOPRefresh is not supported.");
     return OMX_ErrorUnsupportedSetting;
 }
@@ -861,11 +861,11 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetSyncEncoding(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 };
 
-OMX_ERRORTYPE OMXVideoEncoderBase::GetPrependSPSPPS(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderBase::GetPrependSPSPPS(OMX_PTR) {
     return OMX_ErrorNone;
 };
 
-OMX_ERRORTYPE OMXVideoEncoderBase::SetPrependSPSPPS(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderBase::SetPrependSPSPPS(OMX_PTR) {
     LOGD("SetPrependSPSPPS success");
     return OMX_ErrorNone;
 };
@@ -926,12 +926,12 @@ OMX_ERRORTYPE OMXVideoEncoderBase::GetBlackFramePointer(OMX_PTR pStructure) {
             return OMX_ErrorInsufficientResources;
         }
         memset(mBlackFramePointer, 0x0, lumaSize);
-        memset(mBlackFramePointer + lumaSize, 0x80, lumaSize / 2);
+        memset((OMX_PTR)((uint64_t)mBlackFramePointer + lumaSize), 0x80, lumaSize / 2);
         p->nFramePointer = (OMX_U32)mBlackFramePointer;
     }
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderBase::SetBlackFramePointer(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderBase::SetBlackFramePointer(OMX_PTR) {
     return OMX_ErrorUnsupportedSetting;
 }

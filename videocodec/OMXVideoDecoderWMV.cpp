@@ -106,12 +106,12 @@ OMX_ERRORTYPE OMXVideoDecoderWMV::SetParamVideoWmv(OMX_PTR pStructure) {
     return OMX_ErrorNone;
 }
 
-OMX_COLOR_FORMATTYPE OMXVideoDecoderWMV::GetOutputColorFormat(int width, int height)
+OMX_COLOR_FORMATTYPE OMXVideoDecoderWMV::GetOutputColorFormat(int width)
 {
 #ifdef USE_GEN_HW
     return OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled;
 #else
-    return OMXVideoDecoderBase::GetOutputColorFormat(width, height);
+    return OMXVideoDecoderBase::GetOutputColorFormat(width);
 #endif
 }
 

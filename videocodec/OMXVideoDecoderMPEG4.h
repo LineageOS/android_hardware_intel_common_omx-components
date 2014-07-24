@@ -41,7 +41,7 @@ protected:
 
    virtual OMX_ERRORTYPE BuildHandlerList(void);
    virtual OMX_ERRORTYPE SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p);
-   virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width, int height);
+   virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width);
    DECLARE_HANDLER(OMXVideoDecoderMPEG4, ParamVideoMpeg4);
    DECLARE_HANDLER(OMXVideoDecoderMPEG4, ParamVideoMpeg4ProfileLevel);
 

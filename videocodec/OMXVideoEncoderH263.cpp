@@ -87,7 +87,7 @@ OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorDeinit(void) {
 OMX_ERRORTYPE OMXVideoEncoderH263::ProcessorProcess(
     OMX_BUFFERHEADERTYPE **buffers,
     buffer_retain_t *retains,
-    OMX_U32 numberBuffers) {
+    OMX_U32) {
     LOGV("OMXVideoEncoderH263::ProcessorProcess \n");
 
     VideoEncOutputBuffer outBuf;
@@ -219,7 +219,7 @@ out:
         buffers[OUTPORT_INDEX]->nTimeStamp = outtimestamp;
         buffers[OUTPORT_INDEX]->nFlags = outflags;
 
-        LOGV("********** output buffer: len=%d, ts=%ld, flags=%x",
+        LOGV("********** output buffer: len=%d, ts=%lld, flags=%x",
              outfilledlen,
              outtimestamp,
              outflags);
@@ -268,7 +268,7 @@ OMX_ERRORTYPE OMXVideoEncoderH263::GetParamVideoProfileLevelQuerySupported(OMX_P
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXVideoEncoderH263::SetParamVideoProfileLevelQuerySupported(OMX_PTR pStructure) {
+OMX_ERRORTYPE OMXVideoEncoderH263::SetParamVideoProfileLevelQuerySupported(OMX_PTR) {
     LOGW("SetParamVideoH263ProfileLevel is not supported.");
     return OMX_ErrorUnsupportedSetting;
 }

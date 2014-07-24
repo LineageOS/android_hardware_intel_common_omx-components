@@ -245,7 +245,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareWVCDecodeBuffer(OMX_BUFFERHEADERT
    p->flag |= HAS_COMPLETE_FRAME;
 
    if (buffer->nOffset != 0) {
-       LOGW("buffer offset %lu is not zero!!!", buffer->nOffset);
+       LOGW("buffer offset %u is not zero!!!", buffer->nOffset);
    }
 
    DataBuffer *dataBuffer = (DataBuffer *)buffer->pBuffer;
@@ -280,7 +280,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareWVCDecodeBuffer(OMX_BUFFERHEADERT
            ret =  OMX_ErrorNotReady;
        } else if (res != 0) {
            mSessionPaused = false;
-           LOGE("Drm_WV_ReturnNALUHeaders failed. Error = %#x, frame_size: %d, len = %lu", res, nalu_headers.frame_size, buffer->nFilledLen);
+           LOGE("Drm_WV_ReturnNALUHeaders failed. Error = %#x, frame_size: %d, len = %u", res, nalu_headers.frame_size, buffer->nFilledLen);
            ret = OMX_ErrorHardware;
        } else {
            mSessionPaused = false;
@@ -318,7 +318,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareCENCDecodeBuffer(OMX_BUFFERHEADER
     p->flag |= HAS_COMPLETE_FRAME | IS_SUBSAMPLE_ENCRYPTION;
 
     if (buffer->nOffset != 0) {
-        LOGW("buffer offset %lu is not zero!!!", buffer->nOffset);
+        LOGW("buffer offset %u is not zero!!!", buffer->nOffset);
     }
 
     DataBuffer *dataBuffer = (DataBuffer *)buffer->pBuffer;
@@ -341,7 +341,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePRASFDecodeBuffer(OMX_BUFFERHEADE
     p->flag |= HAS_COMPLETE_FRAME;
 
     if (buffer->nOffset != 0) {
-        LOGW("PR:buffer offset %lu is not zero!!!", buffer->nOffset);
+        LOGW("PR:buffer offset %u is not zero!!!", buffer->nOffset);
     }
 
     DataBuffer *dataBuffer = (DataBuffer *)buffer->pBuffer;
@@ -376,7 +376,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePRASFDecodeBuffer(OMX_BUFFERHEADE
             ret =  OMX_ErrorNotReady;
         } else if (res != 0) {
             mSessionPaused = false;
-            LOGE("drm_pr_return_naluheaders failed. Error = %#x, frame_size: %d, len = %lu", res, nalu_headers.frame_size, buffer->nFilledLen);
+            LOGE("drm_pr_return_naluheaders failed. Error = %#x, frame_size: %d, len = %u", res, nalu_headers.frame_size, buffer->nFilledLen);
             ret = OMX_ErrorHardware;
         } else {
            mSessionPaused = false;
@@ -506,10 +506,10 @@ void OMXVideoDecoderAVCSecure::MemFreeDataBuffer(OMX_U8 *pBuffer, OMX_PTR pUserD
 
 OMX_U8* OMXVideoDecoderAVCSecure::MemAllocDataBuffer(OMX_U32 nSizeBytes) {
     if (nSizeBytes > INPORT_BUFFER_SIZE) {
-        LOGE("Invalid size (%lu) of memory to allocate.", nSizeBytes);
+        LOGE("Invalid size (%u) of memory to allocate.", nSizeBytes);
         return NULL;
     }
-    LOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE, "Size of memory to allocate is %lu", nSizeBytes);
+    LOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE, "Size of memory to allocate is %u", nSizeBytes);
     for (int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
         if (mDataBufferSlot[i].owner == NULL) {
             DataBuffer *pBuffer = new DataBuffer;
