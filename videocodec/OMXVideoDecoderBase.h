@@ -66,6 +66,13 @@ protected:
     virtual OMX_ERRORTYPE TranslateDecodeStatus(Decode_Status status);
     virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width);
     virtual OMX_ERRORTYPE BuildHandlerList(void);
+    virtual OMX_ERRORTYPE SetDecoderOutputCropSpecific(OMX_PTR pStructure);
+    virtual OMX_ERRORTYPE GetDecoderOutputCropSpecific(OMX_PTR pStructure);
+    virtual OMX_ERRORTYPE GetNativeBufferUsageSpecific(OMX_PTR pStructure);
+    virtual OMX_ERRORTYPE SetNativeBufferUsageSpecific(OMX_PTR pStructure);
+    virtual OMX_ERRORTYPE SetNativeBufferModeSpecific(OMX_PTR pStructure);
+    virtual OMX_ERRORTYPE GetNativeBufferModeSpecific(OMX_PTR pStructure);
+
     DECLARE_HANDLER(OMXVideoDecoderBase, ParamVideoPortFormat);
     DECLARE_HANDLER(OMXVideoDecoderBase, CapabilityFlags);
     DECLARE_HANDLER(OMXVideoDecoderBase, NativeBufferUsage);
@@ -92,8 +99,6 @@ private:
 
         OUTPORT_NATIVE_BUFFER_COUNT = 10,
     };
-    uint32_t mOMXBufferHeaderTypePtrNum;
-    OMX_BUFFERHEADERTYPE *mOMXBufferHeaderTypePtrArray[MAX_GRAPHIC_BUFFER_NUM];
 
     struct GraphicBufferParam {
         uint32_t graphicBufferStride;
@@ -101,7 +106,6 @@ private:
         uint32_t graphicBufferHeight;
         uint32_t graphicBufferColorFormat;
     };
-    GraphicBufferParam mGraphicBufferParam;
     uint32_t mRotationDegrees;
 #ifdef TARGET_HAS_VPP
     uint32_t mVppBufferNum;
@@ -116,6 +120,9 @@ protected:
     };
     WorkingMode mWorkingMode;
     bool mErrorReportEnabled;
+    GraphicBufferParam mGraphicBufferParam;
+    uint32_t mOMXBufferHeaderTypePtrNum;
+    OMX_BUFFERHEADERTYPE *mOMXBufferHeaderTypePtrArray[MAX_GRAPHIC_BUFFER_NUM];
 };
 
 #endif /* OMX_VIDEO_DECODER_BASE_H_ */
