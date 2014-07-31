@@ -311,7 +311,7 @@ int vp8dx_receive_compressed_data(VP8D_COMP *pbi, size_t size,
     int64_t dx_store_reg[8];
 #endif
     VP8_COMMON *cm = &pbi->common;
-    int retcode = -1;
+    volatile int retcode;
 
     size = size; // to remove warning
     source = source;
