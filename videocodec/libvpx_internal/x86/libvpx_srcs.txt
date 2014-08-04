@@ -239,7 +239,6 @@ vp9/common/x86/vp9_intrapred_ssse3.asm
 vp9/common/x86/vp9_loopfilter_intrin_sse2.c
 vp9/common/x86/vp9_loopfilter_mmx.asm
 vp9/common/x86/vp9_postproc_x86.h
-vp9/common/x86/vp9_subpixel_8t_intrin_ssse3.c
 vp9/common/x86/vp9_subpixel_8t_sse2.asm
 vp9/common/x86/vp9_subpixel_8t_ssse3.asm
 vp9/common/x86/vp9_subpixel_bilinear_sse2.asm
