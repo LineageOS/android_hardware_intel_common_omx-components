@@ -115,6 +115,8 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorInit(void) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
+
+    WaitForFrameDisplayed();
     // Session should be torn down in ProcessorStop, delayed to ProcessorDeinit
     // to allow remaining frames completely rendered.
     LOGI("Calling Drm_DestroySession.");
@@ -568,6 +570,46 @@ void OMXVideoDecoderAVCSecure::KeepAliveTimerCallback() {
     if (sepres != 0) {
         LOGE("Drm_KeepAlive failed. Result = %#x", sepres);
     }
+}
+
+void OMXVideoDecoderAVCSecure::WaitForFrameDisplayed() {
+    int fd = open("/dev/card0", O_RDWR, 0);
+    if (fd <= 0) {
+        LOGE("Failed to open card 0 device");
+        return;
+    }
+
+    // Wait up to 200ms until both overlay planes are disabled
+    int status = 3;
+    int retry = 20;
+    while (retry--) {
+        for (int i = 0; i < 2; i++) {
+            if (status & (1 << i)) {
+                struct drm_psb_register_rw_arg arg;
+                memset(&arg, 0, sizeof(struct drm_psb_register_rw_arg));
+                arg.get_plane_state_mask = 1;
+                arg.plane.type = DC_OVERLAY_PLANE;
+                arg.plane.index = i;
+                int ret = drmCommandWriteRead(fd, DRM_PSB_REGISTER_RW, &arg, sizeof(arg));
+                if (ret != 0) {
+                    LOGE("Failed to query status of overlay plane %d, ret = %d", i, ret);
+                    status &= ~(1 << i);
+                } else if (arg.plane.ctx == PSB_DC_PLANE_DISABLED) {
+                    status &= ~(1 << i);
+                }
+            }
+        }
+        if (status == 0) {
+            break;
+        }
+        // Sleep 10ms then query again
+        usleep(10000);
+    }
+
+    if (status != 0) {
+        LOGE("Overlay planes not disabled, status %d", status);
+    }
+    close(fd);
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p) {

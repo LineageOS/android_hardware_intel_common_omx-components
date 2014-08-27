@@ -54,7 +54,7 @@ private:
     void  MemFreeDataBuffer(OMX_U8 *pBuffer);
     static void KeepAliveTimerCallback(sigval v);
     void KeepAliveTimerCallback();
-    //bool EnableIEDSession(bool enable);
+    void WaitForFrameDisplayed();
     OMX_ERRORTYPE PrepareWVCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
     OMX_ERRORTYPE PrepareCENCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
     OMX_ERRORTYPE PreparePRASFDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
