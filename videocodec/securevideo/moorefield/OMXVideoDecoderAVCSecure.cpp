@@ -120,17 +120,9 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
     // Session should be torn down in ProcessorStop, delayed to ProcessorDeinit
     // to allow remaining frames completely rendered.
     LOGI("Calling Drm_DestroySession.");
-    if (mDrmScheme == DRM_SCHEME_WVC) {
-        uint32_t sepres = drm_destroy_session(WV_SESSION_ID);
-        if (sepres != 0) {
-            LOGW("Drm_DestroySession returns %#x", sepres);
-        }
-    }
-    else if(mDrmScheme == DRM_SCHEME_CENC) {
-        uint32_t ret = drm_wv_mod_stop_playback(WV_SESSION_ID);
-        if (ret != DRM_WV_MOD_SUCCESS) {
-            LOGW("Modular WV - drm_wv_mod_stop_playback returns %#x", ret);
-        }
+    uint32_t ret = drm_stop_playback();
+    if (ret != DRM_WV_MOD_SUCCESS) {
+        ALOGE("drm_stop_playback failed: (0x%x)", ret);
     }
     return OMXVideoDecoderBase::ProcessorDeinit();
 }
@@ -138,6 +130,11 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
     uint32_t imrOffset = 0;
     uint32_t dataBufferSize = DATA_BUFFER_SIZE;
+
+    uint32_t ret = drm_start_playback();
+    if (ret != DRM_WV_MOD_SUCCESS) {
+        ALOGE("drm_start_playback failed: (0x%x)", ret);
+    }
 
     mSessionPaused = false;
     return OMXVideoDecoderBase::ProcessorStart();
