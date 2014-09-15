@@ -5,6 +5,8 @@ ifeq ($(strip $(USE_VIDEO_EFFECT)),true)
 LOCAL_C_FLAGS := -DUSE_VIDEO_EFFECT
 endif
 
+################################################################################
+
 include $(CLEAR_VARS)
 
 ifeq ($(TARGET_HAS_VPP),true)
@@ -21,7 +23,6 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
-    $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
@@ -64,6 +65,7 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
+################################################################################
 
 PLATFORM_SUPPORT_VP8 := \
     merrifield \
@@ -89,7 +91,6 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
-    $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
@@ -99,6 +100,7 @@ LOCAL_SRC_FILES := \
     OMXComponentCodecBase.cpp\
     OMXVideoDecoderBase.cpp\
     OMXVideoDecoderVP8.cpp
+LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderVP8
 
@@ -128,6 +130,8 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 endif
+
+################################################################################
 
 # VP9 with SW decode and HW Render
 include $(CLEAR_VARS)
@@ -184,10 +188,11 @@ ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
 include $(BUILD_SHARED_LIBRARY)
-# end VP9 SW decode and HW Render
 
+################################################################################
 
 include $(CLEAR_VARS)
+
 ifeq ($(TARGET_HAS_VPP),true)
 LOCAL_CFLAGS += -DTARGET_HAS_VPP
 endif
@@ -202,7 +207,6 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
-    $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
@@ -241,6 +245,8 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
+################################################################################
+
 include $(CLEAR_VARS)
 ifeq ($(TARGET_HAS_VPP),true)
 LOCAL_CFLAGS += -DTARGET_HAS_VPP
@@ -256,7 +262,6 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
-    $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
@@ -295,6 +300,8 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
+################################################################################
+
 include $(CLEAR_VARS)
 ifeq ($(TARGET_HAS_VPP),true)
 LOCAL_CFLAGS += -DTARGET_HAS_VPP
@@ -310,7 +317,6 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
-    $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
@@ -353,6 +359,8 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
+################################################################################
+
 #Build secure AVC video decoder only on supported platforms
 ifeq ($(USE_INTEL_SECURE_AVC),true)
 
@@ -372,12 +380,9 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
-    $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
-    $(TARGET_OUT_HEADERS)/drm \
     $(TARGET_OUT_HEADERS)/libdrm \
-    $(TARGET_OUT_HEADERS)/libttm \
     $(call include-path-for, frameworks-native)/media/hardware \
     $(call include-path-for, frameworks-native)/media/openmax \
 
@@ -386,16 +391,14 @@ LOCAL_SRC_FILES := \
     OMXVideoDecoderBase.cpp
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
-#Secure AVC decoder for Moorefield V0 (uses IED)
-LOCAL_SHARED_LIBRARIES += \
-    libsepdrm_cc54 \
-    libdx_cc7
-
-LOCAL_SRC_FILES += securevideo/moorefield/OMXVideoDecoderAVCSecure.cpp
-
+LOCAL_SRC_FILES += \
+    securevideo/moorefield/OMXVideoDecoderAVCSecure.cpp \
+    securevideo/moorefield/drm_vendor_api.c
 LOCAL_CFLAGS += -DVED_TILING
+LOCAL_SHARED_LIBRARIES += libdl
 endif
 
+LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderAVCSecure
 
@@ -403,22 +406,24 @@ include $(BUILD_SHARED_LIBRARY)
 
 endif #USE_INTEL_SECURE_AVC
 
+################################################################################
+
 include $(CLEAR_VARS)
 ifeq ($(TARGET_HAS_VPP),true)
 LOCAL_CFLAGS += -DTARGET_HAS_VPP
 endif
 
 LOCAL_SHARED_LIBRARIES := \
-        libwrs_omxil_common \
-        liblog \
-        libva_videoencoder \
-        libva \
-        libva-android \
-        libva-tpi \
-        libutils \
-        libcutils \
-        libhardware \
-        libintelmetadatabuffer
+    libwrs_omxil_common \
+    liblog \
+    libva_videoencoder \
+    libva \
+    libva-android \
+    libva-tpi \
+    libutils \
+    libcutils \
+    libhardware \
+    libintelmetadatabuffer
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -434,10 +439,12 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderAVC.cpp
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
+LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderAVC
 include $(BUILD_SHARED_LIBRARY)
 
+################################################################################
 
 include $(CLEAR_VARS)
 ifeq ($(TARGET_HAS_VPP),true)
@@ -445,16 +452,16 @@ LOCAL_CFLAGS += -DTARGET_HAS_VPP
 endif
 
 LOCAL_SHARED_LIBRARIES := \
-        libwrs_omxil_common \
-        liblog \
-        libva_videoencoder \
-        libva \
-        libva-android \
-        libva-tpi \
-        libutils \
-        libcutils \
-        libhardware \
-        libintelmetadatabuffer
+    libwrs_omxil_common \
+    liblog \
+    libva_videoencoder \
+    libva \
+    libva-android \
+    libva-tpi \
+    libutils \
+    libcutils \
+    libhardware \
+    libintelmetadatabuffer
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -479,22 +486,24 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderH263
 include $(BUILD_SHARED_LIBRARY)
 
+################################################################################
+
 include $(CLEAR_VARS)
 ifeq ($(TARGET_HAS_VPP),true)
 LOCAL_CFLAGS += -DTARGET_HAS_VPP
 endif
 
 LOCAL_SHARED_LIBRARIES := \
-        libwrs_omxil_common \
-        liblog \
-        libva_videoencoder \
-        libva \
-        libva-android \
-        libva-tpi \
-        libutils \
-        libcutils \
-        libhardware \
-        libintelmetadatabuffer
+    libwrs_omxil_common \
+    liblog \
+    libva_videoencoder \
+    libva \
+    libva-android \
+    libva-tpi \
+    libutils \
+    libcutils \
+    libhardware \
+    libintelmetadatabuffer
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -511,9 +520,12 @@ LOCAL_SRC_FILES := \
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
 
+LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderMPEG4
 include $(BUILD_SHARED_LIBRARY)
+
+################################################################################
 
 include $(CLEAR_VARS)
 ifeq ($(TARGET_HAS_VPP),true)
@@ -530,7 +542,6 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
     $(TARGET_OUT_HEADERS)/khronos/openmax \
-    $(PV_INCLUDES) \
     $(TARGET_OUT_HEADERS)/libmix_videodecoder \
     $(TARGET_OUT_HEADERS)/libva \
     $(call include-path-for, frameworks-native)/media/hardware \
@@ -541,6 +552,7 @@ LOCAL_SRC_FILES := \
     OMXVideoDecoderBase.cpp\
     OMXVideoDecoderPAVC.cpp
 
+LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderPAVC
 ifeq ($(TARGET_BOARD_PLATFORM),clovertrail)
@@ -557,22 +569,24 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
+################################################################################
+
 include $(CLEAR_VARS)
 ifeq ($(TARGET_HAS_VPP),true)
 LOCAL_CFLAGS += -DTARGET_HAS_VPP
 endif
 
 LOCAL_SHARED_LIBRARIES := \
-        libwrs_omxil_common \
-        liblog \
-        libva_videoencoder \
-        libva \
-        libva-android \
-        libva-tpi \
-        libutils \
-        libcutils \
-        libhardware \
-        libintelmetadatabuffer
+    libwrs_omxil_common \
+    liblog \
+    libva_videoencoder \
+    libva \
+    libva-android \
+    libva-tpi \
+    libutils \
+    libcutils \
+    libhardware \
+    libintelmetadatabuffer
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -588,8 +602,9 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderVP8.cpp
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
+LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderVP8
 include $(BUILD_SHARED_LIBRARY)
 
-endif
+endif # ifeq ($(strip $(BOARD_USES_WRS_OMXIL_CORE)),true)

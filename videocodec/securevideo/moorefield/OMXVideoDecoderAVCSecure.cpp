@@ -23,16 +23,6 @@
 #include <signal.h>
 #include <pthread.h>
 
-
-extern "C" {
-#include <sepdrm.h>
-#include <pr_drm_api.h>
-#include <fcntl.h>
-#include <linux/psb_drm.h>
-#include "xf86drm.h"
-#include "xf86drmMode.h"
-}
-
 #include "VideoFrameInfo.h"
 
 // Be sure to have an equal string in VideoDecoderHost.cpp (libmix)
@@ -68,6 +58,9 @@ OMXVideoDecoderAVCSecure::OMXVideoDecoderAVCSecure()
     : mKeepAliveTimer(0),
       mSessionPaused(false){
     LOGV("OMXVideoDecoderAVCSecure is constructed.");
+    if (drm_vendor_api_init(&drm_vendor_api)) {
+        LOGE("drm_vendor_api_init failed");
+    }
     mVideoDecoder = createVideoDecoder(AVC_SECURE_MIME_TYPE);
     if (!mVideoDecoder) {
         LOGE("createVideoDecoder failed for \"%s\"", AVC_SECURE_MIME_TYPE);
@@ -80,7 +73,9 @@ OMXVideoDecoderAVCSecure::OMXVideoDecoderAVCSecure()
 
 OMXVideoDecoderAVCSecure::~OMXVideoDecoderAVCSecure() {
     LOGI("OMXVideoDecoderAVCSecure is destructed.");
-
+    if (drm_vendor_api_deinit(&drm_vendor_api)) {
+        LOGE("drm_vendor_api_deinit failed");
+    }
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::InitInputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionInput) {
@@ -111,6 +106,9 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::InitInputPortFormatSpecific(OMX_PARAM_PO
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorInit(void) {
     mSessionPaused = false;
+    if (drm_vendor_api.handle == NULL) {
+        return OMX_ErrorUndefined;
+    }
     return OMXVideoDecoderBase::ProcessorInit();
 }
 
@@ -120,7 +118,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
     // Session should be torn down in ProcessorStop, delayed to ProcessorDeinit
     // to allow remaining frames completely rendered.
     LOGI("Calling Drm_DestroySession.");
-    uint32_t ret = drm_stop_playback();
+    uint32_t ret = drm_vendor_api.drm_stop_playback();
     if (ret != DRM_WV_MOD_SUCCESS) {
         ALOGE("drm_stop_playback failed: (0x%x)", ret);
     }
@@ -131,7 +129,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
     uint32_t imrOffset = 0;
     uint32_t dataBufferSize = DATA_BUFFER_SIZE;
 
-    uint32_t ret = drm_start_playback();
+    uint32_t ret = drm_vendor_api.drm_start_playback();
     if (ret != DRM_WV_MOD_SUCCESS) {
         ALOGE("drm_start_playback failed: (0x%x)", ret);
     }
@@ -236,10 +234,11 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareConfigBuffer(VideoConfigBuffer *p
     return ret;
 }
 
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareWVCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareWVCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p)
+{
 
    OMX_ERRORTYPE ret = OMX_ErrorNone;
-
+   (void) retain; // unused parameter
 
    p->flag |= HAS_COMPLETE_FRAME;
 
@@ -272,7 +271,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareWVCDecodeBuffer(OMX_BUFFERHEADERT
        nalu_headers.p_hdrs_buf = (uint8_t *)(dataBuffer->data + nalu_headers.frame_size + 4);
        nalu_headers.parse_size = buffer->nFilledLen;
 
-       uint32_t res = drm_wv_return_naluheaders(WV_SESSION_ID, &nalu_headers);
+       uint32_t res = drm_vendor_api.drm_wv_return_naluheaders(WV_SESSION_ID, &nalu_headers);
        if (res == DRM_FAIL_FW_SESSION) {
            LOGW("Drm_WV_ReturnNALUHeaders failed. Session is disabled.");
            mSessionPaused = true;
@@ -305,8 +304,10 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareWVCDecodeBuffer(OMX_BUFFERHEADERT
    dataBuffer->size = NALU_BUFFER_SIZE;
    return ret;
 }
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareCENCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareCENCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p)
+{
     OMX_ERRORTYPE ret = OMX_ErrorNone;
+    (void) retain; // unused parameter
 
     // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
     // if flag is set, buffer will only contain codec data.
@@ -328,8 +329,10 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareCENCDecodeBuffer(OMX_BUFFERHEADER
 }
 
 
-OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePRASFDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p){
+OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePRASFDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p)
+{
     OMX_ERRORTYPE ret = OMX_ErrorNone;
+    (void) retain; // unused parameter
 
     // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
     // if flag is set, buffer will only contain codec data.
@@ -367,7 +370,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePRASFDecodeBuffer(OMX_BUFFERHEADE
         nalu_headers.p_hdrs_buf = (uint8_t *)(dataBuffer->data + nalu_headers.frame_size + 4);
         nalu_headers.parse_size = buffer->nFilledLen;
 
-        uint32_t res = drm_pr_return_naluheaders(dataBuffer->session_id, &nalu_headers);
+        uint32_t res = drm_vendor_api.drm_pr_return_naluheaders(dataBuffer->session_id, &nalu_headers);
 
         if (res == DRM_FAIL_FW_SESSION || !nalu_headers.hdrs_buf_len) {
             LOGW("drm_ReturnNALUHeaders failed. Session is disabled.");
@@ -482,6 +485,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::GetParamVideoAVCProfileLevel(OMX_PTR pSt
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::SetParamVideoAVCProfileLevel(OMX_PTR pStructure) {
     LOGW("SetParamVideoAVCProfileLevel is not supported.");
+    (void) pStructure; // unused parameter
     return OMX_ErrorUnsupportedSetting;
 }
 
@@ -563,7 +567,7 @@ void OMXVideoDecoderAVCSecure::KeepAliveTimerCallback(sigval v) {
 
 void OMXVideoDecoderAVCSecure::KeepAliveTimerCallback() {
     uint32_t timeout = DRM_KEEP_ALIVE_TIMER;
-    uint32_t sepres =  drm_keep_alive(WV_SESSION_ID, &timeout);
+    uint32_t sepres =  drm_vendor_api.drm_keep_alive(WV_SESSION_ID, &timeout);
     if (sepres != 0) {
         LOGE("Drm_KeepAlive failed. Result = %#x", sepres);
     }

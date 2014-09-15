@@ -19,6 +19,9 @@
 
 
 #include "OMXVideoDecoderBase.h"
+extern "C" {
+#include "drm_vendor_api.h"
+}
 
 class OMXVideoDecoderAVCSecure : public OMXVideoDecoderBase {
 public:
@@ -84,6 +87,7 @@ private:
     timer_t mKeepAliveTimer;
 
     bool mSessionPaused;
+    struct drm_vendor_api drm_vendor_api;
 };
 
 #endif /* OMX_VIDEO_DECODER_AVC_SECURE_H_ */
