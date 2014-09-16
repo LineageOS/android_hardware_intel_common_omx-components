@@ -183,7 +183,6 @@ endif
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
-LOCAL_LDFLAGS := -Wl,--no-warn-shared-textrel
 include $(BUILD_SHARED_LIBRARY)
 # end VP9 SW decode and HW Render
 
