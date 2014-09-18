@@ -168,8 +168,8 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEF
     memset(&mConfigIntelSliceNumbers, 0, sizeof(mConfigIntelSliceNumbers));
     SetTypeHeader(&mConfigIntelSliceNumbers, sizeof(mConfigIntelSliceNumbers));
     mConfigIntelSliceNumbers.nPortIndex = OUTPORT_INDEX;
-    mConfigIntelSliceNumbers.nISliceNumber = 2;
-    mConfigIntelSliceNumbers.nPSliceNumber = 2;
+    mConfigIntelSliceNumbers.nISliceNumber = 1;
+    mConfigIntelSliceNumbers.nPSliceNumber = 1;
 
     // Override OMX_PARAM_PORTDEFINITIONTYPE
     paramPortDefinitionOutput->nBufferCountActual = OUTPORT_ACTUAL_BUFFER_COUNT;
