@@ -189,10 +189,55 @@ LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
 include $(BUILD_SHARED_LIBRARY)
 
-################################################################################
+# VP9 hybrid decoder and HW Render
+ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
+include $(CLEAR_VARS)
+ifeq ($(TARGET_HAS_VPP),true)
+LOCAL_CFLAGS += -DTARGET_HAS_VPP
+endif
+LOCAL_SHARED_LIBRARIES := \
+    libui \
+    libwrs_omxil_common \
+    liblog \
+    libva_videodecoder \
+    libdl \
+
+LOCAL_C_INCLUDES := \
+    $(TARGET_OUT_HEADERS)/wrs_omxil_core \
+    $(TARGET_OUT_HEADERS)/khronos/openmax \
+    $(TARGET_OUT_HEADERS)/libmix_videodecoder \
+    $(TARGET_OUT_HEADERS)/libva \
+    $(call include-path-for, frameworks-native)/media/hardware \
+    $(call include-path-for, frameworks-native)/media/openmax
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+    LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
+endif
+
+LOCAL_SRC_FILES := \
+    OMXComponentCodecBase.cpp\
+    OMXVideoDecoderBase.cpp\
+    OMXVideoDecoderVP9Hybrid.cpp
+
+LOCAL_CFLAGS += -Werror
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE := libOMXVideoDecoderVP9Hybrid
+
+ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
+LOCAL_CFLAGS += -DVED_TILING
+endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
+LOCAL_CFLAGS += -DUSE_GEN_HW
+endif
+include $(BUILD_SHARED_LIBRARY)
+endif
 
 include $(CLEAR_VARS)
-
 ifeq ($(TARGET_HAS_VPP),true)
 LOCAL_CFLAGS += -DTARGET_HAS_VPP
 endif
