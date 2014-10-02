@@ -54,27 +54,47 @@ struct DataBuffer {
 };
 //#pragma pack(pop)
 
+bool OMXVideoDecoderAVCSecure::EnableIEDSession(bool enable)
+{
+    if (mDrmDevFd <= 0) {
+        ALOGE("invalid mDrmDevFd");
+        return false;
+    }
+    int request = enable ?  DRM_PSB_ENABLE_IED_SESSION : DRM_PSB_DISABLE_IED_SESSION;
+    int ret = drmCommandNone(mDrmDevFd, request);
+    return ret == 0;
+}
+
 OMXVideoDecoderAVCSecure::OMXVideoDecoderAVCSecure()
     : mKeepAliveTimer(0),
       mSessionPaused(false){
-    LOGV("OMXVideoDecoderAVCSecure is constructed.");
+    ALOGV("OMXVideoDecoderAVCSecure is constructed.");
     if (drm_vendor_api_init(&drm_vendor_api)) {
-        LOGE("drm_vendor_api_init failed");
+        ALOGE("drm_vendor_api_init failed");
     }
     mVideoDecoder = createVideoDecoder(AVC_SECURE_MIME_TYPE);
     if (!mVideoDecoder) {
-        LOGE("createVideoDecoder failed for \"%s\"", AVC_SECURE_MIME_TYPE);
+        ALOGE("createVideoDecoder failed for \"%s\"", AVC_SECURE_MIME_TYPE);
     }
     // Override default native buffer count defined in the base class
     mNativeBufferCount = OUTPORT_NATIVE_BUFFER_COUNT;
 
     BuildHandlerList();
+
+    mDrmDevFd = open("/dev/card0", O_RDWR, 0);
+    if (mDrmDevFd <= 0) {
+        ALOGE("Failed to open drm device.");
+    }
 }
 
 OMXVideoDecoderAVCSecure::~OMXVideoDecoderAVCSecure() {
-    LOGI("OMXVideoDecoderAVCSecure is destructed.");
+    ALOGI("OMXVideoDecoderAVCSecure is destructed.");
     if (drm_vendor_api_deinit(&drm_vendor_api)) {
-        LOGE("drm_vendor_api_deinit failed");
+        ALOGE("drm_vendor_api_deinit failed");
+    }
+    if (mDrmDevFd > 0) {
+        close(mDrmDevFd);
+        mDrmDevFd = 0;
     }
 }
 
@@ -117,11 +137,12 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
     WaitForFrameDisplayed();
     // Session should be torn down in ProcessorStop, delayed to ProcessorDeinit
     // to allow remaining frames completely rendered.
-    LOGI("Calling Drm_DestroySession.");
+    ALOGI("Calling Drm_DestroySession.");
     uint32_t ret = drm_vendor_api.drm_stop_playback();
     if (ret != DRM_WV_MOD_SUCCESS) {
         ALOGE("drm_stop_playback failed: (0x%x)", ret);
     }
+    EnableIEDSession(false);
     return OMXVideoDecoderBase::ProcessorDeinit();
 }
 
@@ -129,6 +150,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
     uint32_t imrOffset = 0;
     uint32_t dataBufferSize = DATA_BUFFER_SIZE;
 
+    EnableIEDSession(true);
     uint32_t ret = drm_vendor_api.drm_start_playback();
     if (ret != DRM_WV_MOD_SUCCESS) {
         ALOGE("drm_start_playback failed: (0x%x)", ret);
@@ -171,7 +193,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorProcess(
 
         ret_value = timer_create(CLOCK_REALTIME, &sev, &mKeepAliveTimer);
         if (ret_value != 0) {
-            LOGE("Failed to create timer.");
+            ALOGE("Failed to create timer.");
         } else {
             struct itimerspec its;
             its.it_value.tv_sec = -1; // never expire
@@ -181,14 +203,14 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorProcess(
 
             ret_value = timer_settime(mKeepAliveTimer, TIMER_ABSTIME, &its, NULL);
             if (ret_value != 0) {
-                LOGE("Failed to set timer.");
+                ALOGE("Failed to set timer.");
             }
         }
     }
 
     if (dataBuffer->size == 0) {
         // error occurs during decryption.
-        LOGW("size of returned data buffer is 0, decryption fails.");
+        ALOGW("size of returned data buffer is 0, decryption fails.");
         mVideoDecoder->flush();
         usleep(FLUSH_WAIT_INTERVAL);
         OMX_BUFFERHEADERTYPE *pOutput = *pBuffers[OUTPORT_INDEX];
@@ -203,7 +225,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorProcess(
     OMX_ERRORTYPE ret;
     ret = OMXVideoDecoderBase::ProcessorProcess(pBuffers, retains, numberBuffers);
     if (ret != OMX_ErrorNone) {
-        LOGE("OMXVideoDecoderBase::ProcessorProcess failed. Result: %#x", ret);
+        ALOGE("OMXVideoDecoderBase::ProcessorProcess failed. Result: %#x", ret);
         return ret;
     }
 
@@ -243,7 +265,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareWVCDecodeBuffer(OMX_BUFFERHEADERT
    p->flag |= HAS_COMPLETE_FRAME;
 
    if (buffer->nOffset != 0) {
-       LOGW("buffer offset %u is not zero!!!", buffer->nOffset);
+       ALOGW("buffer offset %u is not zero!!!", buffer->nOffset);
    }
 
    DataBuffer *dataBuffer = (DataBuffer *)buffer->pBuffer;
@@ -264,7 +286,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareWVCDecodeBuffer(OMX_BUFFERHEADERT
        // Use same video buffer to fill NALU headers returned by chaabi,
        // Adding 4 because the first 4 bytes after databuffer will be used to store length of NALU headers
        if((nalu_headers.frame_size + NALU_HEADER_LENGTH) > INPORT_BUFFER_SIZE){
-           LOGE("Not enough buffer for NALU headers");
+           ALOGE("Not enough buffer for NALU headers");
            return OMX_ErrorOverflow;
        }
 
@@ -273,12 +295,12 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareWVCDecodeBuffer(OMX_BUFFERHEADERT
 
        uint32_t res = drm_vendor_api.drm_wv_return_naluheaders(WV_SESSION_ID, &nalu_headers);
        if (res == DRM_FAIL_FW_SESSION) {
-           LOGW("Drm_WV_ReturnNALUHeaders failed. Session is disabled.");
+           ALOGW("Drm_WV_ReturnNALUHeaders failed. Session is disabled.");
            mSessionPaused = true;
            ret =  OMX_ErrorNotReady;
        } else if (res != 0) {
            mSessionPaused = false;
-           LOGE("Drm_WV_ReturnNALUHeaders failed. Error = %#x, frame_size: %d, len = %u", res, nalu_headers.frame_size, buffer->nFilledLen);
+           ALOGE("Drm_WV_ReturnNALUHeaders failed. Error = %#x, frame_size: %d, len = %u", res, nalu_headers.frame_size, buffer->nFilledLen);
            ret = OMX_ErrorHardware;
        } else {
            mSessionPaused = false;
@@ -312,13 +334,13 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareCENCDecodeBuffer(OMX_BUFFERHEADER
     // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
     // if flag is set, buffer will only contain codec data.
     if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
-        LOGI("Received AVC codec data.");
+        ALOGI("Received AVC codec data.");
     //    return ret;
     }
     p->flag |= HAS_COMPLETE_FRAME | IS_SUBSAMPLE_ENCRYPTION;
 
     if (buffer->nOffset != 0) {
-        LOGW("buffer offset %u is not zero!!!", buffer->nOffset);
+        ALOGW("buffer offset %u is not zero!!!", buffer->nOffset);
     }
 
     DataBuffer *dataBuffer = (DataBuffer *)buffer->pBuffer;
@@ -337,13 +359,13 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePRASFDecodeBuffer(OMX_BUFFERHEADE
     // OMX_BUFFERFLAG_CODECCONFIG is an optional flag
     // if flag is set, buffer will only contain codec data.
     if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
-        LOGV("PR: Received codec data.");
+        ALOGV("PR: Received codec data.");
         return ret;
     }
     p->flag |= HAS_COMPLETE_FRAME;
 
     if (buffer->nOffset != 0) {
-        LOGW("PR:buffer offset %u is not zero!!!", buffer->nOffset);
+        ALOGW("PR:buffer offset %u is not zero!!!", buffer->nOffset);
     }
 
     DataBuffer *dataBuffer = (DataBuffer *)buffer->pBuffer;
@@ -363,7 +385,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePRASFDecodeBuffer(OMX_BUFFERHEADE
         // Use same video buffer to fill NALU headers returned by chaabi,
         // Adding 4 because the first 4 bytes after databuffer will be used to store length of NALU headers
         if((nalu_headers.frame_size + NALU_HEADER_LENGTH) > INPORT_BUFFER_SIZE){
-            LOGE("Not enough buffer for NALU headers");
+            ALOGE("Not enough buffer for NALU headers");
             return OMX_ErrorOverflow;
         }
 
@@ -373,12 +395,12 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PreparePRASFDecodeBuffer(OMX_BUFFERHEADE
         uint32_t res = drm_vendor_api.drm_pr_return_naluheaders(dataBuffer->session_id, &nalu_headers);
 
         if (res == DRM_FAIL_FW_SESSION || !nalu_headers.hdrs_buf_len) {
-            LOGW("drm_ReturnNALUHeaders failed. Session is disabled.");
+            ALOGW("drm_ReturnNALUHeaders failed. Session is disabled.");
             mSessionPaused = true;
             ret =  OMX_ErrorNotReady;
         } else if (res != 0) {
             mSessionPaused = false;
-            LOGE("drm_pr_return_naluheaders failed. Error = %#x, frame_size: %d, len = %u", res, nalu_headers.frame_size, buffer->nFilledLen);
+            ALOGE("drm_pr_return_naluheaders failed. Error = %#x, frame_size: %d, len = %u", res, nalu_headers.frame_size, buffer->nFilledLen);
             ret = OMX_ErrorHardware;
         } else {
            mSessionPaused = false;
@@ -422,7 +444,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         // if flag is set, buffer will only contain codec data.
         mDrmScheme = DRM_SCHEME_WVC;
         if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
-               LOGV("Received AVC codec data.");
+               ALOGV("Received AVC codec data.");
                return ret;
         }
         return PrepareWVCDecodeBuffer(buffer, retain, p);
@@ -484,7 +506,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::GetParamVideoAVCProfileLevel(OMX_PTR pSt
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::SetParamVideoAVCProfileLevel(OMX_PTR pStructure) {
-    LOGW("SetParamVideoAVCProfileLevel is not supported.");
+    ALOGW("SetParamVideoAVCProfileLevel is not supported.");
     (void) pStructure; // unused parameter
     return OMX_ErrorUnsupportedSetting;
 }
@@ -494,7 +516,7 @@ OMX_U8* OMXVideoDecoderAVCSecure::MemAllocDataBuffer(OMX_U32 nSizeBytes, OMX_PTR
     if (p) {
         return p->MemAllocDataBuffer(nSizeBytes);
     }
-    LOGE("NULL pUserData.");
+    ALOGE("NULL pUserData.");
     return NULL;
 }
 
@@ -504,27 +526,27 @@ void OMXVideoDecoderAVCSecure::MemFreeDataBuffer(OMX_U8 *pBuffer, OMX_PTR pUserD
         p->MemFreeDataBuffer(pBuffer);
         return;
     }
-    LOGE("NULL pUserData.");
+    ALOGE("NULL pUserData.");
 }
 
 OMX_U8* OMXVideoDecoderAVCSecure::MemAllocDataBuffer(OMX_U32 nSizeBytes) {
     if (nSizeBytes > INPORT_BUFFER_SIZE) {
-        LOGE("Invalid size (%u) of memory to allocate.", nSizeBytes);
+        ALOGE("Invalid size (%u) of memory to allocate.", nSizeBytes);
         return NULL;
     }
-    LOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE, "Size of memory to allocate is %u", nSizeBytes);
+    ALOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE, "Size of memory to allocate is %u", nSizeBytes);
     for (int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
         if (mDataBufferSlot[i].owner == NULL) {
             DataBuffer *pBuffer = new DataBuffer;
             if (pBuffer == NULL) {
-                LOGE("Failed to allocate memory.");
+                ALOGE("Failed to allocate memory.");
                 return NULL;
             }
 
             pBuffer->data = new uint8_t [INPORT_BUFFER_SIZE];
             if (pBuffer->data == NULL) {
                 delete pBuffer;
-                LOGE("Failed to allocate memory, size to allocate %d.", INPORT_BUFFER_SIZE);
+                ALOGE("Failed to allocate memory, size to allocate %d.", INPORT_BUFFER_SIZE);
                 return NULL;
             }
 
@@ -533,11 +555,11 @@ OMX_U8* OMXVideoDecoderAVCSecure::MemAllocDataBuffer(OMX_U32 nSizeBytes) {
             pBuffer->size = INPORT_BUFFER_SIZE;
             mDataBufferSlot[i].owner = (OMX_U8 *)pBuffer;
 
-            LOGV("Allocating buffer = %#x, Data offset = %#x, data = %#x",  (uint32_t)pBuffer, mDataBufferSlot[i].offset, (uint32_t)pBuffer->data);
+            ALOGV("Allocating buffer = %#x, Data offset = %#x, data = %#x",  (uint32_t)pBuffer, mDataBufferSlot[i].offset, (uint32_t)pBuffer->data);
             return (OMX_U8 *) pBuffer;
         }
     }
-    LOGE("Data buffer slot is not available.");
+    ALOGE("Data buffer slot is not available.");
     return NULL;
 }
 
@@ -548,14 +570,14 @@ void OMXVideoDecoderAVCSecure::MemFreeDataBuffer(OMX_U8 *pBuffer) {
     }
     for (int i = 0; i < INPORT_ACTUAL_BUFFER_COUNT; i++) {
         if (pBuffer == mDataBufferSlot[i].owner) {
-            LOGV("Freeing Data buffer offset = %d, data = %#x", mDataBufferSlot[i].offset, (uint32_t)p->data);
+            ALOGV("Freeing Data buffer offset = %d, data = %#x", mDataBufferSlot[i].offset, (uint32_t)p->data);
             delete [] p->data;
             delete p;
             mDataBufferSlot[i].owner = NULL;
             return;
         }
     }
-    LOGE("Invalid buffer %#x to de-allocate", (uint32_t)pBuffer);
+    ALOGE("Invalid buffer %#x to de-allocate", (uint32_t)pBuffer);
 }
 
 void OMXVideoDecoderAVCSecure::KeepAliveTimerCallback(sigval v) {
@@ -569,14 +591,13 @@ void OMXVideoDecoderAVCSecure::KeepAliveTimerCallback() {
     uint32_t timeout = DRM_KEEP_ALIVE_TIMER;
     uint32_t sepres =  drm_vendor_api.drm_keep_alive(WV_SESSION_ID, &timeout);
     if (sepres != 0) {
-        LOGE("Drm_KeepAlive failed. Result = %#x", sepres);
+        ALOGE("Drm_KeepAlive failed. Result = %#x", sepres);
     }
 }
 
 void OMXVideoDecoderAVCSecure::WaitForFrameDisplayed() {
-    int fd = open("/dev/card0", O_RDWR, 0);
-    if (fd <= 0) {
-        LOGE("Failed to open card 0 device");
+    if (mDrmDevFd <= 0) {
+        ALOGE("Invalid mDrmDevFd");
         return;
     }
 
@@ -591,9 +612,9 @@ void OMXVideoDecoderAVCSecure::WaitForFrameDisplayed() {
                 arg.get_plane_state_mask = 1;
                 arg.plane.type = DC_OVERLAY_PLANE;
                 arg.plane.index = i;
-                int ret = drmCommandWriteRead(fd, DRM_PSB_REGISTER_RW, &arg, sizeof(arg));
+                int ret = drmCommandWriteRead(mDrmDevFd, DRM_PSB_REGISTER_RW, &arg, sizeof(arg));
                 if (ret != 0) {
-                    LOGE("Failed to query status of overlay plane %d, ret = %d", i, ret);
+                    ALOGE("Failed to query status of overlay plane %d, ret = %d", i, ret);
                     status &= ~(1 << i);
                 } else if (arg.plane.ctx == PSB_DC_PLANE_DISABLED) {
                     status &= ~(1 << i);
@@ -608,9 +629,8 @@ void OMXVideoDecoderAVCSecure::WaitForFrameDisplayed() {
     }
 
     if (status != 0) {
-        LOGE("Overlay planes not disabled, status %d", status);
+        ALOGE("Overlay planes not disabled, status %d", status);
     }
-    close(fd);
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITIONTYPE *p) {
