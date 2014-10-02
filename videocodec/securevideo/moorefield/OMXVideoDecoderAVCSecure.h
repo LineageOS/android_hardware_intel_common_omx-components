@@ -58,6 +58,7 @@ private:
     static void KeepAliveTimerCallback(sigval v);
     void KeepAliveTimerCallback();
     void WaitForFrameDisplayed();
+    bool EnableIEDSession(bool enable);
     OMX_ERRORTYPE PrepareWVCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
     OMX_ERRORTYPE PrepareCENCDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
     OMX_ERRORTYPE PreparePRASFDecodeBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p);
@@ -88,6 +89,7 @@ private:
 
     bool mSessionPaused;
     struct drm_vendor_api drm_vendor_api;
+    int mDrmDevFd;
 };
 
 #endif /* OMX_VIDEO_DECODER_AVC_SECURE_H_ */
