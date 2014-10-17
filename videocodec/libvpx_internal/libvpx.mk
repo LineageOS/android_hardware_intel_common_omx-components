@@ -115,7 +115,7 @@ LOCAL_GENERATED_SOURCES += $(VPX_GEN)
 
 ifeq ($(libvpx_target),x86)
 libvpx_x86_asm_src_files := $(filter %.asm, $(libvpx_codec_srcs_unique))
-libvpx_x86_yasm_dir := prebuilts/misc/linux-x86/yasm
+libvpx_x86_yasm_dir := prebuilts/misc/$(HOST_OS)-$(HOST_PREBUILT_ARCH)/yasm
 
 X86_ASM_GEN := $(addprefix $(libvpx_intermediates)/, $(libvpx_x86_asm_src_files:%.asm=%.asm.o))
 
