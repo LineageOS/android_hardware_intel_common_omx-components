@@ -344,25 +344,12 @@ OMX_ERRORTYPE OMXVideoDecoderVP9HWR::ProcessorInit(void)
 
 OMX_ERRORTYPE OMXVideoDecoderVP9HWR::ProcessorDeinit(void)
 {
-    mOMXBufferHeaderTypePtrNum = 0;
-    memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
-
     destroyDecoder();
     unsigned int i = 0;
-
-    for (i = 0; i < MAX_NATIVE_BUFFER_COUNT; i++) {
-        delete extMIDs[i]->m_surface;
-        free(extMIDs[i]);
-    }
-
     if (mWorkingMode == GRAPHICBUFFER_MODE) {
         for (i = 0; i < mOMXBufferHeaderTypePtrNum; i++) {
             if (extMIDs[i]->m_surface != NULL) {
                 vaDestroySurfaces(mVADisplay, extMIDs[i]->m_surface, 1);
-            }
-            if (extMIDs[i]->m_usrAddr != NULL) {
-                free(extMIDs[i]->m_usrAddr);
-                extMIDs[i]->m_usrAddr = NULL;
             }
         }
 
@@ -373,6 +360,12 @@ OMX_ERRORTYPE OMXVideoDecoderVP9HWR::ProcessorDeinit(void)
                 extMIDs[i]->m_usrAddr = NULL;
             }
         }
+    }
+    mOMXBufferHeaderTypePtrNum = 0;
+    memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
+    for (i = 0; i < MAX_NATIVE_BUFFER_COUNT; i++) {
+        delete extMIDs[i]->m_surface;
+        free(extMIDs[i]);
     }
 
     return OMXComponentCodecBase::ProcessorDeinit();
