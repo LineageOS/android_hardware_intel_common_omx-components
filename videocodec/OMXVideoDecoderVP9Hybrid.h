@@ -64,7 +64,7 @@ private:
     typedef bool (*InitFunc)(void *,unsigned int, unsigned int, int, unsigned int *);
     typedef bool (*CloseFunc)(void *, void *);
     typedef bool (*SingalRenderDoneFunc)(unsigned int);
-    typedef bool (*DecodeFunc)(void *, void *, unsigned char *, unsigned int);
+    typedef bool (*DecodeFunc)(void *, void *, unsigned char *, unsigned int, bool);
     typedef bool (*IsBufferAvailableFunc)();	
     typedef int (*GetOutputFunc)(void *);
     OpenFunc mOpenDecoder;
@@ -74,6 +74,7 @@ private:
     DecodeFunc mDecoderDecode;
     IsBufferAvailableFunc mCheckBufferAvailable;
     GetOutputFunc mGetOutput;
+    int64_t mLastTimeStamp;
     enum {
         // OMX_PARAM_PORTDEFINITIONTYPE
         INPORT_MIN_BUFFER_COUNT = 1,

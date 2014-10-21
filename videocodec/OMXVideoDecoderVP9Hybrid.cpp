@@ -39,6 +39,7 @@ OMXVideoDecoderVP9Hybrid::OMXVideoDecoderVP9Hybrid() {
     mDecoderDecode = NULL;
     mCheckBufferAvailable = NULL;
     mGetOutput = NULL;
+    mLastTimeStamp = 0;
 }
 
 OMXVideoDecoderVP9Hybrid::~OMXVideoDecoderVP9Hybrid() {
@@ -134,6 +135,9 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
     OMX_ERRORTYPE ret;
     OMX_BUFFERHEADERTYPE *inBuffer = *pBuffers[INPORT_INDEX];
     OMX_BUFFERHEADERTYPE *outBuffer = *pBuffers[OUTPORT_INDEX];
+    bool eos = (inBuffer->nFlags & OMX_BUFFERFLAG_EOS)? true:false;
+
+    eos = eos && (inBuffer->nFilledLen == 0);
 
     if (inBuffer->pBuffer == NULL) {
         LOGE("Buffer to decode is empty.");
@@ -148,20 +152,12 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
         LOGW("Buffer has OMX_BUFFERFLAG_DECODEONLY flag.");
     }
 
-    if (inBuffer->nFlags & OMX_BUFFERFLAG_EOS) {
-        if (inBuffer->nFilledLen == 0) {
-            (*pBuffers[OUTPORT_INDEX])->nFilledLen = 0;
-            (*pBuffers[OUTPORT_INDEX])->nFlags = OMX_BUFFERFLAG_EOS;
-            return OMX_ErrorNone;
-        }
-    }
-
 #if LOG_TIME == 1
     struct timeval tv_start, tv_end;
     int32_t time_ms;
     gettimeofday(&tv_start,NULL);
 #endif
-    if (mDecoderDecode(mCtx,mHybridCtx,inBuffer->pBuffer + inBuffer->nOffset,inBuffer->nFilledLen) == false) {
+    if (mDecoderDecode(mCtx,mHybridCtx,inBuffer->pBuffer + inBuffer->nOffset,inBuffer->nFilledLen, eos) == false) {
         LOGE("on2 decoder failed to decode frame.");
         return OMX_ErrorBadParameter;
     }
@@ -174,12 +170,12 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
 
     ret = FillRenderBuffer(pBuffers[OUTPORT_INDEX],
                            &retains[OUTPORT_INDEX],
-                           ((*pBuffers[INPORT_INDEX]))->nFlags);
+                           eos? OMX_BUFFERFLAG_EOS:0);
 
     if (ret == OMX_ErrorNone) {
-        (*pBuffers[OUTPORT_INDEX])->nTimeStamp = inBuffer->nTimeStamp;
+        (*pBuffers[OUTPORT_INDEX])->nTimeStamp = mLastTimeStamp;
     }
-
+    mLastTimeStamp = inBuffer->nTimeStamp;
     bool inputEoS = ((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS);
     bool outputEoS = ((*pBuffers[OUTPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS);
     // if output port is not eos, retain the input buffer
