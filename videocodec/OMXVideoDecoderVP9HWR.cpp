@@ -106,32 +106,32 @@ int getVP9FrameBuffer(void *user_priv,
                           unsigned int new_size,
                           vpx_codec_frame_buffer_t *fb)
 {
-    (void)user_priv;
+    OMXVideoDecoderVP9HWR * p = (OMXVideoDecoderVP9HWR *)user_priv;
     if (fb == NULL) {
         return -1;
     }
 
     // TODO: Adaptive playback case needs to reconsider
-    if (extNativeBufferSize < new_size) {
+    if (p->extNativeBufferSize < new_size) {
         LOGE("Provided frame buffer size < requesting min size.");
         return -1;
     }
 
     int i;
-    for (i = 0; i < extMappedNativeBufferCount; i++ ) {
-        if ((extMIDs[i]->m_render_done == true) &&
-            (extMIDs[i]->m_released == true)) {
-            fb->data = extMIDs[i]->m_usrAddr;
-            fb->size = extNativeBufferSize;
-            fb->fb_stride = extActualBufferStride;
-            fb->fb_height_stride = extActualBufferHeightStride;
+    for (i = 0; i < p->extMappedNativeBufferCount; i++ ) {
+        if ((p->extMIDs[i]->m_render_done == true) &&
+            (p->extMIDs[i]->m_released == true)) {
+            fb->data = p->extMIDs[i]->m_usrAddr;
+            fb->size = p->extNativeBufferSize;
+            fb->fb_stride = p->extActualBufferStride;
+            fb->fb_height_stride = p->extActualBufferHeightStride;
             fb->fb_index = i;
-            extMIDs[i]->m_released = false;
+            p->extMIDs[i]->m_released = false;
             break;
         }
     }
 
-    if (i == extMappedNativeBufferCount) {
+    if (i == p->extMappedNativeBufferCount) {
         LOGE("No available frame buffer in pool.");
         return -1;
     }
@@ -143,18 +143,18 @@ int getVP9FrameBuffer(void *user_priv,
 int releaseVP9FrameBuffer(void *user_priv, vpx_codec_frame_buffer_t *fb)
 {
     int i;
-    user_priv = user_priv; // to remove warning
+    OMXVideoDecoderVP9HWR * p = (OMXVideoDecoderVP9HWR *)user_priv;
     if (fb == NULL) {
         return -1;
     }
-    for (i = 0; i < extMappedNativeBufferCount; i++ ) {
-        if (fb->data == extMIDs[i]->m_usrAddr) {
-            extMIDs[i]->m_released = true;
+    for (i = 0; i < p->extMappedNativeBufferCount; i++ ) {
+        if (fb->data == p->extMIDs[i]->m_usrAddr) {
+            p->extMIDs[i]->m_released = true;
             break;
         }
     }
 
-    if (i == extMappedNativeBufferCount) {
+    if (i == p->extMappedNativeBufferCount) {
         LOGE("Not found matching frame buffer in pool, libvpx's wrong?");
         return -1;
     }
@@ -182,7 +182,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9HWR::initDecoder()
     if (vpx_codec_set_frame_buffer_functions((vpx_codec_ctx_t *)mCtx,
                                     getVP9FrameBuffer,
                                     releaseVP9FrameBuffer,
-                                    NULL)) {
+                                    this)) {
       LOGE("Failed to configure external frame buffers");
       return OMX_ErrorNotReady;
     }
@@ -367,7 +367,6 @@ OMX_ERRORTYPE OMXVideoDecoderVP9HWR::ProcessorDeinit(void)
         delete extMIDs[i]->m_surface;
         free(extMIDs[i]);
     }
-
     return OMXComponentCodecBase::ProcessorDeinit();
 }
 
