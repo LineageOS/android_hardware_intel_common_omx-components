@@ -61,12 +61,13 @@ private:
     void *mHybridCtx;
     void *mLibHandle;
     typedef bool (*OpenFunc)(void ** , void **);
-    typedef bool (*InitFunc)(void *,unsigned int, unsigned int, int, unsigned int *);
+    typedef bool (*InitFunc)(void *,unsigned int, unsigned int, int, bool, unsigned int *);
     typedef bool (*CloseFunc)(void *, void *);
-    typedef bool (*SingalRenderDoneFunc)(unsigned int);
+    typedef bool (*SingalRenderDoneFunc)(void *, unsigned int);
     typedef bool (*DecodeFunc)(void *, void *, unsigned char *, unsigned int, bool);
-    typedef bool (*IsBufferAvailableFunc)();	
-    typedef int (*GetOutputFunc)(void *);
+    typedef bool (*IsBufferAvailableFunc)(void *);
+    typedef int (*GetOutputFunc)(void*, void *);
+    typedef int (*GetRawDataOutputFunc)(void*, void *, unsigned char *, int, int);
     OpenFunc mOpenDecoder;
     InitFunc mInitDecoder;
     CloseFunc mCloseDecoder;
@@ -74,6 +75,7 @@ private:
     DecodeFunc mDecoderDecode;
     IsBufferAvailableFunc mCheckBufferAvailable;
     GetOutputFunc mGetOutput;
+    GetRawDataOutputFunc mGetRawDataOutput;
     int64_t mLastTimeStamp;
     enum {
         // OMX_PARAM_PORTDEFINITIONTYPE

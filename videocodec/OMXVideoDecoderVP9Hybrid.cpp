@@ -39,7 +39,9 @@ OMXVideoDecoderVP9Hybrid::OMXVideoDecoderVP9Hybrid() {
     mDecoderDecode = NULL;
     mCheckBufferAvailable = NULL;
     mGetOutput = NULL;
+    mGetRawDataOutput = NULL;
     mLastTimeStamp = 0;
+    mWorkingMode = RAWDATA_MODE;
 }
 
 OMXVideoDecoderVP9Hybrid::~OMXVideoDecoderVP9Hybrid() {
@@ -59,14 +61,24 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::InitInputPortFormatSpecific(
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
     unsigned int buff[MAX_GRAPHIC_BUFFER_NUM];
-    unsigned int i;
-    int bufferSize = mGraphicBufferParam.graphicBufferStride *
-                          mGraphicBufferParam.graphicBufferHeight * 1.5;
-    int bufferStride = mGraphicBufferParam.graphicBufferStride;
+    unsigned int i, bufferCount;
+    bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
+    int bufferSize,bufferStride;
 
-    for (i = 0; i < mOMXBufferHeaderTypePtrNum; i++ ) {
-        OMX_BUFFERHEADERTYPE *buf_hdr = mOMXBufferHeaderTypePtrArray[i];
-        buff[i] = (unsigned int)(buf_hdr->pBuffer);
+    if (!gralloc_mode) {
+        bufferSize = 1920 * 1080 * 1.5;
+        bufferStride = 1920;
+        bufferCount = 12;
+    } else {
+        bufferSize = mGraphicBufferParam.graphicBufferStride *
+                          mGraphicBufferParam.graphicBufferHeight * 1.5;
+        bufferStride = mGraphicBufferParam.graphicBufferStride;
+        bufferCount = mOMXBufferHeaderTypePtrNum;
+
+        for (i = 0; i < bufferCount; i++ ) {
+            OMX_BUFFERHEADERTYPE *buf_hdr = mOMXBufferHeaderTypePtrArray[i];
+            buff[i] = (unsigned int)(buf_hdr->pBuffer);
+        }
     }
 
     mLibHandle = dlopen("libDecoderVP9Hybrid.so", RTLD_NOW);
@@ -83,10 +95,11 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
     mDecoderDecode = (DecodeFunc)dlsym(mLibHandle, "Decoder_Decode");
     mCheckBufferAvailable = (IsBufferAvailableFunc)dlsym(mLibHandle, "Decoder_IsBufferAvailable");
     mGetOutput = (GetOutputFunc)dlsym(mLibHandle, "Decoder_GetOutput");
+    mGetRawDataOutput = (GetRawDataOutputFunc)dlsym(mLibHandle, "Decoder_GetRawDataOutput");
     if (mOpenDecoder == NULL || mCloseDecoder == NULL
         || mInitDecoder == NULL || mSingalRenderDone == NULL
         || mDecoderDecode == NULL || mCheckBufferAvailable == NULL
-        || mGetOutput == NULL) {
+        || mGetOutput == NULL || mGetRawDataOutput == NULL) {
         return OMX_ErrorBadParameter;
     }
 
@@ -95,7 +108,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
         return OMX_ErrorBadParameter;
     }
 
-    mInitDecoder(mHybridCtx,bufferSize,bufferStride,mOMXBufferHeaderTypePtrNum, buff);
+    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferCount,gralloc_mode, buff);
     return OMX_ErrorNone;
 }
 
@@ -113,7 +126,13 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorStop(void) {
     return OMXComponentCodecBase::ProcessorStop();
 }
 
-OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorFlush(OMX_U32) {
+OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorFlush(OMX_U32 portIndex) {
+    LOGI("Processor Flush portIndex = %d", portIndex);
+    // end the last frame
+    if (portIndex == INPORT_INDEX || portIndex == OMX_ALL) {
+        mDecoderDecode(mCtx,mHybridCtx,NULL,0,true);
+        mLastTimeStamp = 0;
+    }
     return OMX_ErrorNone;
 }
 
@@ -122,7 +141,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorPreFillBuffer(OMX_BUFFERHEADERT
     unsigned int i = 0;
 
     if (buffer->nOutputPortIndex == OUTPORT_INDEX){
-        mSingalRenderDone(handle);
+        mSingalRenderDone(mHybridCtx,handle);
     }
     return OMX_ErrorNone;
 }
@@ -209,22 +228,34 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::FillRenderBuffer(OMX_BUFFERHEADERTYPE **
 
     OMX_ERRORTYPE ret = OMX_ErrorNone;
 
-    if (mWorkingMode != GRAPHICBUFFER_MODE) {
-        LOGE("Working Mode is not GRAPHICBUFFER_MODE");
-        ret = OMX_ErrorBadParameter;
+    int fb_index;
+    if (mWorkingMode == RAWDATA_MODE) {
+        const OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionOutput
+                       = this->ports[OUTPORT_INDEX]->GetPortDefinition();
+        int32_t stride = paramPortDefinitionOutput->format.video.nStride;
+        int32_t height =  paramPortDefinitionOutput->format.video.nFrameHeight;
+        int32_t width = paramPortDefinitionOutput->format.video.nFrameWidth;
+        unsigned char *dst = buffer->pBuffer;
+        fb_index = mGetRawDataOutput(mCtx,mHybridCtx,dst,height,stride);
+        if (fb_index == -1) {
+            LOGE("vpx_codec_get_frame return NULL.");
+            return OMX_ErrorNotReady;
+        }
+        buffer->nOffset = 0;
+        buffer->nFilledLen = stride*height*3/2;
+        if (inportBufferFlags & OMX_BUFFERFLAG_EOS) {
+            buffer->nFlags = OMX_BUFFERFLAG_EOS;
+        }
+        return OMX_ErrorNone;
     }
-    int fb_index = mGetOutput(mCtx);
+
+    fb_index = mGetOutput(mCtx,mHybridCtx);
     if (fb_index == -1) {
         LOGE("vpx_codec_get_frame return NULL.");
         return OMX_ErrorNotReady;
     }
 
     buffer = *pBuffer = mOMXBufferHeaderTypePtrArray[fb_index];
-
-    size_t dst_y_size = mGraphicBufferParam.graphicBufferStride *
-                        mGraphicBufferParam.graphicBufferHeight;
-    size_t dst_c_stride = ALIGN(mGraphicBufferParam.graphicBufferStride / 2, 16);
-    size_t dst_c_size = dst_c_stride * mGraphicBufferParam.graphicBufferHeight / 2;
     buffer->nOffset = 0;
     buffer->nFilledLen = sizeof(OMX_U8*);
     if (inportBufferFlags & OMX_BUFFERFLAG_EOS) {
@@ -313,6 +344,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::SetNativeBufferModeSpecific(OMX_PTR pStr
 
     if (!param->enable) {
         mWorkingMode = RAWDATA_MODE;
+        LOGI("Raw data mode is used");
         return OMX_ErrorNone;
     }
     mWorkingMode = GRAPHICBUFFER_MODE;
@@ -324,7 +356,6 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::SetNativeBufferModeSpecific(OMX_PTR pStr
     port_def.nBufferCountMin = mNativeBufferCount;
     port_def.nBufferCountActual = mNativeBufferCount;
     port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
-    port_def.format.video.eColorFormat = (OMX_COLOR_FORMATTYPE)OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar;
     // add borders for libvpx decode need.
     port_def.format.video.nFrameHeight += VPX_DECODE_BORDER * 2;
     port_def.format.video.nFrameWidth += VPX_DECODE_BORDER * 2;
@@ -350,7 +381,7 @@ bool OMXVideoDecoderVP9Hybrid::IsAllBufferAvailable(void) {
     if (!port_def->bEnabled) {
         return false;
     }
-    return mCheckBufferAvailable();
+    return mCheckBufferAvailable(mHybridCtx);
 }
 
 DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.VP9.hybrid", "video_decoder.vp9", OMXVideoDecoderVP9Hybrid);
