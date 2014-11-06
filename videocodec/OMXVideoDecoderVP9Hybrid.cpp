@@ -42,6 +42,10 @@ OMXVideoDecoderVP9Hybrid::OMXVideoDecoderVP9Hybrid() {
     mGetRawDataOutput = NULL;
     mLastTimeStamp = 0;
     mWorkingMode = RAWDATA_MODE;
+    mDecodedImageWidth = 0;
+    mDecodedImageHeight = 0;
+    mDecodedImageNewWidth = 0;
+    mDecodedImageNewHeight = 0;
 }
 
 OMXVideoDecoderVP9Hybrid::~OMXVideoDecoderVP9Hybrid() {
@@ -60,24 +64,25 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::InitInputPortFormatSpecific(
 }
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
-    unsigned int buff[MAX_GRAPHIC_BUFFER_NUM];
-    unsigned int i, bufferCount;
+    uint32_t buff[MAX_GRAPHIC_BUFFER_NUM];
+    uint32_t i, bufferCount;
     bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
-    int bufferSize,bufferStride;
-
+    uint32_t bufferSize, bufferStride, bufferHeight;
     if (!gralloc_mode) {
-        bufferSize = 1920 * 1080 * 1.5;
+        bufferSize = 1920 * 1088 * 1.5;
         bufferStride = 1920;
+        bufferHeight = 1088;
         bufferCount = 12;
     } else {
         bufferSize = mGraphicBufferParam.graphicBufferStride *
                           mGraphicBufferParam.graphicBufferHeight * 1.5;
         bufferStride = mGraphicBufferParam.graphicBufferStride;
         bufferCount = mOMXBufferHeaderTypePtrNum;
+        bufferHeight = mGraphicBufferParam.graphicBufferHeight;
 
         for (i = 0; i < bufferCount; i++ ) {
             OMX_BUFFERHEADERTYPE *buf_hdr = mOMXBufferHeaderTypePtrArray[i];
-            buff[i] = (unsigned int)(buf_hdr->pBuffer);
+            buff[i] = (uint32_t)(buf_hdr->pBuffer);
         }
     }
 
@@ -108,7 +113,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
         return OMX_ErrorBadParameter;
     }
 
-    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferCount,gralloc_mode, buff);
+    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferHeight,bufferCount,gralloc_mode, buff);
     return OMX_ErrorNone;
 }
 
@@ -127,9 +132,8 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorStop(void) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorFlush(OMX_U32 portIndex) {
-    LOGI("Processor Flush portIndex = %d", portIndex);
-    // end the last frame
     if (portIndex == INPORT_INDEX || portIndex == OMX_ALL) {
+        // end the last frame
         mDecoderDecode(mCtx,mHybridCtx,NULL,0,true);
         mLastTimeStamp = 0;
     }
@@ -155,6 +159,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
     OMX_BUFFERHEADERTYPE *inBuffer = *pBuffers[INPORT_INDEX];
     OMX_BUFFERHEADERTYPE *outBuffer = *pBuffers[OUTPORT_INDEX];
     bool eos = (inBuffer->nFlags & OMX_BUFFERFLAG_EOS)? true:false;
+    OMX_BOOL isResolutionChange = OMX_FALSE;
 
     eos = eos && (inBuffer->nFilledLen == 0);
 
@@ -189,12 +194,17 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
 
     ret = FillRenderBuffer(pBuffers[OUTPORT_INDEX],
                            &retains[OUTPORT_INDEX],
-                           eos? OMX_BUFFERFLAG_EOS:0);
+                           eos? OMX_BUFFERFLAG_EOS:0,
+                           &isResolutionChange);
 
     if (ret == OMX_ErrorNone) {
         (*pBuffers[OUTPORT_INDEX])->nTimeStamp = mLastTimeStamp;
     }
     mLastTimeStamp = inBuffer->nTimeStamp;
+
+    if (isResolutionChange == OMX_TRUE) {
+        HandleFormatChange();
+    }
     bool inputEoS = ((*pBuffers[INPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS);
     bool outputEoS = ((*pBuffers[OUTPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS);
     // if output port is not eos, retain the input buffer
@@ -221,7 +231,8 @@ static int ALIGN(int x, int y) {
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer,
                                                       buffer_retain_t *retain,
-                                                      OMX_U32 inportBufferFlags)
+                                                      OMX_U32 inportBufferFlags,
+                                                      OMX_BOOL *isResolutionChange)
 {
     OMX_BUFFERHEADERTYPE *buffer = *pBuffer;
     OMX_BUFFERHEADERTYPE *buffer_orign = buffer;
@@ -238,7 +249,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::FillRenderBuffer(OMX_BUFFERHEADERTYPE **
         unsigned char *dst = buffer->pBuffer;
         fb_index = mGetRawDataOutput(mCtx,mHybridCtx,dst,height,stride);
         if (fb_index == -1) {
-            LOGE("vpx_codec_get_frame return NULL.");
+            LOGV("vpx_codec_get_frame return NULL.");
             return OMX_ErrorNotReady;
         }
         buffer->nOffset = 0;
@@ -249,10 +260,18 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::FillRenderBuffer(OMX_BUFFERHEADERTYPE **
         return OMX_ErrorNone;
     }
 
-    fb_index = mGetOutput(mCtx,mHybridCtx);
+    fb_index = mGetOutput(mCtx,mHybridCtx, &mDecodedImageNewWidth, &mDecodedImageNewHeight);
     if (fb_index == -1) {
-        LOGE("vpx_codec_get_frame return NULL.");
+        LOGV("vpx_codec_get_frame return NULL.");
         return OMX_ErrorNotReady;
+    }
+    if (mDecodedImageHeight == 0 && mDecodedImageWidth == 0) {
+        mDecodedImageWidth = mDecodedImageNewWidth;
+        mDecodedImageHeight = mDecodedImageNewHeight;
+    }
+    if ((mDecodedImageNewWidth != mDecodedImageWidth)
+        || (mDecodedImageNewHeight!= mDecodedImageHeight)) {
+        *isResolutionChange = OMX_TRUE;
     }
 
     buffer = *pBuffer = mOMXBufferHeaderTypePtrArray[fb_index];
@@ -294,6 +313,85 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::GetParamVideoVp9(OMX_PTR) {
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::SetParamVideoVp9(OMX_PTR) {
     return OMX_ErrorNone;
 }
+
+OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::HandleFormatChange(void)
+{
+    mDecodedImageWidth = mDecodedImageNewWidth;
+    mDecodedImageHeight = mDecodedImageNewHeight;
+    // Sync port definition as it may change.
+    OMX_PARAM_PORTDEFINITIONTYPE paramPortDefinitionInput, paramPortDefinitionOutput;
+
+    memcpy(&paramPortDefinitionInput,
+        this->ports[INPORT_INDEX]->GetPortDefinition(),
+        sizeof(paramPortDefinitionInput));
+
+    memcpy(&paramPortDefinitionOutput,
+        this->ports[OUTPORT_INDEX]->GetPortDefinition(),
+        sizeof(paramPortDefinitionOutput));
+
+    unsigned int width = mDecodedImageWidth;
+    unsigned int height = mDecodedImageHeight;
+    unsigned int stride = mDecodedImageWidth;
+    unsigned int sliceHeight = mDecodedImageHeight;
+
+    unsigned int widthCropped = mDecodedImageWidth;
+    unsigned int heightCropped = mDecodedImageHeight;
+    unsigned int strideCropped = widthCropped;
+    unsigned int sliceHeightCropped = heightCropped;
+
+    if (widthCropped == paramPortDefinitionOutput.format.video.nFrameWidth &&
+        heightCropped == paramPortDefinitionOutput.format.video.nFrameHeight) {
+        if (mWorkingMode == RAWDATA_MODE) {
+            LOGW("Change of portsetting is not reported as size is not changed.");
+            return OMX_ErrorNone;
+        }
+    }
+
+    paramPortDefinitionInput.format.video.nFrameWidth = width;
+    paramPortDefinitionInput.format.video.nFrameHeight = height;
+    paramPortDefinitionInput.format.video.nStride = stride;
+    paramPortDefinitionInput.format.video.nSliceHeight = sliceHeight;
+
+    if (mWorkingMode == RAWDATA_MODE) {
+        paramPortDefinitionOutput.format.video.nFrameWidth = widthCropped;
+        paramPortDefinitionOutput.format.video.nFrameHeight = heightCropped;
+        paramPortDefinitionOutput.format.video.nStride = strideCropped;
+        paramPortDefinitionOutput.format.video.nSliceHeight = sliceHeightCropped;
+    } else if (mWorkingMode == GRAPHICBUFFER_MODE) {
+        // when the width and height ES parse are not larger than allocated graphic buffer in outport,
+        // there is no need to reallocate graphic buffer,just report the crop info to omx client
+        if (width <= mGraphicBufferParam.graphicBufferWidth &&
+            height <= mGraphicBufferParam.graphicBufferHeight) {
+            this->ports[INPORT_INDEX]->SetPortDefinition(&paramPortDefinitionInput, true);
+            this->ports[OUTPORT_INDEX]->ReportOutputCrop();
+            return OMX_ErrorNone;
+        }
+
+        if (width > mGraphicBufferParam.graphicBufferWidth ||
+            height > mGraphicBufferParam.graphicBufferHeight) {
+            // update the real decoded resolution to outport instead of display resolution
+            // for graphic buffer reallocation
+            // when the width and height parsed from ES are larger than allocated graphic buffer in outport,
+            paramPortDefinitionOutput.format.video.nFrameWidth = width;
+            paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
+            paramPortDefinitionOutput.format.video.eColorFormat = GetOutputColorFormat(
+                    paramPortDefinitionOutput.format.video.nFrameWidth);
+            paramPortDefinitionOutput.format.video.nStride = stride;
+            paramPortDefinitionOutput.format.video.nSliceHeight = sliceHeight;
+       }
+    }
+
+    paramPortDefinitionOutput.bEnabled = (OMX_BOOL)false;
+    mOMXBufferHeaderTypePtrNum = 0;
+    memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
+
+    this->ports[INPORT_INDEX]->SetPortDefinition(&paramPortDefinitionInput, true);
+    this->ports[OUTPORT_INDEX]->SetPortDefinition(&paramPortDefinitionOutput, true);
+
+    this->ports[OUTPORT_INDEX]->ReportPortSettingsChanged();
+    return OMX_ErrorNone;
+}
+
 
 OMX_COLOR_FORMATTYPE OMXVideoDecoderVP9Hybrid::GetOutputColorFormat(int) {
     LOGV("Output color format is HAL_PIXEL_FORMAT_YV12.");
@@ -353,11 +451,10 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::SetNativeBufferModeSpecific(OMX_PTR pStr
 
     OMX_PARAM_PORTDEFINITIONTYPE port_def;
     memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
-    port_def.nBufferCountMin = mNativeBufferCount;
+    port_def.nBufferCountMin = mNativeBufferCount - 4;
     port_def.nBufferCountActual = mNativeBufferCount;
     port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
     // add borders for libvpx decode need.
-    port_def.format.video.nFrameHeight += VPX_DECODE_BORDER * 2;
     port_def.format.video.nFrameWidth += VPX_DECODE_BORDER * 2;
     // make heigth 32bit align
     port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;

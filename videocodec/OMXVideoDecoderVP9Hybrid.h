@@ -47,26 +47,31 @@ protected:
 
     virtual OMX_ERRORTYPE BuildHandlerList(void);
 
-    virtual OMX_ERRORTYPE FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer,  buffer_retain_t *retain, OMX_U32 inportBufferFlags);
+    virtual OMX_ERRORTYPE FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer,  buffer_retain_t *retain, OMX_U32 inportBufferFlags, OMX_BOOL *isResolutionChange);
 
     virtual OMX_COLOR_FORMATTYPE GetOutputColorFormat(int width);
     virtual OMX_ERRORTYPE GetDecoderOutputCropSpecific(OMX_PTR pStructure);
     virtual OMX_ERRORTYPE GetNativeBufferUsageSpecific(OMX_PTR pStructure);
     virtual OMX_ERRORTYPE SetNativeBufferModeSpecific(OMX_PTR pStructure);
-
+    virtual OMX_ERRORTYPE HandleFormatChange(void);
     DECLARE_HANDLER(OMXVideoDecoderVP9Hybrid, ParamVideoVp9);
 
 private:
     void *mCtx;
     void *mHybridCtx;
     void *mLibHandle;
+    // These members are for Adaptive playback
+    uint32_t mDecodedImageWidth;
+    uint32_t mDecodedImageHeight;
+    uint32_t mDecodedImageNewWidth;
+    uint32_t mDecodedImageNewHeight;
     typedef bool (*OpenFunc)(void ** , void **);
-    typedef bool (*InitFunc)(void *,unsigned int, unsigned int, int, bool, unsigned int *);
+    typedef bool (*InitFunc)(void *,uint32_t, uint32_t, uint32_t, uint32_t,  bool, uint32_t *);
     typedef bool (*CloseFunc)(void *, void *);
     typedef bool (*SingalRenderDoneFunc)(void *, unsigned int);
     typedef bool (*DecodeFunc)(void *, void *, unsigned char *, unsigned int, bool);
     typedef bool (*IsBufferAvailableFunc)(void *);
-    typedef int (*GetOutputFunc)(void*, void *);
+    typedef int (*GetOutputFunc)(void*, void *, unsigned int *, unsigned int *);
     typedef int (*GetRawDataOutputFunc)(void*, void *, unsigned char *, int, int);
     OpenFunc mOpenDecoder;
     InitFunc mInitDecoder;
