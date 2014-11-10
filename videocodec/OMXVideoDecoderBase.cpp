@@ -17,8 +17,11 @@
 //#define LOG_NDEBUG 0
 #define LOG_TAG "OMXVideoDecoder"
 #include <wrs_omxil_core/log.h>
-#include "OMXVideoDecoderBase.h"
+
+#include <hardware/gralloc.h>
 #include <va/va_android.h>
+
+#include "OMXVideoDecoderBase.h"
 
 static const char* VA_RAW_MIME_TYPE = "video/x-raw-va";
 static const uint32_t VA_COLOR_FORMAT = 0x7FA00E00;
