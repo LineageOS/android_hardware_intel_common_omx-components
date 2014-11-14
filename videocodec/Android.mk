@@ -9,8 +9,8 @@ endif
 
 include $(CLEAR_VARS)
 
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -79,8 +79,8 @@ PLATFORM_SUPPORT_VP8 := \
 ifneq ($(filter $(TARGET_BOARD_PLATFORM),$(PLATFORM_SUPPORT_VP8)),)
 include $(CLEAR_VARS)
 
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -140,8 +140,8 @@ endif
 # VP9 with SW decode and HW Render
 include $(CLEAR_VARS)
 
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -242,8 +242,8 @@ include $(BUILD_SHARED_LIBRARY)
 endif
 
 include $(CLEAR_VARS)
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -299,8 +299,8 @@ include $(BUILD_SHARED_LIBRARY)
 ################################################################################
 
 include $(CLEAR_VARS)
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -356,8 +356,8 @@ include $(BUILD_SHARED_LIBRARY)
 ################################################################################
 
 include $(CLEAR_VARS)
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -420,8 +420,8 @@ include $(BUILD_SHARED_LIBRARY)
 ifeq ($(USE_INTEL_SECURE_AVC),true)
 
 include $(CLEAR_VARS)
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -465,8 +465,8 @@ endif #USE_INTEL_SECURE_AVC
 ################################################################################
 
 include $(CLEAR_VARS)
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -503,8 +503,8 @@ include $(BUILD_SHARED_LIBRARY)
 ################################################################################
 
 include $(CLEAR_VARS)
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -545,8 +545,8 @@ include $(BUILD_SHARED_LIBRARY)
 ################################################################################
 
 include $(CLEAR_VARS)
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -584,8 +584,8 @@ include $(BUILD_SHARED_LIBRARY)
 ################################################################################
 
 include $(CLEAR_VARS)
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
@@ -629,8 +629,8 @@ include $(BUILD_SHARED_LIBRARY)
 ################################################################################
 
 include $(CLEAR_VARS)
-ifeq ($(TARGET_HAS_VPP),true)
-LOCAL_CFLAGS += -DTARGET_HAS_VPP
+ifeq ($(TARGET_HAS_ISV),true)
+LOCAL_CFLAGS += -DTARGET_HAS_ISV
 endif
 
 LOCAL_SHARED_LIBRARIES := \
