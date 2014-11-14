@@ -38,6 +38,7 @@ protected:
             OMX_BUFFERHEADERTYPE ***pBuffers,
             buffer_retain_t *retains,
             OMX_U32 numberBuffers);
+    virtual OMX_ERRORTYPE ProcessorReset(void);
 
     virtual OMX_ERRORTYPE ProcessorPreFillBuffer(OMX_BUFFERHEADERTYPE* buffer);
     virtual bool IsAllBufferAvailable(void);
@@ -57,6 +58,7 @@ protected:
     DECLARE_HANDLER(OMXVideoDecoderVP9Hybrid, ParamVideoVp9);
 
 private:
+    bool isReallocateNeeded(const uint8_t *data, uint32_t data_sz);
     void *mCtx;
     void *mHybridCtx;
     void *mLibHandle;
@@ -69,10 +71,12 @@ private:
     typedef bool (*InitFunc)(void *,uint32_t, uint32_t, uint32_t, uint32_t,  bool, uint32_t *);
     typedef bool (*CloseFunc)(void *, void *);
     typedef bool (*SingalRenderDoneFunc)(void *, unsigned int);
-    typedef bool (*DecodeFunc)(void *, void *, unsigned char *, unsigned int, bool);
+    typedef int (*DecodeFunc)(void *, void *, unsigned char *, unsigned int, bool);
     typedef bool (*IsBufferAvailableFunc)(void *);
     typedef int (*GetOutputFunc)(void*, void *, unsigned int *, unsigned int *);
     typedef int (*GetRawDataOutputFunc)(void*, void *, unsigned char *, int, int);
+    typedef void (*DeinitFunc)(void *);
+    typedef bool (*GetFrameResolutionFunc)(const uint8_t *, uint32_t , uint32_t *, uint32_t *);
     OpenFunc mOpenDecoder;
     InitFunc mInitDecoder;
     CloseFunc mCloseDecoder;
@@ -81,6 +85,8 @@ private:
     IsBufferAvailableFunc mCheckBufferAvailable;
     GetOutputFunc mGetOutput;
     GetRawDataOutputFunc mGetRawDataOutput;
+    GetFrameResolutionFunc mGetFrameResolution;
+    DeinitFunc mDeinitDecoder;
     int64_t mLastTimeStamp;
     enum {
         // OMX_PARAM_PORTDEFINITIONTYPE
