@@ -40,6 +40,8 @@ OMXVideoDecoderVP9Hybrid::OMXVideoDecoderVP9Hybrid() {
     mCheckBufferAvailable = NULL;
     mGetOutput = NULL;
     mGetRawDataOutput = NULL;
+    mGetFrameResolution = NULL;
+    mDeinitDecoder = NULL;
     mLastTimeStamp = 0;
     mWorkingMode = RAWDATA_MODE;
     mDecodedImageWidth = 0;
@@ -101,10 +103,13 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
     mCheckBufferAvailable = (IsBufferAvailableFunc)dlsym(mLibHandle, "Decoder_IsBufferAvailable");
     mGetOutput = (GetOutputFunc)dlsym(mLibHandle, "Decoder_GetOutput");
     mGetRawDataOutput = (GetRawDataOutputFunc)dlsym(mLibHandle, "Decoder_GetRawDataOutput");
+    mGetFrameResolution = (GetFrameResolutionFunc)dlsym(mLibHandle, "Decoder_GetFrameResolution");
+    mDeinitDecoder = (DeinitFunc)dlsym(mLibHandle, "Decoder_Deinit");
     if (mOpenDecoder == NULL || mCloseDecoder == NULL
         || mInitDecoder == NULL || mSingalRenderDone == NULL
         || mDecoderDecode == NULL || mCheckBufferAvailable == NULL
-        || mGetOutput == NULL || mGetRawDataOutput == NULL) {
+        || mGetOutput == NULL || mGetRawDataOutput == NULL
+        || mGetFrameResolution == NULL || mDeinitDecoder == NULL) {
         return OMX_ErrorBadParameter;
     }
 
@@ -115,6 +120,54 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
 
     mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferHeight,bufferCount,gralloc_mode, buff);
     return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
+{
+    uint32_t buff[MAX_GRAPHIC_BUFFER_NUM];
+    uint32_t i, bufferCount;
+    bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
+    uint32_t bufferSize, bufferStride, bufferHeight;
+    if (!gralloc_mode) {
+        bufferSize = mDecodedImageWidth * mDecodedImageHeight * 1.5;
+        bufferStride = mDecodedImageWidth;
+        bufferHeight = mDecodedImageHeight;
+        bufferCount = 12;
+    } else {
+        bufferSize = mGraphicBufferParam.graphicBufferStride *
+                          mGraphicBufferParam.graphicBufferHeight * 1.5;
+        bufferStride = mGraphicBufferParam.graphicBufferStride;
+        bufferCount = mOMXBufferHeaderTypePtrNum;
+        bufferHeight = mGraphicBufferParam.graphicBufferHeight;
+
+        for (i = 0; i < bufferCount; i++ ) {
+            OMX_BUFFERHEADERTYPE *buf_hdr = mOMXBufferHeaderTypePtrArray[i];
+            buff[i] = (uint32_t)(buf_hdr->pBuffer);
+        }
+    }
+    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferHeight,bufferCount,gralloc_mode, buff);
+
+    return OMX_ErrorNone;
+}
+
+bool OMXVideoDecoderVP9Hybrid::isReallocateNeeded(const uint8_t * data,uint32_t data_sz)
+{
+    bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
+    uint32_t width, height;
+    bool ret = true;
+    if (gralloc_mode) {
+        ret = mGetFrameResolution(data,data_sz, &width, &height);
+        if (ret) {
+            ret = width > mGraphicBufferParam.graphicBufferWidth
+                || height > mGraphicBufferParam.graphicBufferHeight;
+            if (ret) {
+                mDecodedImageNewWidth = width;
+                mDecodedImageNewHeight = height;
+                return true;
+            }
+        }
+    }
+    return ret;
 }
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorDeinit(void) {
@@ -181,9 +234,21 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
     int32_t time_ms;
     gettimeofday(&tv_start,NULL);
 #endif
-    if (mDecoderDecode(mCtx,mHybridCtx,inBuffer->pBuffer + inBuffer->nOffset,inBuffer->nFilledLen, eos) == false) {
-        LOGE("on2 decoder failed to decode frame.");
-        return OMX_ErrorBadParameter;
+    int res = mDecoderDecode(mCtx,mHybridCtx,inBuffer->pBuffer + inBuffer->nOffset,inBuffer->nFilledLen, eos);
+    if (res != 0) {
+        if (res == -2) {
+            if (isReallocateNeeded(inBuffer->pBuffer + inBuffer->nOffset,inBuffer->nFilledLen)) {
+                retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+                HandleFormatChange();
+                return OMX_ErrorNone;
+            }
+            // drain the last frame, keep the current input buffer
+            res = mDecoderDecode(mCtx,mHybridCtx,NULL,0,true);
+            retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+        } else {
+            LOGE("on2 decoder failed to decode frame.");
+            return OMX_ErrorBadParameter;
+        }
     }
 
 #if LOG_TIME == 1
@@ -268,6 +333,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::FillRenderBuffer(OMX_BUFFERHEADERTYPE **
     if (mDecodedImageHeight == 0 && mDecodedImageWidth == 0) {
         mDecodedImageWidth = mDecodedImageNewWidth;
         mDecodedImageHeight = mDecodedImageNewHeight;
+        *isResolutionChange = OMX_TRUE;
     }
     if ((mDecodedImageNewWidth != mDecodedImageWidth)
         || (mDecodedImageNewHeight!= mDecodedImageHeight)) {
@@ -316,6 +382,8 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::SetParamVideoVp9(OMX_PTR) {
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::HandleFormatChange(void)
 {
+    ALOGI("handle format change from %dx%d to %dx%d",
+        mDecodedImageWidth,mDecodedImageHeight,mDecodedImageNewWidth,mDecodedImageNewHeight);
     mDecodedImageWidth = mDecodedImageNewWidth;
     mDecodedImageHeight = mDecodedImageNewHeight;
     // Sync port definition as it may change.
@@ -384,6 +452,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::HandleFormatChange(void)
     paramPortDefinitionOutput.bEnabled = (OMX_BOOL)false;
     mOMXBufferHeaderTypePtrNum = 0;
     memset(&mGraphicBufferParam, 0, sizeof(mGraphicBufferParam));
+    mDeinitDecoder(mHybridCtx);
 
     this->ports[INPORT_INDEX]->SetPortDefinition(&paramPortDefinitionInput, true);
     this->ports[OUTPORT_INDEX]->SetPortDefinition(&paramPortDefinitionOutput, true);
@@ -456,6 +525,8 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::SetNativeBufferModeSpecific(OMX_PTR pStr
     port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
     // add borders for libvpx decode need.
     port_def.format.video.nFrameWidth += VPX_DECODE_BORDER * 2;
+    mDecodedImageWidth = port_def.format.video.nFrameWidth;
+    mDecodedImageHeight = port_def.format.video.nFrameHeight;
     // make heigth 32bit align
     port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;
     port_def.format.video.eColorFormat = GetOutputColorFormat(port_def.format.video.nFrameWidth);
