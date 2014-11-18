@@ -187,7 +187,9 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorStop(void) {
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorFlush(OMX_U32 portIndex) {
     if (portIndex == INPORT_INDEX || portIndex == OMX_ALL) {
         // end the last frame
+        unsigned int width, height;
         mDecoderDecode(mCtx,mHybridCtx,NULL,0,true);
+        mGetOutput(mCtx,mHybridCtx, &width, &height);
         mLastTimeStamp = 0;
     }
     return OMX_ErrorNone;
