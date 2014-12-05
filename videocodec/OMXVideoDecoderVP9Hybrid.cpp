@@ -276,7 +276,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
     bool outputEoS = ((*pBuffers[OUTPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS);
     // if output port is not eos, retain the input buffer
     // until all the output buffers are drained.
-    if (inputEoS && !outputEoS) {
+    if (inputEoS && !outputEoS && retains[INPORT_INDEX] != BUFFER_RETAIN_GETAGAIN) {
         retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
         // the input buffer is retained for draining purpose.
         // Set nFilledLen to 0 so buffer will not be decoded again.
