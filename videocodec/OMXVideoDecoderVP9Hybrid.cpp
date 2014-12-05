@@ -497,7 +497,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::GetNativeBufferUsageSpecific(OMX_PTR pSt
         (android::GetAndroidNativeBufferUsageParams*)pStructure;
     CHECK_TYPE_HEADER(param);
 
-    param->nUsage |= (GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_SW_READ_NEVER \
+    param->nUsage |= (GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_SW_READ_OFTEN
                      | GRALLOC_USAGE_SW_WRITE_OFTEN | GRALLOC_USAGE_EXTERNAL_DISP);
     return OMX_ErrorNone;
 
