@@ -118,7 +118,6 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorFlush(OMX_U32) {
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorPreFillBuffer(OMX_BUFFERHEADERTYPE* buffer) {
     unsigned int handle = (unsigned int)buffer->pBuffer;
-    unsigned int i = 0;
 
     if (buffer->nOutputPortIndex == OUTPORT_INDEX){
         mSingalRenderDone(handle);
@@ -133,7 +132,6 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
 {
     OMX_ERRORTYPE ret;
     OMX_BUFFERHEADERTYPE *inBuffer = *pBuffers[INPORT_INDEX];
-    OMX_BUFFERHEADERTYPE *outBuffer = *pBuffers[OUTPORT_INDEX];
 
     if (inBuffer->pBuffer == NULL) {
         LOGE("Buffer to decode is empty.");
@@ -199,11 +197,6 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
     return ret;
 }
 
-static int ALIGN(int x, int y) {
-    // y must be a power of 2.
-    return (x + y - 1) & ~(y - 1);
-}
-
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer,
                                                       buffer_retain_t *retain,
                                                       OMX_U32 inportBufferFlags)
@@ -225,10 +218,6 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::FillRenderBuffer(OMX_BUFFERHEADERTYPE **
 
     buffer = *pBuffer = mOMXBufferHeaderTypePtrArray[fb_index];
 
-    size_t dst_y_size = mGraphicBufferParam.graphicBufferStride *
-                        mGraphicBufferParam.graphicBufferHeight;
-    size_t dst_c_stride = ALIGN(mGraphicBufferParam.graphicBufferStride / 2, 16);
-    size_t dst_c_size = dst_c_stride * mGraphicBufferParam.graphicBufferHeight / 2;
     buffer->nOffset = 0;
     buffer->nFilledLen = sizeof(OMX_U8*);
     if (inportBufferFlags & OMX_BUFFERFLAG_EOS) {

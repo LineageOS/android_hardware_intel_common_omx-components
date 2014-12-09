@@ -147,8 +147,6 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorDeinit(void) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorStart(void) {
-    uint32_t imrOffset = 0;
-    uint32_t dataBufferSize = DATA_BUFFER_SIZE;
 
     EnableIEDSession(true);
     uint32_t ret = drm_vendor_api.drm_start_playback();

@@ -27,7 +27,7 @@
 #include "graphics.h"
 #endif
 
-static const char* VA_VED_RAW_MIME_TYPE = "video/x-raw-vaved";
+static constexpr const char* VA_VED_RAW_MIME_TYPE = "video/x-raw-vaved";
 static const uint32_t VA_VED_COLOR_FORMAT = 0x20;
 
 
