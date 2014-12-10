@@ -68,7 +68,7 @@ private:
     uint32_t mDecodedImageNewWidth;
     uint32_t mDecodedImageNewHeight;
     typedef bool (*OpenFunc)(void ** , void **);
-    typedef bool (*InitFunc)(void *,uint32_t, uint32_t, uint32_t, uint32_t,  bool, uint32_t *);
+    typedef bool (*InitFunc)(void *,uint32_t, uint32_t, uint32_t, uint32_t, uint32_t,  bool, uint32_t *);
     typedef bool (*CloseFunc)(void *, void *);
     typedef bool (*SingalRenderDoneFunc)(void *, unsigned int);
     typedef int (*DecodeFunc)(void *, void *, unsigned char *, unsigned int, bool);
