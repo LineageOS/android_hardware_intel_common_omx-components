@@ -197,7 +197,6 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorFlush(OMX_U32 portIndex) {
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorPreFillBuffer(OMX_BUFFERHEADERTYPE* buffer) {
     unsigned int handle = (unsigned int)buffer->pBuffer;
-    unsigned int i = 0;
 
     if (buffer->nOutputPortIndex == OUTPORT_INDEX){
         mSingalRenderDone(mHybridCtx,handle);
@@ -289,11 +288,6 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
     }
 
     return ret;
-}
-
-static int ALIGN(int x, int y) {
-    // y must be a power of 2.
-    return (x + y - 1) & ~(y - 1);
 }
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer,
