@@ -69,10 +69,11 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
     uint32_t buff[MAX_GRAPHIC_BUFFER_NUM];
     uint32_t i, bufferCount;
     bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
-    uint32_t bufferSize, bufferStride, bufferHeight;
+    uint32_t bufferSize, bufferStride, bufferHeight, bufferWidth;
     if (!gralloc_mode) {
         bufferSize = 1920 * 1088 * 1.5;
         bufferStride = 1920;
+        bufferWidth = 1920;
         bufferHeight = 1088;
         bufferCount = 12;
     } else {
@@ -81,6 +82,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
         bufferStride = mGraphicBufferParam.graphicBufferStride;
         bufferCount = mOMXBufferHeaderTypePtrNum;
         bufferHeight = mGraphicBufferParam.graphicBufferHeight;
+        bufferWidth = mGraphicBufferParam.graphicBufferWidth;
 
         for (i = 0; i < bufferCount; i++ ) {
             OMX_BUFFERHEADERTYPE *buf_hdr = mOMXBufferHeaderTypePtrArray[i];
@@ -118,7 +120,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
         return OMX_ErrorBadParameter;
     }
 
-    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferHeight,bufferCount,gralloc_mode, buff);
+    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferWidth, bufferHeight,bufferCount,gralloc_mode, buff);
     return OMX_ErrorNone;
 }
 
@@ -127,16 +129,18 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
     uint32_t buff[MAX_GRAPHIC_BUFFER_NUM];
     uint32_t i, bufferCount;
     bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
-    uint32_t bufferSize, bufferStride, bufferHeight;
+    uint32_t bufferSize, bufferStride, bufferHeight, bufferWidth;
     if (!gralloc_mode) {
         bufferSize = mDecodedImageWidth * mDecodedImageHeight * 1.5;
         bufferStride = mDecodedImageWidth;
+        bufferWidth = mDecodedImageWidth;
         bufferHeight = mDecodedImageHeight;
         bufferCount = 12;
     } else {
         bufferSize = mGraphicBufferParam.graphicBufferStride *
                           mGraphicBufferParam.graphicBufferHeight * 1.5;
         bufferStride = mGraphicBufferParam.graphicBufferStride;
+        bufferWidth =  mGraphicBufferParam.graphicBufferWidth;
         bufferCount = mOMXBufferHeaderTypePtrNum;
         bufferHeight = mGraphicBufferParam.graphicBufferHeight;
 
@@ -145,7 +149,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
             buff[i] = (uint32_t)(buf_hdr->pBuffer);
         }
     }
-    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferHeight,bufferCount,gralloc_mode, buff);
+    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferWidth,bufferHeight,bufferCount,gralloc_mode, buff);
 
     return OMX_ErrorNone;
 }
