@@ -314,6 +314,13 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::FillRenderBuffer(OMX_BUFFERHEADERTYPE **
         unsigned char *dst = buffer->pBuffer;
         fb_index = mGetRawDataOutput(mCtx,mHybridCtx,dst,height,stride);
         if (fb_index == -1) {
+            if (inportBufferFlags & OMX_BUFFERFLAG_EOS) {
+                // eos frame is non-shown frame
+                buffer->nFlags = OMX_BUFFERFLAG_EOS;
+                buffer->nOffset = 0;
+                buffer->nFilledLen = 0;
+                return OMX_ErrorNone;
+            }
             LOGV("vpx_codec_get_frame return NULL.");
             return OMX_ErrorNotReady;
         }
@@ -327,6 +334,13 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::FillRenderBuffer(OMX_BUFFERHEADERTYPE **
 
     fb_index = mGetOutput(mCtx,mHybridCtx, &mDecodedImageNewWidth, &mDecodedImageNewHeight);
     if (fb_index == -1) {
+        if (inportBufferFlags & OMX_BUFFERFLAG_EOS) {
+            // eos frame is no-shown frame
+            buffer->nFlags = OMX_BUFFERFLAG_EOS;
+            buffer->nOffset = 0;
+            buffer->nFilledLen = 0;
+            return OMX_ErrorNone;
+        }
         LOGV("vpx_codec_get_frame return NULL.");
         return OMX_ErrorNotReady;
     }
