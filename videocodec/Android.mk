@@ -227,6 +227,9 @@ LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderVP9Hybrid
 
+# OMXVideoDecoderVP9Hybrid.h hides overloaded virtual function FillRenderBuffer.
+LOCAL_CLANG_CFLAGS += -Wno-overloaded-virtual
+
 ifeq ($(TARGET_BOARD_PLATFORM),merrifield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
