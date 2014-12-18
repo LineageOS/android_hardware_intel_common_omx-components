@@ -100,11 +100,10 @@ OMXVideoDecoderVP9HWR::~OMXVideoDecoderVP9HWR()
 // Callback func for vpx decoder to get decode buffer
 // Now we map from the vaSurface to deploy gralloc buffer
 // as decode buffer
-int getVP9FrameBuffer(void *user_priv,
+int getVP9FrameBuffer(void* /*user_priv*/,
                           unsigned int new_size,
                           vpx_codec_frame_buffer_t *fb)
 {
-    (void)user_priv;
     if (fb == NULL) {
         return -1;
     }
@@ -138,10 +137,9 @@ int getVP9FrameBuffer(void *user_priv,
 
 // call back function from libvpx to inform frame buffer
 // not used anymore.
-int releaseVP9FrameBuffer(void *user_priv, vpx_codec_frame_buffer_t *fb)
+int releaseVP9FrameBuffer(void* /*user_priv*/, vpx_codec_frame_buffer_t *fb)
 {
     int i;
-    user_priv = user_priv; // to remove warning
     if (fb == NULL) {
         return -1;
     }
