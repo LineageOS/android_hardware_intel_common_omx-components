@@ -634,6 +634,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
     uint32_t strideCropped = widthCropped;
     uint32_t sliceHeightCropped = heightCropped;
     int force_realloc = 0;
+    bool isVP8 = false;
 
 #ifdef TARGET_HAS_ISV
     LOGI("============== mVppBufferNum = %d\n", mVppBufferNum);
@@ -655,6 +656,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
         paramPortDefinitionInput.format.video.nFrameWidth,
         paramPortDefinitionInput.format.video.nFrameHeight,
         width, height, widthCropped, heightCropped);
+
+    if (paramPortDefinitionInput.format.video.eCompressionFormat == OMX_VIDEO_CodingVP8) {
+        isVP8 = true;
+    }
 
     if (!force_realloc &&
         widthCropped == paramPortDefinitionOutput.format.video.nFrameWidth &&
@@ -684,11 +689,11 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
             return OMX_ErrorNone;
         }
 
-        if (width > formatInfo->surfaceWidth ||  height > formatInfo->surfaceHeight) {
+        if (isVP8 || width > formatInfo->surfaceWidth ||  height > formatInfo->surfaceHeight) {
             // update the real decoded resolution to outport instead of display resolution for graphic buffer reallocation
             // when the width and height parsed from ES are larger than allocated graphic buffer in outport,
             paramPortDefinitionOutput.format.video.nFrameWidth = width;
-            paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
+            paramPortDefinitionOutput.format.video.nFrameHeight = height;
             paramPortDefinitionOutput.format.video.eColorFormat = GetOutputColorFormat(
                     paramPortDefinitionOutput.format.video.nFrameWidth);
             paramPortDefinitionOutput.format.video.nStride = stride;
@@ -706,6 +711,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
     if (mWorkingMode == GRAPHICBUFFER_MODE) {
         // Make sure va_destroySurface is called before graphicbuffer is freed in case of port setting changed
         mVideoDecoder->freeSurfaceBuffers();
+
+        // Also make sure all the reference frames are flushed
+        ProcessorFlush(INPORT_INDEX);
     }
     this->ports[OUTPORT_INDEX]->ReportPortSettingsChanged();
     return OMX_ErrorNone;
