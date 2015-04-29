@@ -83,6 +83,7 @@ protected:
 #ifdef TARGET_HAS_ISV
     DECLARE_HANDLER(OMXVideoDecoderBase, DecoderVppBufferNum);
 #endif
+    DECLARE_HANDLER(OMXVideoDecoderBase, StoreMetaDataMode);
     DECLARE_HANDLER(OMXVideoDecoderBase, ErrorReportMode);
     DECLARE_HANDLER(OMXVideoDecoderBase, CodecPriority);
     DECLARE_HANDLER(OMXVideoDecoderBase, DecoderOperatingRate);
@@ -135,6 +136,15 @@ protected:
     GraphicBufferParam mGraphicBufferParam;
     uint32_t mOMXBufferHeaderTypePtrNum;
     OMX_BUFFERHEADERTYPE *mOMXBufferHeaderTypePtrArray[MAX_GRAPHIC_BUFFER_NUM];
+
+    enum AdaptivePlaybackMode {
+        METADATA_MODE,
+        LEGACY_MODE,
+    };
+    AdaptivePlaybackMode mAPMode;
+    uint32_t mMetaDataBuffersNum;
+    bool mFormatChanged;
+    uint32_t getStride(uint32_t format, uint32_t width);
 };
 
 #endif /* OMX_VIDEO_DECODER_BASE_H_ */

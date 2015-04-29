@@ -55,6 +55,7 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+LOCAL_CFLAGS += -DUSE_META_DATA
 endif
 
 ifeq ($(TARGET_VPP_USE_GEN),true)
@@ -114,6 +115,7 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+LOCAL_CFLAGS += -DUSE_META_DATA
 endif
 
 PLATFORM_USE_GEN_HW := \
@@ -454,6 +456,7 @@ LOCAL_SRC_FILES += \
     securevideo/moorefield/OMXVideoDecoderAVCSecure.cpp \
     securevideo/moorefield/drm_vendor_api.c
 LOCAL_CFLAGS += -DVED_TILING
+LOCAL_CFLAGS += -DUSE_META_DATA
 LOCAL_SHARED_LIBRARIES += libdl
 endif
 
