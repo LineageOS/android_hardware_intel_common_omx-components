@@ -175,7 +175,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::ProcessorProcess(
         if (pInput->nFlags & OMX_BUFFERFLAG_CODECCONFIG)
         {
             // Processing codec data, which is not in ProtectedDataBuffer format
-            ALOGV("%s: received AVC codec data (%lu bytes).", __FUNCTION__, pInput->nFilledLen);
+            ALOGV("%s: received AVC codec data (%" PRIu32 " bytes).", __FUNCTION__, pInput->nFilledLen);
             DumpBuffer2("OMX: AVC codec data: ", pInput->pBuffer, pInput->nFilledLen);
             return OMX_ErrorNone;
         }
@@ -447,7 +447,7 @@ OMX_ERRORTYPE OMXVideoDecoderAVCSecure::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE
         if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG)
         {
             // Processing codec data, which is not in ProtectedDataBuffer format
-            ALOGI("%s: received AVC codec data (%lu bytes).", __FUNCTION__, buffer->nFilledLen);
+            ALOGI("%s: received AVC codec data (%" PRIu32 " bytes).", __FUNCTION__, buffer->nFilledLen);
             DumpBuffer2("OMX: AVC codec data: ", buffer->pBuffer, buffer->nFilledLen) ;
             return OMX_ErrorNone;
         }
@@ -565,7 +565,7 @@ void OMXVideoDecoderAVCSecure::MemFreeDataBuffer(OMX_U8 *pBuffer, OMX_PTR pUserD
 OMX_U8* OMXVideoDecoderAVCSecure::MemAllocDataBuffer(OMX_U32 nSizeBytes) {
 
     ALOGW_IF(nSizeBytes != INPORT_BUFFER_SIZE,
-        "%s: size of memory to allocate is %lu, but will allocate %u",
+        "%s: size of memory to allocate is %" PRIu32 ", but will allocate %zu",
         __FUNCTION__, nSizeBytes, sizeof(ProtectedDataBuffer));
     
     if (mNumInportBuffers >= INPORT_ACTUAL_BUFFER_COUNT)
