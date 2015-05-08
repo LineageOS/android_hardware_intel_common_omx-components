@@ -31,6 +31,8 @@ OMXVideoDecoderBase::OMXVideoDecoderBase()
 #ifdef TARGET_HAS_ISV
       mVppBufferNum(0),
 #endif
+      mCodecPriority(1),
+      mOperatingRate(0),
       mVideoDecoder(NULL),
       mNativeBufferCount(OUTPORT_NATIVE_BUFFER_COUNT),
       mWorkingMode(RAWDATA_MODE),
@@ -777,6 +779,8 @@ OMX_ERRORTYPE OMXVideoDecoderBase::BuildHandlerList(void) {
 #endif
     AddHandler(OMX_IndexConfigCommonOutputCrop, GetDecoderOutputCrop, SetDecoderOutputCrop);
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableErrorReport), GetErrorReportMode, SetErrorReportMode);
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexConfigPriority), GetCodecPriority, SetCodecPriority);
+    AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexConfigOperatingRate), GetDecoderOperatingRate, SetDecoderOperatingRate);
 
     return OMX_ErrorNone;
 }
@@ -982,6 +986,40 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderOutputCrop(OMX_PTR pStructure) {
 
 OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderOutputCrop(OMX_PTR pStructure) {
     return this->GetDecoderOutputCropSpecific(pStructure);
+}
+
+
+OMX_ERRORTYPE OMXVideoDecoderBase::SetCodecPriority(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_PARAM_U32TYPE *priorityParam = (OMX_PARAM_U32TYPE *)pStructure;
+    mCodecPriority = priorityParam->nU32;
+    return OMX_ErrorNone;
+}
+
+
+OMX_ERRORTYPE OMXVideoDecoderBase::GetCodecPriority(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_PARAM_U32TYPE *priorityParam = (OMX_PARAM_U32TYPE *)pStructure;
+    CHECK_TYPE_HEADER(priorityParam);
+    priorityParam->nU32 = mCodecPriority;
+    return OMX_ErrorNone;
+}
+
+
+OMX_ERRORTYPE OMXVideoDecoderBase::SetDecoderOperatingRate(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_PARAM_U32TYPE *operatingRateParam = (OMX_PARAM_U32TYPE *)pStructure;
+    CHECK_TYPE_HEADER(operatingRateParam);
+    mOperatingRate = operatingRateParam->nU32;
+    return OMX_ErrorNone;
+}
+
+OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderOperatingRate(OMX_PTR pStructure) {
+    OMX_ERRORTYPE ret;
+    OMX_PARAM_U32TYPE *operatingRateParam = (OMX_PARAM_U32TYPE *)pStructure;
+    CHECK_TYPE_HEADER(operatingRateParam);
+    operatingRateParam->nU32 = mOperatingRate;
+    return OMX_ErrorNone;
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::GetErrorReportMode(OMX_PTR) {
