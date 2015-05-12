@@ -84,6 +84,8 @@ protected:
     DECLARE_HANDLER(OMXVideoDecoderBase, DecoderVppBufferNum);
 #endif
     DECLARE_HANDLER(OMXVideoDecoderBase, ErrorReportMode);
+    DECLARE_HANDLER(OMXVideoDecoderBase, CodecPriority);
+    DECLARE_HANDLER(OMXVideoDecoderBase, DecoderOperatingRate);
 
 private:
     enum {
@@ -110,6 +112,16 @@ private:
 #ifdef TARGET_HAS_ISV
     uint32_t mVppBufferNum;
 #endif
+
+    // Codec priority. Higher value means lower priority
+    // Currently, only two levels are supported:
+    // 0: realtime priority - This will only be used by
+    //    media playback, capture, and possibly by realtime
+    //    communication scenarios if best effort performance is not suitable.
+    // 1: non-realtime priority (best effort). This is the default value.
+    uint32_t mCodecPriority;
+
+    uint32_t mOperatingRate;
 
 protected:
     IVideoDecoder *mVideoDecoder;
