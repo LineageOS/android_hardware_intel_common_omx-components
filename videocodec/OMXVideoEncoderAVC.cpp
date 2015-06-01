@@ -20,6 +20,10 @@
 
 static const char *AVC_MIME_TYPE = "video/h264";
 
+// AVC encoder instance limitation
+#define INSTANCE_LIMITATION 3
+static int gInstanceNumber = 0;
+
 struct ProfileMap {
     OMX_VIDEO_AVCPROFILETYPE key;
     VAProfile value;
@@ -119,6 +123,7 @@ OMXVideoEncoderAVC::~OMXVideoEncoderAVC() {
         delete mAVCParams;
         mAVCParams = NULL;
     }
+    gInstanceNumber --;
 }
 
 OMX_ERRORTYPE OMXVideoEncoderAVC::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionOutput) {
@@ -1060,4 +1065,25 @@ OMX_ERRORTYPE OMXVideoEncoderAVC::SetParamVideoBytestream(OMX_PTR pStructure) {
 }
 
 
-DECLARE_OMX_COMPONENT("OMX.Intel.VideoEncoder.AVC", "video_encoder.avc", OMXVideoEncoderAVC);
+#define DECLARE_OMX_COMPONENT_AVC(NAME, ROLE, CLASS) \
+    static const char *gName = (const char *)(NAME);\
+    static const char *gRole = (const char *)(ROLE);\
+    OMX_ERRORTYPE CreateInstance(OMX_PTR *instance) {\
+        *instance = NULL;\
+        if (gInstanceNumber + 1 > INSTANCE_LIMITATION) {\
+            return OMX_ErrorInsufficientResources;\
+        } else {\
+            gInstanceNumber ++;\
+        }\
+        ComponentBase *inst = new CLASS;\
+        if (!inst) {\
+            return OMX_ErrorInsufficientResources;\
+        }\
+        *instance = inst;\
+        return OMX_ErrorNone;\
+    }\
+    struct wrs_omxil_cmodule_ops_s gOps = {CreateInstance};\
+    struct wrs_omxil_cmodule_s WRS_OMXIL_CMODULE_SYMBOL = {gName, &gRole, 1, &gOps};
+
+
+DECLARE_OMX_COMPONENT_AVC("OMX.Intel.VideoEncoder.AVC", "video_encoder.avc", OMXVideoEncoderAVC);
