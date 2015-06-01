@@ -22,6 +22,10 @@
 // Be sure to have an equal string in VideoDecoderHost.cpp (libmix)
 static const char* VP8_MIME_TYPE = "video/x-vnd.on2.vp8";
 
+// codec number limitation
+#define INSTANCE_LIMITATION 4
+static int gInstanceNumber = 0;
+
 OMXVideoDecoderVP8::OMXVideoDecoderVP8() {
     LOGV("OMXVideoDecoderVP8 is constructed.");
     mVideoDecoder = createVideoDecoder(VP8_MIME_TYPE);
@@ -34,6 +38,7 @@ OMXVideoDecoderVP8::OMXVideoDecoderVP8() {
 }
 
 OMXVideoDecoderVP8::~OMXVideoDecoderVP8() {
+    gInstanceNumber --;
     LOGV("OMXVideoDecoderVP8 is destructed.");
 }
 
@@ -128,6 +133,26 @@ OMX_ERRORTYPE OMXVideoDecoderVP8::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITI
     p->nBufferCountActual = OUTPORT_NATIVE_BUFFER_COUNT;
     return OMXVideoDecoderBase::SetMaxOutputBufferCount(p);
 }
-DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.VP8", "video_decoder.vp8", OMXVideoDecoderVP8);
 
+#define DECLARE_OMX_COMPONENT_VP8(NAME, ROLE, CLASS) \
+    static const char *gName = (const char *)(NAME);\
+    static const char *gRole = (const char *)(ROLE);\
+    OMX_ERRORTYPE CreateInstance(OMX_PTR *instance) {\
+        *instance = NULL;\
+        if (gInstanceNumber + 1 > INSTANCE_LIMITATION) {\
+            return OMX_ErrorInsufficientResources;\
+        } else {\
+            gInstanceNumber ++;\
+        }\
+        ComponentBase *inst = new CLASS;\
+        if (!inst) {\
+            return OMX_ErrorInsufficientResources;\
+        }\
+        *instance = inst;\
+        return OMX_ErrorNone;\
+    }\
+    struct wrs_omxil_cmodule_ops_s gOps = {CreateInstance};\
+    struct wrs_omxil_cmodule_s WRS_OMXIL_CMODULE_SYMBOL = {gName, &gRole, 1, &gOps};
+
+DECLARE_OMX_COMPONENT_VP8("OMX.Intel.VideoDecoder.VP8", "video_decoder.vp8", OMXVideoDecoderVP8);
 
