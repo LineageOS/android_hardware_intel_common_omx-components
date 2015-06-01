@@ -25,6 +25,9 @@
 static const char* AVC_MIME_TYPE = "video/h264";
 #define INVALID_PTS (OMX_S64)-1
 
+// codec number limitation
+#define INSTANCE_LIMITATION 4
+static int gInstanceNumber = 0;
 
 OMXVideoDecoderAVC::OMXVideoDecoderAVC()
     : mAccumulateBuffer(NULL),
@@ -42,6 +45,7 @@ OMXVideoDecoderAVC::OMXVideoDecoderAVC()
 }
 
 OMXVideoDecoderAVC::~OMXVideoDecoderAVC() {
+    gInstanceNumber --;
     LOGV("OMXVideoDecoderAVC is destructed.");
 }
 
@@ -329,4 +333,24 @@ OMX_ERRORTYPE OMXVideoDecoderAVC::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINITI
     return OMXVideoDecoderBase::SetMaxOutputBufferCount(p);
 }
 
-DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.AVC", "video_decoder.avc", OMXVideoDecoderAVC);
+#define DECLARE_OMX_COMPONENT_AVC(NAME, ROLE, CLASS) \
+    static const char *gName = (const char *)(NAME);\
+    static const char *gRole = (const char *)(ROLE);\
+    OMX_ERRORTYPE CreateInstance(OMX_PTR *instance) {\
+        *instance = NULL;\
+        if (gInstanceNumber + 1 > INSTANCE_LIMITATION) {\
+            return OMX_ErrorInsufficientResources;\
+        } else {\
+            gInstanceNumber ++;\
+        }\
+        ComponentBase *inst = new CLASS;\
+        if (!inst) {\
+            return OMX_ErrorInsufficientResources;\
+        }\
+        *instance = inst;\
+        return OMX_ErrorNone;\
+    }\
+    struct wrs_omxil_cmodule_ops_s gOps = {CreateInstance};\
+    struct wrs_omxil_cmodule_s WRS_OMXIL_CMODULE_SYMBOL = {gName, &gRole, 1, &gOps};
+
+DECLARE_OMX_COMPONENT_AVC("OMX.Intel.VideoDecoder.AVC", "video_decoder.avc", OMXVideoDecoderAVC);

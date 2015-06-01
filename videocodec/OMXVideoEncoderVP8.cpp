@@ -4,6 +4,10 @@
 
 static const char *VP8_MIME_TYPE = "video/x-vnd.on2.vp8";
 
+// VP8 encoder instance limitation
+#define INSTANCE_LIMITATION 3
+static int gInstanceNumber = 0;
+
 OMXVideoEncoderVP8::OMXVideoEncoderVP8() {
     LOGV("OMXVideoEncoderVP8 is constructed.");
     mLastTimestamp = 0x7FFFFFFFFFFFFFFFLL;
@@ -14,6 +18,7 @@ OMXVideoEncoderVP8::OMXVideoEncoderVP8() {
 
 OMXVideoEncoderVP8::~OMXVideoEncoderVP8() {
     LOGV("OMXVideoEncoderVP8 is destructed.");
+    gInstanceNumber --;
 }
 
 OMX_ERRORTYPE OMXVideoEncoderVP8::InitOutputPortFormatSpecific(OMX_PARAM_PORTDEFINITIONTYPE *paramPortDefinitionOutput) {
@@ -321,4 +326,25 @@ OMX_ERRORTYPE OMXVideoEncoderVP8::SetConfigVp8MaxFrameSizeRatio(OMX_PTR pStructu
     return OMX_ErrorNone;
 }
 
-DECLARE_OMX_COMPONENT("OMX.Intel.VideoEncoder.VP8", "video_encoder.vp8", OMXVideoEncoderVP8);
+#define DECLARE_OMX_COMPONENT_VP8(NAME, ROLE, CLASS) \
+    static const char *gName = (const char *)(NAME);\
+    static const char *gRole = (const char *)(ROLE);\
+    OMX_ERRORTYPE CreateInstance(OMX_PTR *instance) {\
+        *instance = NULL;\
+        if (gInstanceNumber + 1 > INSTANCE_LIMITATION) {\
+            return OMX_ErrorInsufficientResources;\
+        } else {\
+            gInstanceNumber ++;\
+        }\
+        ComponentBase *inst = new CLASS;\
+        if (!inst) {\
+            return OMX_ErrorInsufficientResources;\
+        }\
+        *instance = inst;\
+        return OMX_ErrorNone;\
+    }\
+    struct wrs_omxil_cmodule_ops_s gOps = {CreateInstance};\
+    struct wrs_omxil_cmodule_s WRS_OMXIL_CMODULE_SYMBOL = {gName, &gRole, 1, &gOps};
+
+
+DECLARE_OMX_COMPONENT_VP8("OMX.Intel.VideoEncoder.VP8", "video_encoder.vp8", OMXVideoEncoderVP8);
