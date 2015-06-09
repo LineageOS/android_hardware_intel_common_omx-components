@@ -293,6 +293,7 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+LOCAL_CFLAGS += -DUSE_META_DATA
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
@@ -350,6 +351,7 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+LOCAL_CFLAGS += -DUSE_META_DATA
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
@@ -511,6 +513,7 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+LOCAL_CFLAGS += -DUSE_META_DATA
 endif
 
 include $(BUILD_SHARED_LIBRARY)
