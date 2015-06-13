@@ -1201,7 +1201,6 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINIT
 
 uint32_t OMXVideoDecoderBase::getStride(uint32_t format, uint32_t width) {
     uint32_t stride = 0;
-    format = format;
 
     if (width <= 512)
         stride = 512;
@@ -1213,6 +1212,8 @@ uint32_t OMXVideoDecoderBase::getStride(uint32_t format, uint32_t width) {
         if (format == HAL_PIXEL_FORMAT_NV12_X_TILED_INTEL) {
             stride = 2048;
         }
+#else
+        (void)format;
 #endif
     } else if (width <= 2048)
         stride = 2048;
