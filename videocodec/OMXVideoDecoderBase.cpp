@@ -1037,6 +1037,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetStoreMetaDataMode(OMX_PTR) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::SetStoreMetaDataMode(OMX_PTR pStructure) {
+#ifndef USE_META_DATA
     OMX_PARAM_PORTDEFINITIONTYPE defInput;
     memcpy(&defInput,
         this->ports[INPORT_INDEX]->GetPortDefinition(),
@@ -1045,7 +1046,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetStoreMetaDataMode(OMX_PTR pStructure) {
         ALOGE("SetMetaDataMode for VP9 is not implemented");
         return OMX_ErrorNotImplemented;
     }
-
+#endif
     OMX_ERRORTYPE ret;
     StoreMetaDataInBuffersParams *param = (StoreMetaDataInBuffersParams*)pStructure;
 
