@@ -25,10 +25,6 @@
 #include <hardware/gralloc.h>
 #include <system/graphics.h>
 
-// codec number limitation
-#define INSTANCE_LIMITATION 4
-static int gInstanceNumber = 0;
-
 static const char* VP9_MIME_TYPE = "video/x-vnd.on2.vp9";
 
 OMXVideoDecoderVP9Hybrid::OMXVideoDecoderVP9Hybrid() {
@@ -55,7 +51,6 @@ OMXVideoDecoderVP9Hybrid::OMXVideoDecoderVP9Hybrid() {
 }
 
 OMXVideoDecoderVP9Hybrid::~OMXVideoDecoderVP9Hybrid() {
-    gInstanceNumber --;
     LOGV("OMXVideoDecoderVP9Hybrid is destructed.");
 }
 
@@ -659,24 +654,4 @@ bool OMXVideoDecoderVP9Hybrid::IsAllBufferAvailable(void) {
     return mCheckBufferAvailable(mHybridCtx);
 }
 
-#define DECLARE_OMX_COMPONENT_VP9(NAME, ROLE, CLASS) \
-    static const char *gName = (const char *)(NAME);\
-    static const char *gRole = (const char *)(ROLE);\
-    OMX_ERRORTYPE CreateInstance(OMX_PTR *instance) {\
-        *instance = NULL;\
-        if (gInstanceNumber + 1 > INSTANCE_LIMITATION) {\
-            return OMX_ErrorInsufficientResources;\
-        } else {\
-            gInstanceNumber ++;\
-        }\
-        ComponentBase *inst = new CLASS;\
-        if (!inst) {\
-            return OMX_ErrorInsufficientResources;\
-        }\
-        *instance = inst;\
-        return OMX_ErrorNone;\
-    }\
-    struct wrs_omxil_cmodule_ops_s gOps = {CreateInstance};\
-    struct wrs_omxil_cmodule_s WRS_OMXIL_CMODULE_SYMBOL = {gName, &gRole, 1, &gOps};
-
-DECLARE_OMX_COMPONENT_VP9("OMX.Intel.VideoDecoder.VP9.hybrid", "video_decoder.vp9", OMXVideoDecoderVP9Hybrid);
+DECLARE_OMX_COMPONENT("OMX.Intel.VideoDecoder.VP9.hybrid", "video_decoder.vp9", OMXVideoDecoderVP9Hybrid);
