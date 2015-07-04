@@ -497,7 +497,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
             mOMXBufferHeaderTypePtrNum = 0;
 
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
-            mGraphicBufferParam.graphicBufferStride = getStride(def_output->format.video.eColorFormat, def_output->format.video.nFrameWidth);
+            mGraphicBufferParam.graphicBufferStride = getStride(def_output->format.video.nFrameWidth);
             mGraphicBufferParam.graphicBufferWidth = def_output->format.video.nFrameWidth;
             mGraphicBufferParam.graphicBufferHeight = (def_output->format.video.nFrameHeight + 0xf) & ~0xf;
 
@@ -1200,7 +1200,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetMaxOutputBufferCount(OMX_PARAM_PORTDEFINIT
     return OMX_ErrorNone;
 }
 
-uint32_t OMXVideoDecoderBase::getStride(uint32_t format, uint32_t width) {
+uint32_t OMXVideoDecoderBase::getStride(uint32_t width) {
     uint32_t stride = 0;
 
     if (width <= 512)
@@ -1209,13 +1209,6 @@ uint32_t OMXVideoDecoderBase::getStride(uint32_t format, uint32_t width) {
         stride = 1024;
     else if (width <= 1280) {
         stride = 1280;
-#ifdef USE_GEN_HW
-        if (format == HAL_PIXEL_FORMAT_NV12_X_TILED_INTEL) {
-            stride = 2048;
-        }
-#else
-        (void)format;
-#endif
     } else if (width <= 2048)
         stride = 2048;
     else if (width <= 4096)

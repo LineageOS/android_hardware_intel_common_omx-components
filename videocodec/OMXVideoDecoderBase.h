@@ -144,7 +144,7 @@ protected:
     AdaptivePlaybackMode mAPMode;
     uint32_t mMetaDataBuffersNum;
     bool mFormatChanged;
-    uint32_t getStride(uint32_t format, uint32_t width);
+    uint32_t getStride(uint32_t width);
 };
 
 #endif /* OMX_VIDEO_DECODER_BASE_H_ */
