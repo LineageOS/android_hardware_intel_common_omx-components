@@ -926,7 +926,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetNativeBufferUsageSpecific(OMX_PTR pStructu
      OMX_ERRORTYPE ret;
      GetAndroidNativeBufferUsageParams *param = (GetAndroidNativeBufferUsageParams*)pStructure;
      CHECK_TYPE_HEADER(param);
-     param->nUsage |= GRALLOC_USAGE_HW_TEXTURE;
+     // hardware usage: consumed by GLES and HWC
+     param->nUsage |= GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_COMPOSER;
+     // software usage: can be read/written by apps
+     param->nUsage |= GRALLOC_USAGE_SW_READ_RARELY | GRALLOC_USAGE_SW_WRITE_RARELY;
      return OMX_ErrorNone;
 }
 OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBufferUsageSpecific(OMX_PTR) {
