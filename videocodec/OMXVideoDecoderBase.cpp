@@ -721,7 +721,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
         paramPortDefinitionInput.format.video.nSliceHeight = sliceHeight;
         // output port
         paramPortDefinitionOutput.format.video.nFrameWidth = width;
-        paramPortDefinitionOutput.format.video.nFrameHeight = height;
+        paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
         paramPortDefinitionOutput.format.video.eColorFormat = GetOutputColorFormat(paramPortDefinitionOutput.format.video.nFrameWidth);
         paramPortDefinitionOutput.format.video.nStride = stride;
         paramPortDefinitionOutput.format.video.nSliceHeight = sliceHeight;
@@ -1106,12 +1106,25 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderOutputCropSpecific(OMX_PTR pStructu
     if (rectParams->nPortIndex != OUTPORT_INDEX) {
         return OMX_ErrorUndefined;
     }
+
+    PortVideo *port = NULL;
+    port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
+    OMX_PARAM_PORTDEFINITIONTYPE port_def;
+    memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
+
     const VideoFormatInfo *formatInfo = mVideoDecoder->getFormatInfo();
     if (formatInfo->valid == true) {
         rectParams->nLeft =  formatInfo->cropLeft;
         rectParams->nTop = formatInfo->cropTop;
         rectParams->nWidth = formatInfo->width - formatInfo->cropLeft - formatInfo->cropRight;
         rectParams->nHeight = formatInfo->height - formatInfo->cropTop - formatInfo->cropBottom;
+
+        // if port width parsed from extractor is not as same as from SPS/PPS nalu header,
+        // align it.
+        if (port_def.format.video.nFrameWidth != rectParams->nWidth) {
+            port_def.format.video.nFrameWidth = rectParams->nWidth;
+        }
+        port->SetPortDefinition(&port_def,true);
         return OMX_ErrorNone;
     } else {
         return OMX_ErrorFormatNotDetected;
