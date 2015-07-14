@@ -25,6 +25,7 @@
 #include <hardware/gralloc.h>
 #include <system/graphics.h>
 
+#define VP9_YV12_ALIGN (64-1)
 static const char* VP9_MIME_TYPE = "video/x-vnd.on2.vp9";
 
 OMXVideoDecoderVP9Hybrid::OMXVideoDecoderVP9Hybrid() {
@@ -86,7 +87,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
             mOMXBufferHeaderTypePtrNum = 0;
 
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
-            mGraphicBufferParam.graphicBufferStride = (def_output->format.video.nFrameWidth + 0x7f) & ~0x7f;
+            mGraphicBufferParam.graphicBufferStride = (def_output->format.video.nFrameWidth + VP9_YV12_ALIGN) & ~VP9_YV12_ALIGN;
             mGraphicBufferParam.graphicBufferWidth = def_output->format.video.nFrameWidth;
             mGraphicBufferParam.graphicBufferHeight = (def_output->format.video.nFrameHeight + 0x1f) & ~0x1f;
             mDecodedImageWidth = def_output->format.video.nFrameWidth;
@@ -162,7 +163,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
             mOMXBufferHeaderTypePtrNum = 0;
 
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
-            mGraphicBufferParam.graphicBufferStride = (def_output->format.video.nFrameWidth + 0x7f) & ~0x7f;
+            mGraphicBufferParam.graphicBufferStride = (def_output->format.video.nFrameWidth + VP9_YV12_ALIGN) & ~VP9_YV12_ALIGN;
             mGraphicBufferParam.graphicBufferWidth = def_output->format.video.nFrameWidth;
             mGraphicBufferParam.graphicBufferHeight = (def_output->format.video.nFrameHeight  + 0x1f) & ~0x1f;
         } else{
