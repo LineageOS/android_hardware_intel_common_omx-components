@@ -25,7 +25,7 @@
 #include <hardware/gralloc.h>
 #include <system/graphics.h>
 
-#define VP9_YV12_ALIGN (64-1)
+#define VP9_YV12_ALIGN (128-1)
 static const char* VP9_MIME_TYPE = "video/x-vnd.on2.vp9";
 
 OMXVideoDecoderVP9Hybrid::OMXVideoDecoderVP9Hybrid() {
