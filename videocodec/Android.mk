@@ -543,6 +543,9 @@ LOCAL_CFLAGS += -DVED_TILING
 LOCAL_CFLAGS += -DUSE_META_DATA
 endif
 
+# TODO: Fix this.
+LOCAL_CFLAGS += -Wno-error=unused-variable
+
 include $(BUILD_SHARED_LIBRARY)
 endif
 
