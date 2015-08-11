@@ -65,6 +65,9 @@ ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
 
+# TODO: Fix this.
+LOCAL_CFLAGS += -Wno-error=unused-variable
+
 include $(BUILD_SHARED_LIBRARY)
 
 ################################################################################
@@ -132,6 +135,9 @@ ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_X_TILE
 endif
 
+# TODO: Fix this.
+LOCAL_CFLAGS += -Wno-error=unused-variable
+
 include $(BUILD_SHARED_LIBRARY)
 endif
 
@@ -191,6 +197,10 @@ endif
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
+
+# TODO: Fix this.
+LOCAL_CFLAGS += -Wno-error=unused-variable
+
 include $(BUILD_SHARED_LIBRARY)
 
 # VP9 hybrid decoder and HW Render
@@ -241,6 +251,10 @@ endif
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
+
+# TODO: Fix this.
+LOCAL_CFLAGS += -Wno-error=unused-variable
+
 include $(BUILD_SHARED_LIBRARY)
 endif
 
@@ -296,6 +310,9 @@ endif
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
+
+# TODO: Fix this.
+LOCAL_CFLAGS += -Wno-error=unused-variable
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -353,6 +370,9 @@ endif
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
+
+# TODO: Fix this.
+LOCAL_CFLAGS += -Wno-error=unused-variable
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -415,6 +435,9 @@ ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
 LOCAL_CFLAGS += -DUSE_GEN_HW
 endif
 
+# TODO: Fix this.
+LOCAL_CFLAGS += -Wno-error=unused-variable
+
 include $(BUILD_SHARED_LIBRARY)
 
 ################################################################################
@@ -460,6 +483,9 @@ endif
 LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoDecoderAVCSecure
+
+# TODO: Fix this.
+LOCAL_CFLAGS += -Wno-error=unused-variable
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -626,6 +652,9 @@ endif
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
 endif
+
+# TODO: Fix this.
+LOCAL_CFLAGS += -Wno-error=unused-variable
 
 include $(BUILD_SHARED_LIBRARY)
 
