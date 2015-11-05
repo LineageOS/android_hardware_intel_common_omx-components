@@ -734,9 +734,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
         this->ports[INPORT_INDEX]->SetPortDefinition(&paramPortDefinitionInput, true);
         this->ports[OUTPORT_INDEX]->SetPortDefinition(&paramPortDefinitionOutput, true);
 
+        ProcessorFlush(INPORT_INDEX);
+
         mVideoDecoder->freeSurfaceBuffers();
 
-        ProcessorFlush(INPORT_INDEX);
         this->ports[OUTPORT_INDEX]->ReportPortSettingsChanged();
 
         mFormatChanged = false;
