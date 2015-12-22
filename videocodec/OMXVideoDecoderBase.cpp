@@ -910,7 +910,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
             // update the real decoded resolution to outport instead of display resolution for graphic buffer reallocation
             // when the width and height parsed from ES are larger than allocated graphic buffer in outport,
             paramPortDefinitionOutput.format.video.nFrameWidth = width;
-            paramPortDefinitionOutput.format.video.nFrameHeight = height;
+            paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
             paramPortDefinitionOutput.format.video.eColorFormat = GetOutputColorFormat(
                     paramPortDefinitionOutput.format.video.nFrameWidth);
             paramPortDefinitionOutput.format.video.nStride = stride;
