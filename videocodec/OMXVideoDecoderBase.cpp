@@ -985,7 +985,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::BuildHandlerList(void) {
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtVppBufferNum), GetDecoderVppBufferNum, SetDecoderVppBufferNum);
 #endif
     AddHandler(OMX_IndexConfigCommonOutputCrop, GetDecoderOutputCrop, SetDecoderOutputCrop);
-#ifdef USE_META_DATA
+#if defined(USE_META_DATA) && !defined(ASUS_ZENFONE2_LP_BLOBS)
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexStoreMetaDataInBuffers), GetStoreMetaDataMode, SetStoreMetaDataMode);
 #endif
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableErrorReport), GetErrorReportMode, SetErrorReportMode);
@@ -1145,7 +1145,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetStoreMetaDataMode(OMX_PTR) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::SetStoreMetaDataMode(OMX_PTR pStructure) {
-#ifndef USE_META_DATA
+#if !defined(USE_META_DATA) || defined(ASUS_ZENFONE2_LP_BLOBS)
     OMX_PARAM_PORTDEFINITIONTYPE defInput;
     memcpy(&defInput,
         this->ports[INPORT_INDEX]->GetPortDefinition(),
