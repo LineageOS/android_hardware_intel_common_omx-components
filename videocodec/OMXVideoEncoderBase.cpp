@@ -972,6 +972,13 @@ OMX_ERRORTYPE OMXVideoEncoderBase::SetConfigVideoBitrate(OMX_PTR pStructure){
     // CHECK_SET_CONFIG_STATE();
 
     VideoConfigBitRate configBitRate;
+    if (mVideoEncoder->getConfig(&configBitRate) != ENCODE_SUCCESS) {
+        /* Ignoring the error here sucks, but prior to this change
+         * we were just using an uninitialized chunk of memory anyway
+         * so we aren't making anything worse and it makes this change safer.
+         */
+        LOGW("failed to get IntelBitrate");
+    }
     configBitRate.rcParams.bitRate = mConfigBitrate.nEncodeBitrate;
     configBitRate.rcParams.temporalID = 0;
     retStatus = mVideoEncoder->setConfig(&configBitRate);
