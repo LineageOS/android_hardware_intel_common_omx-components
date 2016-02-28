@@ -55,7 +55,9 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+ifndef ASUS_ZENFONE2_LP_BLOBS
 LOCAL_CFLAGS += -DUSE_META_DATA
+endif
 endif
 
 ifeq ($(TARGET_VPP_USE_GEN),true)
@@ -115,7 +117,9 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+ifndef ASUS_ZENFONE2_LP_BLOBS
 LOCAL_CFLAGS += -DUSE_META_DATA
+endif
 endif
 
 PLATFORM_USE_GEN_HW := \
@@ -238,7 +242,9 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+ifndef ASUS_ZENFONE2_LP_BLOBS
 LOCAL_CFLAGS += -DUSE_META_DATA
+endif
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
@@ -294,7 +300,9 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+ifndef ASUS_ZENFONE2_LP_BLOBS
 LOCAL_CFLAGS += -DUSE_META_DATA
+endif
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
@@ -352,7 +360,9 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+ifndef ASUS_ZENFONE2_LP_BLOBS
 LOCAL_CFLAGS += -DUSE_META_DATA
+endif
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
@@ -459,7 +469,9 @@ LOCAL_SRC_FILES += \
     securevideo/moorefield/OMXVideoDecoderAVCSecure.cpp \
     securevideo/moorefield/drm_vendor_api.c
 LOCAL_CFLAGS += -DVED_TILING
+ifndef ASUS_ZENFONE2_LP_BLOBS
 LOCAL_CFLAGS += -DUSE_META_DATA
+endif
 LOCAL_SHARED_LIBRARIES += libdl
 endif
 
@@ -514,7 +526,9 @@ endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),moorefield)
 LOCAL_CFLAGS += -DVED_TILING
+ifndef ASUS_ZENFONE2_LP_BLOBS
 LOCAL_CFLAGS += -DUSE_META_DATA
+endif
 endif
 
 include $(BUILD_SHARED_LIBRARY)
