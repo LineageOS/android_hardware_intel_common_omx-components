@@ -461,7 +461,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva_videodecoder \
     liblog \
     libva \
-    libva-android
+    libva-android \
+    libcutils
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
