@@ -22,6 +22,8 @@
 #include <va/va_android.h>
 
 #include "OMXVideoDecoderBase.h"
+#include "ProtectedDataBuffer.h"
+
 
 static const char* VA_RAW_MIME_TYPE = "video/x-raw-va";
 static const uint32_t VA_COLOR_FORMAT = 0x7FA00E00;
@@ -598,6 +600,61 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareDecodeBuffer(OMX_BUFFERHEADERTYPE *buf
     *retain= BUFFER_RETAIN_NOT_RETAIN;
     return OMX_ErrorNone;
 }
+
+OMX_ERRORTYPE OMXVideoDecoderBase::PrepareDecodeNativeHandleBuffer(OMX_BUFFERHEADERTYPE *buffer, buffer_retain_t *retain, VideoDecodeBuffer *p) {
+    // default decode buffer preparation
+
+    memset(p, 0, sizeof(VideoDecodeBuffer));
+    if (buffer->nFilledLen == 0) {
+        LOGW("Len of filled data to decode is 0.");
+        return OMX_ErrorNone; //OMX_ErrorBadParameter;
+    }
+
+    if (buffer->pBuffer == NULL) {
+        LOGE("Buffer to decode is empty.");
+        return OMX_ErrorBadParameter;
+    }
+
+    if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
+        LOGI("Buffer has OMX_BUFFERFLAG_CODECCONFIG flag.");
+    }
+
+    if (buffer->nFlags & OMX_BUFFERFLAG_DECODEONLY) {
+        // TODO: Handle OMX_BUFFERFLAG_DECODEONLY : drop the decoded frame without rendering it.
+        LOGW("Buffer has OMX_BUFFERFLAG_DECODEONLY flag.");
+    }
+    //Get data pointer from native_handle
+    native_handle_t *native_handle = (native_handle_t *)buffer->pBuffer;
+    ProtectedDataBuffer *dataBuffer = (ProtectedDataBuffer *) native_handle->data[1];
+    p->data =  dataBuffer->data + buffer->nOffset;
+
+
+
+    p->size = buffer->nFilledLen;
+    p->timeStamp = buffer->nTimeStamp;
+    if (buffer->nFlags & (OMX_BUFFERFLAG_ENDOFFRAME | OMX_BUFFERFLAG_EOS)) {
+        // TODO: OMX_BUFFERFLAG_ENDOFFRAME can be used to indicate end of a NAL unit.
+        // setting this flag may cause corruption if buffer does not contain end-of-frame data.
+        p->flag = HAS_COMPLETE_FRAME;
+    }
+
+    if (buffer->nFlags & OMX_BUFFERFLAG_SYNCFRAME) {
+        p->flag |= IS_SYNC_FRAME;
+    }
+
+    if (buffer->pInputPortPrivate) {
+        uint32_t degree = 0;
+        memcpy ((void *) &degree, buffer->pInputPortPrivate, sizeof(uint32_t));
+        p->rotationDegrees = degree;
+        LOGV("rotationDegrees = %d", p->rotationDegrees);
+    } else {
+        p->rotationDegrees = mRotationDegrees;
+    }
+
+    *retain= BUFFER_RETAIN_NOT_RETAIN;
+    return OMX_ErrorNone;
+}
+
 
 OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuffer, buffer_retain_t *retain, OMX_U32 inportBufferFlags, OMX_BOOL *isResolutionChange) {
     OMX_BUFFERHEADERTYPE *buffer = *pBuffer;
