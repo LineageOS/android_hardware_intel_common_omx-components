@@ -1178,8 +1178,8 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderOutputCropSpecific(OMX_PTR pStructu
     if (formatInfo->valid == true) {
         rectParams->nLeft =  formatInfo->cropLeft;
         rectParams->nTop = formatInfo->cropTop;
-        rectParams->nWidth = formatInfo->width - formatInfo->cropLeft - formatInfo->cropRight;
-        rectParams->nHeight = formatInfo->height - formatInfo->cropTop - formatInfo->cropBottom;
+        rectParams->nWidth = formatInfo->surfaceWidth - formatInfo->cropLeft - formatInfo->cropRight;
+        rectParams->nHeight = formatInfo->surfaceHeight - formatInfo->cropTop - formatInfo->cropBottom;
 
         // if port width parsed from extractor is not as same as from SPS/PPS nalu header,
         // align it.
