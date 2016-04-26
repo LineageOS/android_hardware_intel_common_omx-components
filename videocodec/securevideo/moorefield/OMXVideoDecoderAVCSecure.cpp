@@ -619,7 +619,8 @@ OMX_U8* OMXVideoDecoderAVCSecure::MemAllocDataBuffer(OMX_U32 nSizeBytes) {
         return NULL;
     }
     native->data[1] = (int) pBuffer;
-    native->data[2] = 0;
+    // Use a random value as the buffer id
+    native->data[2] = rand();
     ++mNumInportBuffers;
 
     Init_ProtectedDataBuffer(pBuffer);
