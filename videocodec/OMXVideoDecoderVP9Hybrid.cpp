@@ -25,6 +25,8 @@
 #include <hardware/gralloc.h>
 #include <system/graphics.h>
 
+#include <hal_public.h>
+
 #define VP9_YV12_ALIGN (128-1)
 static const char* VP9_MIME_TYPE = "video/x-vnd.on2.vp9";
 
@@ -70,12 +72,12 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
     uint32_t buff[MAX_GRAPHIC_BUFFER_NUM];
     uint32_t i, bufferCount;
     bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
-    uint32_t bufferSize, bufferStride, bufferHeight, bufferWidth;
+    uint32_t bufferSize, bufferHStride, bufferVStride, bufferWidth;
     if (!gralloc_mode) {
-        bufferSize = 1920 * 1088 * 1.5;
-        bufferStride = 1920;
+        bufferHStride = 1920;
+        bufferVStride = 1088;
         bufferWidth = 1920;
-        bufferHeight = 1088;
+        //bufferHeight = 1080;
         bufferCount = 12;
     } else {
         if (mAPMode == METADATA_MODE) {
@@ -87,9 +89,10 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
             mOMXBufferHeaderTypePtrNum = 0;
 
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
-            mGraphicBufferParam.graphicBufferStride = (def_output->format.video.nFrameWidth + VP9_YV12_ALIGN) & ~VP9_YV12_ALIGN;
+            mGraphicBufferParam.graphicBufferHStride = (def_output->format.video.nFrameWidth + VP9_YV12_ALIGN) & ~VP9_YV12_ALIGN;
+            mGraphicBufferParam.graphicBufferVStride = (def_output->format.video.nFrameHeight + 0x1f) & ~0x1f;
             mGraphicBufferParam.graphicBufferWidth = def_output->format.video.nFrameWidth;
-            mGraphicBufferParam.graphicBufferHeight = (def_output->format.video.nFrameHeight + 0x1f) & ~0x1f;
+            mGraphicBufferParam.graphicBufferHeight = def_output->format.video.nFrameHeight;
             mDecodedImageWidth = def_output->format.video.nFrameWidth;
             mDecodedImageHeight = def_output->format.video.nFrameHeight;
         } else{
@@ -101,12 +104,14 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
             }
         }
 
-        bufferSize = mGraphicBufferParam.graphicBufferStride *
-                          mGraphicBufferParam.graphicBufferHeight * 1.5;
-        bufferStride = mGraphicBufferParam.graphicBufferStride;
-        bufferHeight = mGraphicBufferParam.graphicBufferHeight;
+        bufferHStride = mGraphicBufferParam.graphicBufferHStride;
+        bufferVStride = mGraphicBufferParam.graphicBufferVStride;
         bufferWidth = mGraphicBufferParam.graphicBufferWidth;
+        //bufferHeight = mGraphicBufferParam.graphicBufferHeight;
     }
+
+    bufferSize = bufferHStride * bufferVStride * 1.5;
+
     mLibHandle = dlopen("libDecoderVP9Hybrid.so", RTLD_NOW);
     if (mLibHandle == NULL) {
         LOGE("dlopen libDecoderVP9Hybrid.so fail\n");
@@ -137,7 +142,11 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
         return OMX_ErrorBadParameter;
     }
 
-    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferWidth, bufferHeight,bufferCount,gralloc_mode, buff, (uint32_t)mAPMode);
+    // FIXME: The proprietary part of the vp9hybrid decoder should be updated
+    //        to take VStride as well as Height. For now it's convenient to
+    //        use VStride as that was effectively what was done before..
+    mInitDecoder(mHybridCtx, bufferSize, bufferHStride, bufferWidth,
+        bufferVStride, bufferCount, gralloc_mode, buff, (uint32_t)mAPMode);
     return OMX_ErrorNone;
 }
 
@@ -146,12 +155,13 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
     uint32_t buff[MAX_GRAPHIC_BUFFER_NUM];
     uint32_t i, bufferCount;
     bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
-    uint32_t bufferSize, bufferStride, bufferHeight, bufferWidth;
+    uint32_t bufferSize, bufferHStride, bufferVStride, bufferWidth;
     if (!gralloc_mode) {
-        bufferSize = mDecodedImageWidth * mDecodedImageHeight * 1.5;
-        bufferStride = mDecodedImageWidth;
+        bufferHStride = mDecodedImageWidth;
+        bufferVStride = mDecodedImageHeight;
         bufferWidth = mDecodedImageWidth;
-        bufferHeight = mDecodedImageHeight;
+        //bufferHeight = mDecodedImageHeight;
+        bufferSize = bufferHStride * bufferVStride * 1.5;
         bufferCount = 12;
     } else {
         if (mAPMode == METADATA_MODE) {
@@ -163,9 +173,10 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
             mOMXBufferHeaderTypePtrNum = 0;
 
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
-            mGraphicBufferParam.graphicBufferStride = (def_output->format.video.nFrameWidth + VP9_YV12_ALIGN) & ~VP9_YV12_ALIGN;
+            mGraphicBufferParam.graphicBufferHStride = (def_output->format.video.nFrameWidth + VP9_YV12_ALIGN) & ~VP9_YV12_ALIGN;
+            mGraphicBufferParam.graphicBufferVStride = (def_output->format.video.nFrameHeight + 0x1f) & ~0x1f;
             mGraphicBufferParam.graphicBufferWidth = def_output->format.video.nFrameWidth;
-            mGraphicBufferParam.graphicBufferHeight = (def_output->format.video.nFrameHeight  + 0x1f) & ~0x1f;
+            mGraphicBufferParam.graphicBufferHeight = def_output->format.video.nFrameHeight;
         } else{
             bufferCount = mOMXBufferHeaderTypePtrNum;
 
@@ -174,14 +185,19 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
                 buff[i] = (uint32_t)(buf_hdr->pBuffer);
             }
         }
-        bufferSize = mGraphicBufferParam.graphicBufferStride *
-                          mGraphicBufferParam.graphicBufferHeight * 1.5;
-        bufferStride = mGraphicBufferParam.graphicBufferStride;
-        bufferHeight = mGraphicBufferParam.graphicBufferHeight;
+        bufferHStride = mGraphicBufferParam.graphicBufferHStride;
+        bufferVStride = mGraphicBufferParam.graphicBufferVStride;
         bufferWidth = mGraphicBufferParam.graphicBufferWidth;
+        //bufferHeight = mGraphicBufferParam.graphicBufferHeight;
     }
 
-    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferWidth,bufferHeight,bufferCount,gralloc_mode, buff, (uint32_t)mAPMode);
+    bufferSize = bufferHStride * bufferVStride * 1.5;
+
+    // FIXME: The proprietary part of the vp9hybrid decoder should be updated
+    //        to take VStride as well as Height. For now it's convenient to
+    //        use VStride as that was effectively what was done before..
+    mInitDecoder(mHybridCtx, bufferSize, bufferHStride, bufferWidth,
+        bufferVStride, bufferCount, gralloc_mode, buff, (uint32_t)mAPMode);
     mFormatChanged = false;
     return OMX_ErrorNone;
 }
@@ -475,7 +491,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::SetParamVideoVp9(OMX_PTR) {
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::HandleFormatChange(void)
 {
-    ALOGI("handle format change from %dx%d to %dx%d",
+    ALOGE("handle format change from %dx%d to %dx%d",
         mDecodedImageWidth,mDecodedImageHeight,mDecodedImageNewWidth,mDecodedImageNewHeight);
     mDecodedImageWidth = mDecodedImageNewWidth;
     mDecodedImageHeight = mDecodedImageNewHeight;
@@ -540,10 +556,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::HandleFormatChange(void)
             // for graphic buffer reallocation
             // when the width and height parsed from ES are larger than allocated graphic buffer in outport,
             paramPortDefinitionOutput.format.video.nFrameWidth = width;
-            if (mAPMode == METADATA_MODE)
-               paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
-            else
-               paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
+            paramPortDefinitionOutput.format.video.nFrameHeight = height;
             paramPortDefinitionOutput.format.video.eColorFormat = GetOutputColorFormat(
                     paramPortDefinitionOutput.format.video.nFrameWidth);
             paramPortDefinitionOutput.format.video.nStride = stride;
@@ -566,8 +579,8 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::HandleFormatChange(void)
 
 
 OMX_COLOR_FORMATTYPE OMXVideoDecoderVP9Hybrid::GetOutputColorFormat(int) {
-    LOGV("Output color format is HAL_PIXEL_FORMAT_YV12.");
-    return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_YV12;
+    LOGV("Output color format is HAL_PIXEL_FORMAT_INTEL_YV12.");
+    return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_INTEL_YV12;
 }
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::GetDecoderOutputCropSpecific(OMX_PTR pStructure) {
@@ -628,10 +641,9 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::SetNativeBufferModeSpecific(OMX_PTR pStr
     port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
     // add borders for libvpx decode need.
     port_def.format.video.nFrameWidth += VPX_DECODE_BORDER * 2;
+    port_def.format.video.nFrameHeight += VPX_DECODE_BORDER * 2;
     mDecodedImageWidth = port_def.format.video.nFrameWidth;
     mDecodedImageHeight = port_def.format.video.nFrameHeight;
-    // make heigth 32bit align
-    port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;
     port_def.format.video.eColorFormat = GetOutputColorFormat(port_def.format.video.nFrameWidth);
     port->SetPortDefinition(&port_def,true);
 
