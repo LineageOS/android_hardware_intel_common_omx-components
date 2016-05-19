@@ -597,8 +597,8 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::HandleFormatChange(void)
 
 
 OMX_COLOR_FORMATTYPE OMXVideoDecoderVP9Hybrid::GetOutputColorFormat(int) {
-    LOGV("Output color format is HAL_PIXEL_FORMAT_YV12.");
-    return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_YV12;
+    LOGV("Output color format is HAL_PIXEL_FORMAT_INTEL_YV12.");
+    return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_INTEL_YV12;
 }
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::GetDecoderOutputCropSpecific(OMX_PTR pStructure) {
