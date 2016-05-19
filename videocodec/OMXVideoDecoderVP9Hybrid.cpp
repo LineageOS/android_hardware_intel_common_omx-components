@@ -72,12 +72,12 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
     uint32_t buff[MAX_GRAPHIC_BUFFER_NUM];
     uint32_t i, bufferCount;
     bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
-    uint32_t bufferSize, bufferHStride, bufferVStride, bufferWidth;
+    uint32_t bufferSize, bufferHStride, bufferHeight, bufferVStride, bufferWidth;
     if (!gralloc_mode) {
         bufferHStride = 1920;
         bufferVStride = 1088;
         bufferWidth = 1920;
-        //bufferHeight = 1080;
+        bufferHeight = 1080;
         bufferCount = 12;
     } else {
         if (mAPMode == METADATA_MODE) {
@@ -107,7 +107,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
         bufferHStride = mGraphicBufferParam.graphicBufferHStride;
         bufferVStride = mGraphicBufferParam.graphicBufferVStride;
         bufferWidth = mGraphicBufferParam.graphicBufferWidth;
-        //bufferHeight = mGraphicBufferParam.graphicBufferHeight;
+        bufferHeight = mGraphicBufferParam.graphicBufferHeight;
     }
 
     bufferSize = bufferHStride * bufferVStride * 1.5;
@@ -146,7 +146,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
     //        to take VStride as well as Height. For now it's convenient to
     //        use VStride as that was effectively what was done before..
     mInitDecoder(mHybridCtx, bufferSize, bufferHStride, bufferWidth,
-        bufferVStride, bufferCount, gralloc_mode, buff, (uint32_t)mAPMode);
+        bufferHeight, bufferCount, gralloc_mode, buff, (uint32_t)mAPMode);
     return OMX_ErrorNone;
 }
 
@@ -155,12 +155,12 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
     uint32_t buff[MAX_GRAPHIC_BUFFER_NUM];
     uint32_t i, bufferCount;
     bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
-    uint32_t bufferSize, bufferHStride, bufferVStride, bufferWidth;
+    uint32_t bufferSize, bufferHStride, bufferHeight, bufferVStride, bufferWidth;
     if (!gralloc_mode) {
         bufferHStride = mDecodedImageWidth;
         bufferVStride = mDecodedImageHeight;
         bufferWidth = mDecodedImageWidth;
-        //bufferHeight = mDecodedImageHeight;
+        bufferHeight = mDecodedImageHeight;
         bufferSize = bufferHStride * bufferVStride * 1.5;
         bufferCount = 12;
     } else {
@@ -188,7 +188,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
         bufferHStride = mGraphicBufferParam.graphicBufferHStride;
         bufferVStride = mGraphicBufferParam.graphicBufferVStride;
         bufferWidth = mGraphicBufferParam.graphicBufferWidth;
-        //bufferHeight = mGraphicBufferParam.graphicBufferHeight;
+        bufferHeight = mGraphicBufferParam.graphicBufferHeight;
     }
 
     bufferSize = bufferHStride * bufferVStride * 1.5;
@@ -197,7 +197,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
     //        to take VStride as well as Height. For now it's convenient to
     //        use VStride as that was effectively what was done before..
     mInitDecoder(mHybridCtx, bufferSize, bufferHStride, bufferWidth,
-        bufferVStride, bufferCount, gralloc_mode, buff, (uint32_t)mAPMode);
+        bufferHeight, bufferCount, gralloc_mode, buff, (uint32_t)mAPMode);
     mFormatChanged = false;
     return OMX_ErrorNone;
 }
@@ -579,8 +579,8 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::HandleFormatChange(void)
 
 
 OMX_COLOR_FORMATTYPE OMXVideoDecoderVP9Hybrid::GetOutputColorFormat(int) {
-    LOGV("Output color format is HAL_PIXEL_FORMAT_INTEL_YV12.");
-    return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_INTEL_YV12;
+    LOGV("Output color format is HAL_PIXEL_FORMAT_YV12.");
+    return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_YV12;
 }
 
 OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::GetDecoderOutputCropSpecific(OMX_PTR pStructure) {
