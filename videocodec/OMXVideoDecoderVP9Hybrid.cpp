@@ -625,17 +625,25 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::SetNativeBufferModeSpecific(OMX_PTR pStr
     CHECK_PORT_INDEX_RANGE(param);
     CHECK_SET_PARAM_STATE();
 
+    PortVideo *port = NULL;
+    port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
+    OMX_PARAM_PORTDEFINITIONTYPE port_def;
+    memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
+
     if (!param->enable) {
         mWorkingMode = RAWDATA_MODE;
         LOGI("Raw data mode is used");
+        // If it is fallback from native mode the color format has been
+        // already set to INTEL format.
+        // We need to set back the default color format and Native stuff.
+        port_def.format.video.eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
+        port_def.format.video.pNativeRender = NULL;
+        port_def.format.video.pNativeWindow = NULL;
+        port->SetPortDefinition(&port_def,true);
         return OMX_ErrorNone;
     }
-    mWorkingMode = GRAPHICBUFFER_MODE;
-    PortVideo *port = NULL;
-    port = static_cast<PortVideo *>(this->ports[OUTPORT_INDEX]);
 
-    OMX_PARAM_PORTDEFINITIONTYPE port_def;
-    memcpy(&port_def,port->GetPortDefinition(),sizeof(port_def));
+    mWorkingMode = GRAPHICBUFFER_MODE;
     port_def.nBufferCountMin = mNativeBufferCount - 4;
     port_def.nBufferCountActual = mNativeBufferCount;
     port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
