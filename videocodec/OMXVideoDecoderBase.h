@@ -145,6 +145,7 @@ protected:
     };
     AdaptivePlaybackMode mAPMode;
     uint32_t mMetaDataBuffersNum;
+    OMX_TICKS mFlushMode;
     bool mFormatChanged;
     uint32_t getStride(uint32_t width);
 };
