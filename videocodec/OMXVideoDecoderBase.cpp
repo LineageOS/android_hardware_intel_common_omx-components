@@ -499,9 +499,10 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
             mOMXBufferHeaderTypePtrNum = 0;
 
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
-            mGraphicBufferParam.graphicBufferStride = getStride(def_output->format.video.nFrameWidth);
+            mGraphicBufferParam.graphicBufferHStride = getStride(def_output->format.video.nFrameWidth);
+            mGraphicBufferParam.graphicBufferVStride = (def_output->format.video.nFrameHeight + 0x1f) & ~0x1f;
             mGraphicBufferParam.graphicBufferWidth = def_output->format.video.nFrameWidth;
-            mGraphicBufferParam.graphicBufferHeight = (def_output->format.video.nFrameHeight + 0xf) & ~0xf;
+            mGraphicBufferParam.graphicBufferHeight = def_output->format.video.nFrameHeight;
 
             p->surfaceNumber = mMetaDataBuffersNum;
             for (int i = 0; i < MAX_GRAPHIC_BUFFER_NUM; i++) {
@@ -517,10 +518,11 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
             }
         }
         p->flag |= USE_NATIVE_GRAPHIC_BUFFER;
-        p->graphicBufferStride = mGraphicBufferParam.graphicBufferStride;
-        p->graphicBufferColorFormat = mGraphicBufferParam.graphicBufferColorFormat;
+        p->graphicBufferHStride = mGraphicBufferParam.graphicBufferHStride;
+        p->graphicBufferVStride = mGraphicBufferParam.graphicBufferVStride;
         p->graphicBufferWidth = mGraphicBufferParam.graphicBufferWidth;
         p->graphicBufferHeight = mGraphicBufferParam.graphicBufferHeight;
+        p->graphicBufferColorFormat = mGraphicBufferParam.graphicBufferColorFormat;
         if (p->graphicBufferColorFormat == OMX_INTEL_COLOR_FormatYUV420PackedSemiPlanar_Tiled
 #ifdef USE_GEN_HW
             || p->graphicBufferColorFormat == HAL_PIXEL_FORMAT_NV12_X_TILED_INTEL
@@ -1031,7 +1033,9 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBuffer(OMX_PTR pStructure) {
 
     if (mOMXBufferHeaderTypePtrNum == 1) {
          mGraphicBufferParam.graphicBufferColorFormat = param->nativeBuffer->format;
-         mGraphicBufferParam.graphicBufferStride = param->nativeBuffer->stride;
+         mGraphicBufferParam.graphicBufferHStride = param->nativeBuffer->stride;
+         // FIXME: use IMG_native_handle_t->aiVStride[0] instead..
+         mGraphicBufferParam.graphicBufferVStride = param->nativeBuffer->height;
          mGraphicBufferParam.graphicBufferWidth = param->nativeBuffer->width;
          mGraphicBufferParam.graphicBufferHeight = param->nativeBuffer->height;
     }
