@@ -40,6 +40,7 @@ OMXVideoDecoderBase::OMXVideoDecoderBase()
       mWorkingMode(RAWDATA_MODE),
       mErrorReportEnabled (false),
       mAPMode(LEGACY_MODE),
+      mFlushMode(false),
       mFormatChanged(false) {
       mOMXBufferHeaderTypePtrNum = 0;
       mMetaDataBuffersNum = 0;
@@ -352,10 +353,18 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
             HandleFormatChange();
         }
 
-        // Actually, if mAPMode is set, mWorkingMode should be GRAPHICBUFFER_MODE.
-        if (((mAPMode == METADATA_MODE) && (mWorkingMode == GRAPHICBUFFER_MODE)) && mFormatChanged) {
-            if (((*pBuffers[OUTPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS) || (mVideoDecoder->getOutputQueueLength() == 0)) {
-                HandleFormatChange();
+        if (mFlushMode) {
+            LOGI("in mFlushMode, do HandleFormatChange.");
+            HandleFormatChange();
+        } else {
+            // Actually, if mAPMode is set, mWorkingMode should be GRAPHICBUFFER_MODE.
+            if (((mAPMode == METADATA_MODE) && (mWorkingMode == GRAPHICBUFFER_MODE)) && mFormatChanged) {
+                if (((*pBuffers[OUTPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS) || (mVideoDecoder->getOutputQueueLength() == 0)) {
+                    // Format changed, set mFlushMode, clear eos
+                    mFlushMode = true;
+                    mFormatChanged = false;
+                    (*pBuffers[OUTPORT_INDEX])->nFlags &= ~OMX_BUFFERFLAG_EOS;
+                }
             }
         }
 
@@ -436,9 +445,17 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
         HandleFormatChange();
     }
 
-    if (((mAPMode == METADATA_MODE) && (mWorkingMode == GRAPHICBUFFER_MODE)) && mFormatChanged) {
-        if (((*pBuffers[OUTPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS) || (mVideoDecoder->getOutputQueueLength() == 0)) {
-            HandleFormatChange();
+    if (mFlushMode) {
+        LOGI("in mFlushMode, do HandleFormatChange.");
+        HandleFormatChange();
+    } else {
+        if (((mAPMode == METADATA_MODE) && (mWorkingMode == GRAPHICBUFFER_MODE)) && mFormatChanged) {
+            if (((*pBuffers[OUTPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS) || (mVideoDecoder->getOutputQueueLength() == 0)) {
+                // Format changed, set mFlushMode, clear eos.
+                mFlushMode = true;
+                mFormatChanged = false;
+                (*pBuffers[OUTPORT_INDEX])->nFlags &= ~OMX_BUFFERFLAG_EOS;
+            }
         }
     }
 
@@ -678,8 +695,15 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
 
     bool draining = (inportBufferFlags & OMX_BUFFERFLAG_EOS);
     //pthread_mutex_lock(&mSerializationLock);
-    const VideoRenderBuffer *renderBuffer;
+    const VideoRenderBuffer *renderBuffer = NULL;
     //pthread_mutex_unlock(&mSerializationLock);
+
+    // in mFlushMode, provide empty buffer.
+    if (mFlushMode) {
+        buffer->nFilledLen = 0;
+        return OMX_ErrorNone;
+    }
+
     if (((mAPMode == METADATA_MODE) && (mWorkingMode == GRAPHICBUFFER_MODE)) && mFormatChanged) {
          renderBuffer = mVideoDecoder->getOutput(true, ErrBufPtr);
     } else {
@@ -803,7 +827,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
 
         this->ports[OUTPORT_INDEX]->ReportPortSettingsChanged();
 
-        mFormatChanged = false;
+        mFlushMode = false;
         return OMX_ErrorNone;
     }
 
