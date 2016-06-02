@@ -105,7 +105,8 @@ private:
     };
 
     struct GraphicBufferParam {
-        uint32_t graphicBufferStride;
+        uint32_t graphicBufferHStride;
+        uint32_t graphicBufferVStride;
         uint32_t graphicBufferWidth;
         uint32_t graphicBufferHeight;
         uint32_t graphicBufferColorFormat;
