@@ -228,6 +228,8 @@ LOCAL_C_INCLUDES := \
 
 ifeq ($(TARGET_BOARD_PLATFORM),baytrail)
     LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ufo
+else
+    LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/pvr/hal
 endif
 
 LOCAL_SRC_FILES := \
