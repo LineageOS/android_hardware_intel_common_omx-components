@@ -209,6 +209,9 @@ bool OMXVideoDecoderVP9Hybrid::isReallocateNeeded(const uint8_t * data,uint32_t 
     bool ret = true;
     if (gralloc_mode) {
         ret = mGetFrameResolution(data,data_sz, &width, &height);
+        if (width == 0 || height == 0)
+            return false;
+
         if (ret) {
             if (mAPMode == METADATA_MODE) {
                 ret = (width != mDecodedImageWidth)
@@ -292,6 +295,21 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
     OMX_ERRORTYPE ret;
     OMX_BUFFERHEADERTYPE *inBuffer = *pBuffers[INPORT_INDEX];
     OMX_BUFFERHEADERTYPE *outBuffer = *pBuffers[OUTPORT_INDEX];
+
+    if ((mWorkingMode == GRAPHICBUFFER_MODE) && (mAPMode == METADATA_MODE) &&
+        (mLastTimeStamp == 0) && (!mFormatChanged)) {
+        bool mRet = mGetFrameResolution(inBuffer->pBuffer + inBuffer->nOffset, inBuffer->nFilledLen,
+            &mDecodedImageNewWidth,&mDecodedImageNewHeight);
+
+        if (mRet && ((mDecodedImageNewWidth != 0) && (mDecodedImageNewHeight != 0)) &&
+            ((mDecodedImageWidth != 0) && (mDecodedImageHeight != 0)) &&
+            ((mDecodedImageNewWidth != mDecodedImageWidth || mDecodedImageNewHeight != mDecodedImageHeight))) {
+            retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+            HandleFormatChange();
+            return OMX_ErrorNone;
+	}
+    }
+
     bool eos = (inBuffer->nFlags & OMX_BUFFERFLAG_EOS)? true:false;
     OMX_BOOL isResolutionChange = OMX_FALSE;
     bool formatChange = false;
