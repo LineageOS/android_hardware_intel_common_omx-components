@@ -295,25 +295,11 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
     OMX_ERRORTYPE ret;
     OMX_BUFFERHEADERTYPE *inBuffer = *pBuffers[INPORT_INDEX];
     OMX_BUFFERHEADERTYPE *outBuffer = *pBuffers[OUTPORT_INDEX];
-
-    if ((mWorkingMode == GRAPHICBUFFER_MODE) && (mAPMode == METADATA_MODE) &&
-        (mLastTimeStamp == 0) && (!mFormatChanged)) {
-        bool mRet = mGetFrameResolution(inBuffer->pBuffer + inBuffer->nOffset, inBuffer->nFilledLen,
-            &mDecodedImageNewWidth,&mDecodedImageNewHeight);
-
-        if (mRet && ((mDecodedImageNewWidth != 0) && (mDecodedImageNewHeight != 0)) &&
-            ((mDecodedImageWidth != 0) && (mDecodedImageHeight != 0)) &&
-            ((mDecodedImageNewWidth != mDecodedImageWidth || mDecodedImageNewHeight != mDecodedImageHeight))) {
-            retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
-            HandleFormatChange();
-            return OMX_ErrorNone;
-	}
-    }
-
-    bool eos = (inBuffer->nFlags & OMX_BUFFERFLAG_EOS)? true:false;
     OMX_BOOL isResolutionChange = OMX_FALSE;
-    bool formatChange = false;
+    bool eos = (inBuffer->nFlags & OMX_BUFFERFLAG_EOS)? true : false;
     eos = eos && (inBuffer->nFilledLen == 0);
+    static unsigned char *firstFrame = NULL;
+    static uint32_t firstFrameSize = 0;
 
     if (inBuffer->pBuffer == NULL) {
         LOGE("Buffer to decode is empty.");
@@ -326,6 +312,52 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
 
     if (inBuffer->nFlags & OMX_BUFFERFLAG_DECODEONLY) {
         LOGW("Buffer has OMX_BUFFERFLAG_DECODEONLY flag.");
+    }
+
+    if (firstFrameSize == 0 && inBuffer->nFilledLen != 0 && inBuffer->nTimeStamp != 0) {
+        if (firstFrame != NULL) {
+            free(firstFrame);
+            firstFrame = NULL;
+        }
+
+        firstFrame = (unsigned char *)malloc(inBuffer->nFilledLen);
+        memcpy(firstFrame, inBuffer->pBuffer + inBuffer->nOffset, inBuffer->nFilledLen);
+        firstFrameSize = inBuffer->nFilledLen;
+    }
+
+    if ((mWorkingMode == GRAPHICBUFFER_MODE) && (mAPMode == METADATA_MODE) && (!mFormatChanged)) {
+        bool mRet = mGetFrameResolution(inBuffer->pBuffer + inBuffer->nOffset, inBuffer->nFilledLen,
+            &mDecodedImageNewWidth,&mDecodedImageNewHeight);
+
+        if (mRet && ((mDecodedImageNewWidth != 0) && (mDecodedImageNewHeight != 0)) &&
+            ((mDecodedImageWidth != 0) && (mDecodedImageHeight != 0)) &&
+            ((mDecodedImageNewWidth != mDecodedImageWidth || mDecodedImageNewHeight != mDecodedImageHeight))) {
+            if (mLastTimeStamp == 0) {
+                retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+                HandleFormatChange();
+                return OMX_ErrorNone;
+            } else {
+                // Detected format change in time.
+                // drain the last frame, keep the current input buffer
+                mDecoderDecode(mCtx, mHybridCtx, firstFrame, firstFrameSize, false);
+                retains[INPORT_INDEX] = BUFFER_RETAIN_GETAGAIN;
+
+                mFormatChanged = true;
+
+                ret = FillRenderBuffer(pBuffers[OUTPORT_INDEX], &retains[OUTPORT_INDEX],
+                    eos ? OMX_BUFFERFLAG_EOS : 0, &isResolutionChange);
+
+                if (ret == OMX_ErrorNone)
+                    (*pBuffers[OUTPORT_INDEX])->nTimeStamp = mLastTimeStamp;
+
+                mLastTimeStamp = inBuffer->nTimeStamp;
+
+                free(firstFrame);
+                firstFrame = NULL;
+                firstFrameSize = 0;
+                return ret;
+            }
+	}
     }
 
 #if LOG_TIME == 1
