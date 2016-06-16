@@ -40,7 +40,6 @@ libvpx_source_dir := $(LOCAL_PATH)/libvpx
 libvpx_codec_srcs := $(shell cat $(libvpx_config_dir)/libvpx_srcs.txt)
 
 LOCAL_SHARED_LIBRARIES += liblog
-LOCAL_LDLIBS := -L$(SYSROOT)/usr/lib -llog
 LOCAL_CFLAGS := -DHAVE_CONFIG_H=vpx_config.h
 
 # Static functions declared in headers. b/18632512
