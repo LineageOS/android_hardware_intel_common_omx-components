@@ -786,6 +786,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::HandleFormatChange(void) {
     if (strcasecmp(formatInfo->mimeType,"video/avc") == 0 ||
         strcasecmp(formatInfo->mimeType,"video/h264") == 0) {
         heightCropped = formatInfo->height;
+        widthCropped = formatInfo->width;
     }
     uint32_t strideCropped = widthCropped;
     uint32_t sliceHeightCropped = heightCropped;
@@ -1215,6 +1216,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetDecoderOutputCropSpecific(OMX_PTR pStructu
         if (strcasecmp(formatInfo->mimeType,"video/avc") == 0 ||
             strcasecmp(formatInfo->mimeType,"video/h264") == 0) {
             rectParams->nHeight = formatInfo->height;
+            rectParams->nWidth = formatInfo->width;
         }
 
         // if port width parsed from extractor is not as same as from SPS/PPS nalu header,
