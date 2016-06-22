@@ -251,7 +251,6 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorFlush(OMX_U32 portIndex) {
         unsigned int width, height;
         mDecoderDecode(mCtx,mHybridCtx,NULL,0,true);
         mGetOutput(mCtx,mHybridCtx, &width, &height);
-        mLastTimeStamp = 0;
     }
     return OMX_ErrorNone;
 }
