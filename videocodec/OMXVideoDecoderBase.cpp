@@ -528,10 +528,15 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
             mOMXBufferHeaderTypePtrNum = 0;
 
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
+#ifdef ASUS_ZENFONE2_LP_BLOBS
+            mGraphicBufferParam.graphicBufferStride = getStride(def_output->format.video.nFrameWidth);
+            mGraphicBufferParam.graphicBufferHeight = (def_output->format.video.nFrameHeight + 0xf) & ~0xf;
+#else
             mGraphicBufferParam.graphicBufferHStride = getStride(def_output->format.video.nFrameWidth);
             mGraphicBufferParam.graphicBufferVStride = (def_output->format.video.nFrameHeight + 0x1f) & ~0x1f;
-            mGraphicBufferParam.graphicBufferWidth = def_output->format.video.nFrameWidth;
             mGraphicBufferParam.graphicBufferHeight = def_output->format.video.nFrameHeight;
+#endif
+            mGraphicBufferParam.graphicBufferWidth = def_output->format.video.nFrameWidth;
 
             p->surfaceNumber = mMetaDataBuffersNum;
             for (int i = 0; i < MAX_GRAPHIC_BUFFER_NUM; i++) {
@@ -547,8 +552,12 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
             }
         }
         p->flag |= USE_NATIVE_GRAPHIC_BUFFER;
+#ifdef ASUS_ZENFONE2_LP_BLOBS
+        p->graphicBufferStride = mGraphicBufferParam.graphicBufferStride;
+#else
         p->graphicBufferHStride = mGraphicBufferParam.graphicBufferHStride;
         p->graphicBufferVStride = mGraphicBufferParam.graphicBufferVStride;
+#endif
         p->graphicBufferWidth = mGraphicBufferParam.graphicBufferWidth;
         p->graphicBufferHeight = mGraphicBufferParam.graphicBufferHeight;
         p->graphicBufferColorFormat = mGraphicBufferParam.graphicBufferColorFormat;
@@ -1070,9 +1079,13 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBuffer(OMX_PTR pStructure) {
 
     if (mOMXBufferHeaderTypePtrNum == 1) {
          mGraphicBufferParam.graphicBufferColorFormat = param->nativeBuffer->format;
+#ifdef ASUS_ZENFONE2_LP_BLOBS
+         mGraphicBufferParam.graphicBufferStride = param->nativeBuffer->stride;
+#else
          mGraphicBufferParam.graphicBufferHStride = param->nativeBuffer->stride;
          // FIXME: use IMG_native_handle_t->aiVStride[0] instead..
          mGraphicBufferParam.graphicBufferVStride = param->nativeBuffer->height;
+#endif
          mGraphicBufferParam.graphicBufferWidth = param->nativeBuffer->width;
          mGraphicBufferParam.graphicBufferHeight = param->nativeBuffer->height;
     }
