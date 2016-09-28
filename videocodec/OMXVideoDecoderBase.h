@@ -105,8 +105,12 @@ private:
     };
 
     struct GraphicBufferParam {
+#ifdef ASUS_ZENFONE2_LP_BLOBS
+        uint32_t graphicBufferStride;
+#else
         uint32_t graphicBufferHStride;
         uint32_t graphicBufferVStride;
+#endif
         uint32_t graphicBufferWidth;
         uint32_t graphicBufferHeight;
         uint32_t graphicBufferColorFormat;
