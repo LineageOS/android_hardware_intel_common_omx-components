@@ -530,12 +530,11 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
 #ifdef ASUS_ZENFONE2_LP_BLOBS
             mGraphicBufferParam.graphicBufferStride = getStride(def_output->format.video.nFrameWidth);
-            mGraphicBufferParam.graphicBufferHeight = (def_output->format.video.nFrameHeight + 0xf) & ~0xf;
 #else
             mGraphicBufferParam.graphicBufferHStride = getStride(def_output->format.video.nFrameWidth);
             mGraphicBufferParam.graphicBufferVStride = (def_output->format.video.nFrameHeight + 0x1f) & ~0x1f;
-            mGraphicBufferParam.graphicBufferHeight = def_output->format.video.nFrameHeight;
 #endif
+            mGraphicBufferParam.graphicBufferHeight = def_output->format.video.nFrameHeight;
             mGraphicBufferParam.graphicBufferWidth = def_output->format.video.nFrameWidth;
 
             p->surfaceNumber = mMetaDataBuffersNum;
