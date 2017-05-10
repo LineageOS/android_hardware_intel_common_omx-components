@@ -356,7 +356,10 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorProcess(
                 firstFrameSize = 0;
                 return ret;
             }
-	}
+        } else if (!mRet && (mDecodedImageNewWidth == 0 || mDecodedImageNewHeight == 0)) {
+            retains[INPORT_INDEX] = BUFFER_RETAIN_NOT_RETAIN;
+            return OMX_ErrorBadParameter;
+        }
     }
 
 #if LOG_TIME == 1
