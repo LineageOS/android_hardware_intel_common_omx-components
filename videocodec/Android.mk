@@ -158,6 +158,7 @@ LOCAL_CFLAGS += -DTARGET_HAS_VPP
 endif
 LOCAL_SHARED_LIBRARIES := \
     libwrs_omxil_common \
+    libion \
     liblog \
     libva_videodecoder \
     libdl \
