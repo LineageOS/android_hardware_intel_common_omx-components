@@ -72,13 +72,13 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
     uint32_t buff[MAX_GRAPHIC_BUFFER_NUM];
     uint32_t i, bufferCount;
     bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
     uint32_t bufferSize, bufferStride, bufferHeight, bufferWidth;
 #else
     uint32_t bufferSize, bufferHStride, bufferHeight, bufferVStride, bufferWidth;
 #endif
     if (!gralloc_mode) {
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
         bufferSize = 1920 * 1088 * 1.5;
         bufferStride = 1920;
 #else
@@ -98,7 +98,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
             mOMXBufferHeaderTypePtrNum = 0;
 
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
             mGraphicBufferParam.graphicBufferStride = (def_output->format.video.nFrameWidth + VP9_YV12_ALIGN) & ~VP9_YV12_ALIGN;
 #else
             mGraphicBufferParam.graphicBufferHStride = (def_output->format.video.nFrameWidth + VP9_YV12_ALIGN) & ~VP9_YV12_ALIGN;
@@ -116,7 +116,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
                 buff[i] = (uint32_t)(buf_hdr->pBuffer);
             }
         }
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
         bufferSize = mGraphicBufferParam.graphicBufferStride *
                           mGraphicBufferParam.graphicBufferHeight * 1.5;
         bufferStride = mGraphicBufferParam.graphicBufferStride;
@@ -128,7 +128,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
         bufferWidth = mGraphicBufferParam.graphicBufferWidth;
     }
 
-#ifndef ASUS_ZENFONE2_LP_BLOBS
+#ifndef PRE_ION_X86
     bufferSize = bufferHStride * bufferVStride * 1.5;
 #endif
 
@@ -162,7 +162,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorInit(void) {
         return OMX_ErrorBadParameter;
     }
 
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
 -    mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferWidth, bufferHeight,bufferCount,gralloc_mode, buff, (uint32_t)mAPMode);
 #else
     // FIXME: The proprietary part of the vp9hybrid decoder should be updated
@@ -179,13 +179,13 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
     uint32_t buff[MAX_GRAPHIC_BUFFER_NUM];
     uint32_t i, bufferCount;
     bool gralloc_mode = (mWorkingMode == GRAPHICBUFFER_MODE);
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
     uint32_t bufferSize, bufferStride, bufferHeight, bufferWidth;
 #else
     uint32_t bufferSize, bufferHStride, bufferHeight, bufferVStride, bufferWidth;
 #endif
     if (!gralloc_mode) {
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
         bufferSize = mDecodedImageWidth * mDecodedImageHeight * 1.5;
         bufferStride = mDecodedImageWidth;
 #else
@@ -206,7 +206,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
             mOMXBufferHeaderTypePtrNum = 0;
 
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
             mGraphicBufferParam.graphicBufferStride = (def_output->format.video.nFrameWidth + VP9_YV12_ALIGN) & ~VP9_YV12_ALIGN;
 #else
             mGraphicBufferParam.graphicBufferHStride = (def_output->format.video.nFrameWidth + VP9_YV12_ALIGN) & ~VP9_YV12_ALIGN;
@@ -222,7 +222,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
                 buff[i] = (uint32_t)(buf_hdr->pBuffer);
             }
         }
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
         bufferSize = mGraphicBufferParam.graphicBufferStride *
                           mGraphicBufferParam.graphicBufferHeight * 1.5;
         bufferStride = mGraphicBufferParam.graphicBufferStride;
@@ -234,7 +234,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::ProcessorReset(void)
         bufferWidth = mGraphicBufferParam.graphicBufferWidth;
     }
 
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
     mInitDecoder(mHybridCtx,bufferSize,bufferStride,bufferWidth,bufferHeight,bufferCount,gralloc_mode, buff, (uint32_t)mAPMode);
 #else
     bufferSize = bufferHStride * bufferVStride * 1.5;
@@ -660,7 +660,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::HandleFormatChange(void)
             // for graphic buffer reallocation
             // when the width and height parsed from ES are larger than allocated graphic buffer in outport,
             paramPortDefinitionOutput.format.video.nFrameWidth = width;
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
             if (mAPMode == METADATA_MODE)
                paramPortDefinitionOutput.format.video.nFrameHeight = (height + 0x1f) & ~0x1f;
             else
@@ -690,7 +690,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::HandleFormatChange(void)
 
 
 OMX_COLOR_FORMATTYPE OMXVideoDecoderVP9Hybrid::GetOutputColorFormat(int) {
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
     LOGV("Output color format is HAL_PIXEL_FORMAT_YV12.");
     return (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_YV12;
 #else
@@ -765,7 +765,7 @@ OMX_ERRORTYPE OMXVideoDecoderVP9Hybrid::SetNativeBufferModeSpecific(OMX_PTR pStr
     port_def.format.video.cMIMEType = (OMX_STRING)VA_VED_RAW_MIME_TYPE;
     // add borders for libvpx decode need.
     port_def.format.video.nFrameWidth += VPX_DECODE_BORDER * 2;
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
     // make heigth 32bit align
     port_def.format.video.nFrameHeight = (port_def.format.video.nFrameHeight + 0x1f) & ~0x1f;
 #else

@@ -320,7 +320,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorPreFreeBuffer(OMX_U32 nPortIndex, OM
             }
 
             VideoDecoderOutputMetaData *metadata = (VideoDecoderOutputMetaData *)(buffer->pBuffer);
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
             status = mVideoDecoder->signalRenderDone((void *)(metadata->pHandle));
 #else
             status = mVideoDecoder->signalRenderDone((void *)(metadata->pHandle), !found);
@@ -356,7 +356,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
         if (isResolutionChange) {
             HandleFormatChange();
         }
-#ifndef ASUS_ZENFONE2_LP_BLOBS
+#ifndef PRE_ION_X86
         if (mFlushMode) {
             LOGI("in mFlushMode, do HandleFormatChange.");
             HandleFormatChange();
@@ -365,11 +365,11 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
             // Actually, if mAPMode is set, mWorkingMode should be GRAPHICBUFFER_MODE.
             if (((mAPMode == METADATA_MODE) && (mWorkingMode == GRAPHICBUFFER_MODE)) && mFormatChanged) {
                 if (((*pBuffers[OUTPORT_INDEX])->nFlags & OMX_BUFFERFLAG_EOS)
-#ifndef ASUS_ZENFONE2_LP_BLOBS
+#ifndef PRE_ION_X86
                      || (mVideoDecoder->getOutputQueueLength() == 0)
 #endif
                  ) {
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
                     HandleFormatChange();
                 }
            }
@@ -459,7 +459,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::ProcessorProcess(
     if (isResolutionChange) {
         HandleFormatChange();
     }
-#ifndef ASUS_ZENFONE2_LP_BLOBS
+#ifndef PRE_ION_X86
     if (mFlushMode) {
         LOGI("in mFlushMode, do HandleFormatChange.");
         HandleFormatChange();
@@ -541,7 +541,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
             mOMXBufferHeaderTypePtrNum = 0;
 
             mGraphicBufferParam.graphicBufferColorFormat = def_output->format.video.eColorFormat;
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
             mGraphicBufferParam.graphicBufferStride = getStride(def_output->format.video.nFrameWidth);
 #else
             mGraphicBufferParam.graphicBufferHStride = getStride(def_output->format.video.nFrameWidth);
@@ -564,7 +564,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::PrepareConfigBuffer(VideoConfigBuffer *p) {
             }
         }
         p->flag |= USE_NATIVE_GRAPHIC_BUFFER;
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
         p->graphicBufferStride = mGraphicBufferParam.graphicBufferStride;
 #else
         p->graphicBufferHStride = mGraphicBufferParam.graphicBufferHStride;
@@ -730,7 +730,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::FillRenderBuffer(OMX_BUFFERHEADERTYPE **pBuff
     //pthread_mutex_lock(&mSerializationLock);
     const VideoRenderBuffer *renderBuffer = NULL;
     //pthread_mutex_unlock(&mSerializationLock);
-#ifndef ASUS_ZENFONE2_LP_BLOBS
+#ifndef PRE_ION_X86
     // in mFlushMode, provide empty buffer.
     if (mFlushMode) {
         buffer->nFilledLen = 0;
@@ -1007,7 +1007,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::BuildHandlerList(void) {
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtVppBufferNum), GetDecoderVppBufferNum, SetDecoderVppBufferNum);
 #endif
     AddHandler(OMX_IndexConfigCommonOutputCrop, GetDecoderOutputCrop, SetDecoderOutputCrop);
-#if defined(USE_META_DATA) && !defined(ASUS_ZENFONE2_LP_BLOBS)
+#if defined(USE_META_DATA) && !defined(PRE_ION_X86)
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexStoreMetaDataInBuffers), GetStoreMetaDataMode, SetStoreMetaDataMode);
 #endif
     AddHandler(static_cast<OMX_INDEXTYPE>(OMX_IndexExtEnableErrorReport), GetErrorReportMode, SetErrorReportMode);
@@ -1093,7 +1093,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::SetNativeBuffer(OMX_PTR pStructure) {
 
     if (mOMXBufferHeaderTypePtrNum == 1) {
          mGraphicBufferParam.graphicBufferColorFormat = param->nativeBuffer->format;
-#ifdef ASUS_ZENFONE2_LP_BLOBS
+#ifdef PRE_ION_X86
          mGraphicBufferParam.graphicBufferStride = param->nativeBuffer->stride;
 #else
          mGraphicBufferParam.graphicBufferHStride = param->nativeBuffer->stride;
@@ -1171,7 +1171,7 @@ OMX_ERRORTYPE OMXVideoDecoderBase::GetStoreMetaDataMode(OMX_PTR) {
 }
 
 OMX_ERRORTYPE OMXVideoDecoderBase::SetStoreMetaDataMode(OMX_PTR pStructure) {
-#if !defined(USE_META_DATA) || defined(ASUS_ZENFONE2_LP_BLOBS)
+#if !defined(USE_META_DATA) || defined(PRE_ION_X86)
     OMX_PARAM_PORTDEFINITIONTYPE defInput;
     memcpy(&defInput,
         this->ports[INPORT_INDEX]->GetPortDefinition(),
