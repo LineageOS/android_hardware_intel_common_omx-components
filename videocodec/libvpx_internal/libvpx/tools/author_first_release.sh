@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 ##
 ## List the release each author first contributed to.
 ##
