@@ -511,7 +511,7 @@ LOCAL_CFLAGS += -DUSE_META_DATA
 endif
 
 # TODO: Fix this.
-LOCAL_CFLAGS += -Wno-error=unused-variable
+LOCAL_CFLAGS += -Wall -Werror -Wno-error=unused-variable
 
 include $(BUILD_SHARED_LIBRARY)
 endif
