@@ -24,7 +24,7 @@
 #include <hardware/gralloc.h>
 #include <system/graphics.h>
 
-#include <hal_public.h>
+#include "hal_public.h"
 
 #define VP9_YV12_ALIGN (128-1)
 static const char* VP9_MIME_TYPE = "video/x-vnd.on2.vp9";

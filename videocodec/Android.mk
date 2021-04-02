@@ -21,7 +21,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_HEADER_LIBRARIES := \
-    libnativebase_headers
+    libnativebase_headers \
+    libstagefright_foundation_headers
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -164,7 +165,9 @@ LOCAL_SHARED_LIBRARIES := \
     libdl \
 
 LOCAL_HEADER_LIBRARIES := \
-    libnativebase_headers
+    intel_hwcomposer_headers \
+    libnativebase_headers \
+    libstagefright_foundation_headers
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -225,7 +228,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_HEADER_LIBRARIES := \
-    libnativebase_headers
+    libnativebase_headers \
+    libstagefright_foundation_headers
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -289,7 +293,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_HEADER_LIBRARIES := \
-    libnativebase_headers
+    libnativebase_headers \
+    libstagefright_foundation_headers
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -353,7 +358,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_HEADER_LIBRARIES := \
-    libnativebase_headers
+    libnativebase_headers \
+    libstagefright_foundation_headers
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -425,7 +431,8 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils
 
 LOCAL_HEADER_LIBRARIES := \
-    libnativebase_headers
+    libnativebase_headers \
+    libstagefright_foundation_headers
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -483,7 +490,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_HEADER_LIBRARIES := \
-    libnativebase_headers
+    libnativebase_headers \
+    libstagefright_foundation_headers
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -548,6 +556,7 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderBase.cpp \
     OMXVideoEncoderAVC.cpp
 
+LOCAL_HEADER_LIBRARIES := libstagefright_foundation_headers
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
 LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
@@ -591,6 +600,8 @@ LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
 ifeq ($(SW_MPEG4_ENCODER),true)
     LOCAL_CFLAGS += -DSYNC_MODE
 endif
+
+LOCAL_HEADER_LIBRARIES := libstagefright_foundation_headers
 LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderH263
@@ -630,6 +641,7 @@ LOCAL_SRC_FILES := \
 
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
 
+LOCAL_HEADER_LIBRARIES := libstagefright_foundation_headers
 LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMXVideoEncoderMPEG4
@@ -650,7 +662,8 @@ LOCAL_SHARED_LIBRARIES := \
     libva-android
 
 LOCAL_HEADER_LIBRARIES := \
-    libnativebase_headers
+    libnativebase_headers \
+    libstagefright_foundation_headers
 
 LOCAL_C_INCLUDES := \
     $(TARGET_OUT_HEADERS)/wrs_omxil_core \
@@ -718,6 +731,7 @@ LOCAL_SRC_FILES := \
     OMXVideoEncoderBase.cpp \
     OMXVideoEncoderVP8.cpp
 
+LOCAL_HEADER_LIBRARIES := libstagefright_foundation_headers
 LOCAL_CFLAGS += $(LOCAL_C_FLAGS)
 LOCAL_CFLAGS += -Werror
 LOCAL_MODULE_TAGS := optional
