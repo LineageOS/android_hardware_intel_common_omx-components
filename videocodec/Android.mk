@@ -431,6 +431,7 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils
 
 LOCAL_HEADER_LIBRARIES := \
+    intel_drm_headers \
     libnativebase_headers \
     libstagefright_foundation_headers
 
@@ -455,6 +456,7 @@ LOCAL_SRC_FILES += \
 LOCAL_CFLAGS += -DVED_TILING
 LOCAL_CFLAGS += -DUSE_META_DATA
 LOCAL_SHARED_LIBRARIES += libdl
+LOCAL_HEADER_LIBRARIES += moorefield_securevideo_headers
 endif
 
 LOCAL_CFLAGS += -Werror
